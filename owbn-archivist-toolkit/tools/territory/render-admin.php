@@ -1,9 +1,9 @@
 <?php
 
-// File: tools/cchub/render.php
+// File: tools/territory/render-admin.php
 // @version 0.1.0
 // @author greghacke
-// @tool cchub
+// @tool territory
 
 defined( 'ABSPATH' ) || exit;
 
