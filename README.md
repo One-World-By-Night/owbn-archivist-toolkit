@@ -203,7 +203,7 @@ Adding a new domain requires **no new tables** — just a domain class with work
 │                     OAP Plugin                              │
 │                                                             │
 │  ┌────────────────┐  ┌────────────────────────────────────┐ │
-│  │ Workflow Engine │  │  Domain Registry                  │ │
+│  │Workflow Engine │  │  Domain Registry                   │ │
 │  │                │  │  ┌──────────────────────────────┐  │ │
 │  │ - Steps        │  │  │ Chronicle Rpt  │ Binding Ag. │  │ │
 │  │ - Routing      │  │  │ Char Lifecycle │ Disciplinary│  │ │
@@ -212,14 +212,14 @@ Adding a new domain requires **no new tables** — just a domain class with work
 │  └──┬─────────┬───┘  │  (+ external domains via hook)     │ │
 │     │         │      └────────────────────────────────────┘ │
 │     │         │                                             │
-│  ┌──▼──────┐ ┌▼───────────────────┐ ┌──────────────────┐   │
-│  │ Timer   │ │ Notification Engine │ │ Regulation       │   │
-│  │ Engine  │ │                     │ │ Lookup Table     │   │
-│  │         │ │ ┌─────┐ ┌───────┐  │ │                  │   │
-│  │ - BBP   │ │ │Email│ │Dashbd │  │ │                  │   │
-│  │ - Bumps │ │ ├─────┤ ├───────┤  │ │                  │   │
-│  │ - Expiry│ │ │ API │ │Channel│  │ │                  │   │
-│  └────┬────┘ │ └─────┘ └───────┘  │ └──────────────────┘   │
+│  ┌──▼──────┐ ┌▼───────────────────┐ ┌──────────────────┐    │
+│  │ Timer   │ │ Notification Engine │ │ Regulation      │    │
+│  │ Engine  │ │                     │ │ Lookup Table    │    │
+│  │         │ │ ┌─────┐ ┌───────┐  │ │                  │    │
+│  │ - BBP   │ │ │Email│ │Dashbd │  │ │                  │    │
+│  │ - Bumps │ │ ├─────┤ ├───────┤  │ │                  │    │
+│  │ - Expiry│ │ │ API │ │Channel│  │ │                  │    │
+│  └────┬────┘ │ └─────┘ └───────┘  │ └──────────────────┘    │
 │       │      └─────────────────────┘                        │
 │  ┌────▼────────────────────────────────────────────────┐    │
 │  │ Data Layer (WP Custom Tables)                       │    │
