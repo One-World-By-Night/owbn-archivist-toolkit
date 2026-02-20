@@ -82,7 +82,7 @@ The toolkit handles six types of organizational processes at launch. Each is a "
 | **Chronicle Reporting** | Staff (CM/HST) | Staff ⟷ Archivist | Monthly reports, game data |
 | **Character Lifecycle** | Player or Staff | Player ⟷ Staff ⟷ Coordinator ⟷ Archivist | Transfers, deaths, registration, R&U, learning custom content |
 | **Custom Content** | Staff (HST) | Staff ⟷ Coordinator ⟷ Archivist | New disciplines, combos, rituals, merits |
-| **Binding Agreements** | Player or Staff | Player ⟷ Staff ⟷ Coordinator → Archivist | Cross-chronicle agreements |
+| **Binding Agreements** | Player or Staff | Player ⟷ Staff ⟷ Coordinator → Archivist | Coordinator LEvel Binding agreements |
 | **Disciplinary Actions** | Staff or Exec | Staff → Archivist (local) / Exec → Archivist (global) | Disciplinary records |
 | **Governance Records** | Admin Coordinator | Admin → Archivist | Organizational records |
 
