@@ -121,12 +121,18 @@ Steps can have timers attached. The most important one:
 
 **Bump Bump Pass** — When a coordinator doesn't respond to an R&U request:
 
-- 14-day timer starts when the request reaches the coordinator
-- The submitter must send 2 bumps (reminders within the system)
-- If the coordinator still hasn't acted after the timer and bumps, the request auto-approves
-- Executive Team is notified
-- Timer resets if the coordinator requests changes (fair — they responded)
+1. 14-day timer starts when the request reaches the coordinator
+2. The submitter bumps it at any time (Reminder #1 — before or after day 14)
+3. The submitter bumps it again at any time (Reminder #2)
+4. Once 14 days have passed AND the submitter has bumped at least twice, the submitter can invoke auto-approve. They don't have to — they can bump again instead
+5. The two conditions (14 days elapsed + 2 bumps) are independent — bumps can come before or after day 14
+6. If the submitter never bumped twice, the auto-approve option is not available regardless of how much time has passed
+7. If the coordinator takes any workflow action (approve, deny, request changes), the clock stops
+8. If the coordinator requests changes, the clock resets to a fresh 14 days when the submitter resubmits
+
+- Executive Team is notified on auto-approve
 - Positions and ranks cannot auto-approve (Exec must intervene)
+- Bumps don't reset the clock — they're reminders, not extensions
 
 Timer extensions are available through the Executive Team for vacancies, unavailability, and blackout periods.
 
@@ -180,7 +186,7 @@ If a coordinator denies a request and Council subsequently passes it via vote, a
 
 ### Database Schema
 
-Nine custom tables, all prefixed with `{wp_prefix}oap_`:
+Ten custom tables, all prefixed with `{wp_prefix}oap_`:
 
 | Table                     | Purpose                                                                            |
 | ------------------------- | ---------------------------------------------------------------------------------- |
@@ -193,6 +199,7 @@ Nine custom tables, all prefixed with `{wp_prefix}oap_`:
 | `oap_regulation_rules`    | The Regulation Lookup Table (Controlled Items)                                     |
 | `oap_timers`              | Active timer state — duration, bump count, expiry behavior                         |
 | `oap_entry_relationships` | Typed, directional links between entries (informational, not routing)              |
+| `oap_entry_rules`         | Junction table linking entries to regulation rules (many-to-many)                 |
 
 Adding a new domain requires **no new tables** — just a domain class with workflow configuration and meta key definitions.
 
@@ -246,13 +253,13 @@ A domain class defines:
 
 ### Action Types
 
-12 action types compose into domain-specific workflows:
+15 action types compose into domain-specific workflows:
 
 | Category        | Actions                                                 |
 | --------------- | ------------------------------------------------------- |
-| **Core** (5)    | Submit, Approve, Deny, Request Changes, Cancel/Withdraw |
-| **Routing** (3) | Reassign, Delegate, Hold/Pause                          |
-| **System** (4)  | Notify, Timer, Record, Council Override                 |
+| **Core** (6)    | Submit, Approve, Deny, Request Changes, Cancel/Withdraw, Bump |
+| **Routing** (3) | Reassign, Delegate, Hold/Pause                                |
+| **System** (6)  | Resume, Record, Auto-Approve, Auto-Deny, Council Override, Timer Extend |
 
 Every user action requires a note. Notes are appended to the timeline and become part of the permanent record.
 
@@ -264,7 +271,7 @@ Every user action requires a note. Notes are appended to the timeline and become
 - **Request Changes** — always routes exactly one step back; no level-skipping
 - **Originator** — always the person who clicked Submit; "on behalf of" is domain-specific meta
 - **Entry relationships** — typed, directional links between entries for cross-domain references
-- **Template versioning** — handled at the schema level for in-flight entries
+- **Template versioning** — always-latest; templates are PHP code, not data. In-flight entries follow the current template
 
 ### Workflow Template Example
 
