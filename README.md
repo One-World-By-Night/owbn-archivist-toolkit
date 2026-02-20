@@ -220,7 +220,7 @@ Adding a new domain requires **no new tables** — just a domain class with work
 │  │ - Bumps │ │ ├─────┤ ├───────┤  │ │                  │    │
 │  │ - Expiry│ │ │ API │ │Channel│  │ │                  │    │
 │  └────┬────┘ │ └─────┘ └───────┘  │ └──────────────────┘    │
-│       │      └─────────────────────┘                        │
+│       │      └────────────────────┘                         │
 │  ┌────▼────────────────────────────────────────────────┐    │
 │  │ Data Layer (WP Custom Tables)                       │    │
 │  │ entries │ meta │ timeline │ assignees │ watchers │ …│    │
@@ -308,8 +308,6 @@ No data will be lost. Migration is a formatting problem, not a data loss problem
 ## Status
 
 **Current phase:** Schema Design
-
-The proposal and all architectural decisions are finalized (27 decisions confirmed). Database table definitions are being specified. No code has been written yet.
 
 ## License
 
