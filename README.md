@@ -77,14 +77,14 @@ A request can sit indefinitely because one party decided to stop responding. The
 
 The toolkit handles six types of organizational processes at launch. Each is a "domain" — a configured workflow using shared building blocks.
 
-| Domain | Who submits | Approval path | What gets recorded |
-|--------|------------|---------------|-------------------|
-| **Chronicle Reporting** | Staff (CM/HST) | Staff ⟷ Archivist | Monthly reports, game data |
-| **Character Lifecycle** | Player or Staff | Player ⟷ Staff ⟷ Coordinator ⟷ Archivist | Transfers, deaths, registration, R&U, learning custom content |
-| **Custom Content** | Staff (HST) | Staff ⟷ Coordinator ⟷ Archivist | New disciplines, combos, rituals, merits |
-| **Binding Agreements** | Player or Staff | Player ⟷ Staff ⟷ Coordinator → Archivist | Coordinator LEvel Binding agreements |
-| **Disciplinary Actions** | Staff or Exec | Staff → Archivist (local) / Exec → Archivist (global) | Disciplinary records |
-| **Governance Records** | Admin Coordinator | Admin → Archivist | Organizational records |
+| Domain                   | Who submits       | Approval path                                         | What gets recorded                                            |
+| ------------------------ | ----------------- | ----------------------------------------------------- | ------------------------------------------------------------- |
+| **Chronicle Reporting**  | Staff (CM/HST)    | Staff ⟷ Archivist                                     | Monthly reports, game data                                    |
+| **Character Lifecycle**  | Player or Staff   | Player ⟷ Staff ⟷ Coordinator ⟷ Archivist              | Transfers, deaths, registration, R&U, learning custom content |
+| **Custom Content**       | Staff (HST)       | Staff ⟷ Coordinator ⟷ Archivist                       | New disciplines, combos, rituals, merits                      |
+| **Binding Agreements**   | Player or Staff   | Player ⟷ Staff ⟷ Coordinator → Archivist              | Coordinator Level Binding agreements                           |
+| **Disciplinary Actions** | Staff or Exec     | Staff → Archivist (local) / Exec → Archivist (global) | Disciplinary records                                          |
+| **Governance Records**   | Admin Coordinator | Admin → Archivist                                     | Organizational records                                        |
 
 `⟷` means the step can loop (approve / deny / request changes). `→` means one-way pass-through.
 
@@ -96,6 +96,7 @@ Every request follows the same fundamental pattern at each approval level:
 
 1. **Someone submits** (or revises and resubmits)
 2. **An assignee reviews** and chooses one of:
+
    - **Approve** — moves to the next level
    - **Deny** — closes the request with a reason
    - **Request Changes** — sends it back one level for revision
@@ -119,6 +120,7 @@ The originator (person who submitted) can **cancel/withdraw** at any time before
 Steps can have timers attached. The most important one:
 
 **Bump Bump Pass** — When a coordinator doesn't respond to an R&U request:
+
 - 14-day timer starts when the request reaches the coordinator
 - The submitter must send 2 bumps (reminders within the system)
 - If the coordinator still hasn't acted after the timer and bumps, the request auto-approves
@@ -130,7 +132,7 @@ Timer extensions are available through the Executive Team for vacancies, unavail
 
 ### Regulation Lookup Table
 
-The digital version of the Controlled Items list from the Character Regulation Bylaws. It determines:
+The digital version of the R&U Classifications list from the Character Regulation Bylaws. It determines:
 
 - Whether a coordinator approval step is needed
 - Which specific coordinator(s) are assigned
@@ -180,17 +182,17 @@ If a coordinator denies a request and Council subsequently passes it via vote, a
 
 Nine custom tables, all prefixed with `{wp_prefix}oap_`:
 
-| Table | Purpose |
-|-------|---------|
-| `oap_entries` | Core workflow state — domain, status, step, originator, associated entities, dates |
-| `oap_entry_meta` | Domain-specific data as key-value pairs (form fields, submission content) |
-| `oap_timeline` | Append-only action/note log — the complete audit trail |
-| `oap_assignees` | Step assignees + individual approval status (supports multi-approval) |
-| `oap_watchers` | Notification recipients per entry |
-| `oap_notifications` | Dispatch log — every notification sent, channel, recipient, delivery status |
-| `oap_regulation_rules` | The Regulation Lookup Table (Controlled Items) |
-| `oap_timers` | Active timer state — duration, bump count, expiry behavior |
-| `oap_entry_relationships` | Typed, directional links between entries (informational, not routing) |
+| Table                     | Purpose                                                                            |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `oap_entries`             | Core workflow state — domain, status, step, originator, associated entities, dates |
+| `oap_entry_meta`          | Domain-specific data as key-value pairs (form fields, submission content)          |
+| `oap_timeline`            | Append-only action/note log — the complete audit trail                             |
+| `oap_assignees`           | Step assignees + individual approval status (supports multi-approval)              |
+| `oap_watchers`            | Notification recipients per entry                                                  |
+| `oap_notifications`       | Dispatch log — every notification sent, channel, recipient, delivery status        |
+| `oap_regulation_rules`    | The Regulation Lookup Table (Controlled Items)                                     |
+| `oap_timers`              | Active timer state — duration, bump count, expiry behavior                         |
+| `oap_entry_relationships` | Typed, directional links between entries (informational, not routing)              |
 
 Adding a new domain requires **no new tables** — just a domain class with workflow configuration and meta key definitions.
 
@@ -234,6 +236,7 @@ Adding a new domain requires **no new tables** — just a domain class with work
 Each domain is a PHP class implementing `OAP_Domain_Interface`. Domains register via a WordPress filter hook (`oap_register_domains`), making the system extensible — other plugins can add domains without modifying core code.
 
 A domain class defines:
+
 - Workflow steps (sequence, assignee roles, available actions, routing, timers, conditions)
 - Meta keys (domain-specific data fields)
 - Form field specifications
@@ -245,11 +248,11 @@ A domain class defines:
 
 12 action types compose into domain-specific workflows:
 
-| Category | Actions |
-|----------|---------|
-| **Core** (5) | Submit, Approve, Deny, Request Changes, Cancel/Withdraw |
-| **Routing** (3) | Reassign, Delegate, Hold/Pause |
-| **System** (4) | Notify, Timer, Record, Council Override |
+| Category        | Actions                                                 |
+| --------------- | ------------------------------------------------------- |
+| **Core** (5)    | Submit, Approve, Deny, Request Changes, Cancel/Withdraw |
+| **Routing** (3) | Reassign, Delegate, Hold/Pause                          |
+| **System** (4)  | Notify, Timer, Record, Council Override                 |
 
 Every user action requires a note. Notes are appended to the timeline and become part of the permanent record.
 
@@ -280,19 +283,20 @@ Step 4: Record         → Exec/Archivist/Coordinator
 
 ### AccessSchema Role Paths
 
-| Role | AccessSchema Path |
-|------|-------------------|
-| Player | `Player/*` |
-| Staff | `Chronicle/*/HST` or `Chronicle/*/Staff` |
-| Coordinator | `Coordinator/*/Coordinator` |
-| Admin | `Exec/Admin/Coordinator` |
-| Archivist | `Exec/Archivist/Coordinator` |
-| Web Coordinator | `Exec/Web/Coordinator` |
+| Role                | AccessSchema Path                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Player              | `Player/*`                                                                            |
+| Staff               | `Chronicle/*/HST` or `Chronicle/*/Staff`                                              |
+| Coordinator         | `Coordinator/*/Coordinator`                                                           |
+| Admin               | `Exec/Admin/Coordinator`                                                              |
+| Archivist           | `Exec/Archivist/Coordinator`                                                          |
+| Web Coordinator     | `Exec/Web/Coordinator`                                                                |
 | Executive oversight | `Exec/AHC1/Coordinator`, `Exec/AHC2/Coordinator`, `Exec/Head-Coordinator/Coordinator` |
 
 ### Legacy Migration
 
 The existing Drupal system data will be migrated **after** the new tool is stable. The approach:
+
 1. Build the new tool with a clean design (not constrained by Drupal's data model)
 2. Export Drupal data
 3. Transform and import into the new schema
