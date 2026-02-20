@@ -213,8 +213,8 @@ Adding a new domain requires **no new tables** — just a domain class with work
 │     │         │      └────────────────────────────────────┘ │
 │     │         │                                             │
 │  ┌──▼──────┐ ┌▼───────────────────┐ ┌──────────────────┐    │
-│  │ Timer   │ │ Notification Engine │ │ Regulation      │    │
-│  │ Engine  │ │                     │ │ Lookup Table    │    │
+│  │ Timer   │ │Notification Engine │ │ Regulation       │    │
+│  │ Engine  │ │                    │ │ Lookup Table     │    │
 │  │         │ │ ┌─────┐ ┌───────┐  │ │                  │    │
 │  │ - BBP   │ │ │Email│ │Dashbd │  │ │                  │    │
 │  │ - Bumps │ │ ├─────┤ ├───────┤  │ │                  │    │
