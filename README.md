@@ -131,7 +131,7 @@ Steps can have timers attached. The most important one:
 8. If the coordinator requests changes, the clock resets to a fresh 14 days when the submitter resubmits
 
 - Executive Team is notified on auto-approve
-- Positions and ranks cannot auto-approve (Exec must intervene)
+- Certain R&U elements are barred from BBP (Exec must intervene)
 - Bumps don't reset the clock — they're reminders, not extensions
 
 Timer extensions are available through the Executive Team for vacancies, unavailability, and blackout periods.
