@@ -186,20 +186,20 @@ If a coordinator denies a request and Council subsequently passes it via vote, a
 
 ### Database Schema
 
-Ten custom tables, all prefixed with `{wp_prefix}oap_`:
+Ten custom tables, all prefixed with `{wp_prefix}oat_`:
 
 | Table                     | Purpose                                                                            |
 | ------------------------- | ---------------------------------------------------------------------------------- |
-| `oap_entries`             | Core workflow state — domain, status, step, originator, associated entities, dates |
-| `oap_entry_meta`          | Domain-specific data as key-value pairs (form fields, submission content)          |
-| `oap_timeline`            | Append-only action/note log — the complete audit trail                             |
-| `oap_assignees`           | Step assignees + individual approval status (supports multi-approval)              |
-| `oap_watchers`            | Notification recipients per entry                                                  |
-| `oap_notifications`       | Dispatch log — every notification sent, channel, recipient, delivery status        |
-| `oap_regulation_rules`    | The Regulation Lookup Table (Controlled Items)                                     |
-| `oap_timers`              | Active timer state — duration, bump count, expiry behavior                         |
-| `oap_entry_relationships` | Typed, directional links between entries (informational, not routing)              |
-| `oap_entry_rules`         | Junction table linking entries to regulation rules (many-to-many)                 |
+| `oat_entries`             | Core workflow state — domain, status, step, originator, associated entities, dates |
+| `oat_entry_meta`          | Domain-specific data as key-value pairs (form fields, submission content)          |
+| `oat_timeline`            | Append-only action/note log — the complete audit trail                             |
+| `oat_assignees`           | Step assignees + individual approval status (supports multi-approval)              |
+| `oat_watchers`            | Notification recipients per entry                                                  |
+| `oat_notifications`       | Dispatch log — every notification sent, channel, recipient, delivery status        |
+| `oat_regulation_rules`    | The Regulation Lookup Table (Controlled Items)                                     |
+| `oat_timers`              | Active timer state — duration, bump count, expiry behavior                         |
+| `oat_entry_relationships` | Typed, directional links between entries (informational, not routing)              |
+| `oat_entry_rules`         | Junction table linking entries to regulation rules (many-to-many)                 |
 
 Adding a new domain requires **no new tables** — just a domain class with workflow configuration and meta key definitions.
 
@@ -207,7 +207,7 @@ Adding a new domain requires **no new tables** — just a domain class with work
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     OAP Plugin                              │
+│                     OAT Plugin                              │
 │                                                             │
 │  ┌────────────────┐  ┌────────────────────────────────────┐ │
 │  │Workflow Engine │  │  Domain Registry                   │ │
@@ -240,7 +240,7 @@ Adding a new domain requires **no new tables** — just a domain class with work
 
 ### Domain Registration
 
-Each domain is a PHP class implementing `OAP_Domain_Interface`. Domains register via a WordPress filter hook (`oap_register_domains`), making the system extensible — other plugins can add domains without modifying core code.
+Each domain is a PHP class implementing `OAT_Domain_Interface`. Domains register via a WordPress filter hook (`oat_register_domains`), making the system extensible — other plugins can add domains without modifying core code.
 
 A domain class defines:
 
@@ -314,7 +314,13 @@ No data will be lost. Migration is a formatting problem, not a data loss problem
 
 ## Status
 
-**Current phase:** Schema Design
+**Current phase:** Implementation Planning complete — Plugin Scaffolding next
+
+- Schema Design: 10 tables fully defined (SCHEMA-DESIGN.md)
+- Decisions: D-001 through D-051 recorded (DECISIONS.md)
+- R&U Data: 944 regulation rules parsed from Character Bylaws (team reviewing CSV)
+- Build Plan: 8 phases, 337 checkboxes (DEV-WORKFLOW.md)
+- Next: Phase 0 — Plugin Scaffold
 
 ## License
 
