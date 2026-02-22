@@ -186,7 +186,7 @@ If a coordinator denies a request and Council subsequently passes it via vote, a
 
 ### Database Schema
 
-Ten custom tables, all prefixed with `{wp_prefix}oat_`:
+Eleven custom tables, all prefixed with `{wp_prefix}oat_`:
 
 | Table                     | Purpose                                                                            |
 | ------------------------- | ---------------------------------------------------------------------------------- |
@@ -200,6 +200,7 @@ Ten custom tables, all prefixed with `{wp_prefix}oat_`:
 | `oat_timers`              | Active timer state — duration, bump count, expiry behavior                         |
 | `oat_entry_relationships` | Typed, directional links between entries (informational, not routing)              |
 | `oat_entry_rules`         | Junction table linking entries to regulation rules (many-to-many)                 |
+| `oat_characters`          | Character identity registry — maps characters to players to chronicles via UUIDv7 |
 
 Adding a new domain requires **no new tables** — just a domain class with workflow configuration and meta key definitions.
 
@@ -314,13 +315,7 @@ No data will be lost. Migration is a formatting problem, not a data loss problem
 
 ## Status
 
-**Current phase:** Implementation Planning complete — Plugin Scaffolding next
-
-- Schema Design: 10 tables fully defined (SCHEMA-DESIGN.md)
-- Decisions: D-001 through D-051 recorded (DECISIONS.md)
-- R&U Data: 944 regulation rules parsed from Character Bylaws (team reviewing CSV)
-- Build Plan: 8 phases, 337 checkboxes (DEV-WORKFLOW.md)
-- Next: Phase 0 — Plugin Scaffold
+**Current phase:** Plugin Scaffolding
 
 ## License
 
