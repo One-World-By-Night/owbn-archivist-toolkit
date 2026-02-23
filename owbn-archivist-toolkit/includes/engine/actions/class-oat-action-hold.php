@@ -11,6 +11,10 @@ class OAT_Action_Hold {
      * @return true|WP_Error
      */
     public static function execute( $entry, $user_id, $data = array() ) {
+        if ( ! OAT_Authorization::check( OAT_Constants::CAP_EXEC_OVERSIGHT ) ) {
+            return new WP_Error( 'unauthorized', 'Only Exec Oversight can place an entry on hold.' );
+        }
+
         if ( empty( $data['note'] ) ) {
             return new WP_Error( 'missing_note', 'A note is required.' );
         }
