@@ -28,6 +28,13 @@ add_action( 'admin_menu', array( 'OAT_Admin', 'register_menus' ) );
 add_action( 'admin_enqueue_scripts', array( 'OAT_Admin', 'enqueue_assets' ) );
 add_action( 'admin_init', array( 'OAT_Install', 'check_version' ) );
 
+// Register with centralized ASC module in owbn-client.
+add_action( 'init', function() {
+    if ( function_exists( 'owc_asc_register_client' ) ) {
+        owc_asc_register_client( 'oat', 'OWbN Archivist Toolkit' );
+    }
+} );
+
 // Domain registration.
 add_filter( 'oat_register_domains', function( $domains ) {
     $domains[] = new OAT_Domain_Character_Lifecycle();

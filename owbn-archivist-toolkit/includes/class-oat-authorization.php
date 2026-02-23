@@ -3,7 +3,8 @@
  * OAT Authorization.
  *
  * Bridge between accessSchema role paths and WordPress capabilities.
- * Primary: accessSchema role check. Fallback: WP capability check.
+ * Uses owc_asc_* wrappers from owbn-client's centralized ASC module.
+ * Fallback: WP capability check when ASC is unavailable.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -11,16 +12,16 @@ defined( 'ABSPATH' ) || exit;
 class OAT_Authorization {
 
     /**
-     * accessSchema client ID — lowercase, derived from $asc_instance_prefix.
+     * ASC client identifier.
      */
     const CLIENT_ID = 'oat';
 
     /**
-     * Check if the current user has access via accessSchema role path,
+     * Check if the current user has access via ASC role path,
      * with WordPress capability as fallback.
      *
      * @param string      $capability WP capability name (fallback).
-     * @param string|null $role_path  accessSchema role path (primary).
+     * @param string|null $role_path  ASC role path (primary).
      * @return bool
      */
     public static function check( $capability, $role_path = null ) {
@@ -29,12 +30,12 @@ class OAT_Authorization {
             return false;
         }
 
-        // Primary: accessSchema.
-        if ( $role_path && function_exists( 'accessSchema_client_remote_check_access' ) ) {
-            $result = accessSchema_client_remote_check_access(
+        // Primary: ASC centralized check.
+        if ( $role_path && function_exists( 'owc_asc_check_access' ) ) {
+            $result = owc_asc_check_access(
+                self::CLIENT_ID,
                 $user->user_email,
                 $role_path,
-                self::CLIENT_ID,
                 true
             );
             if ( is_bool( $result ) ) {
@@ -47,7 +48,7 @@ class OAT_Authorization {
     }
 
     /**
-     * Get all accessSchema roles for the current user.
+     * Get all ASC roles for the current user.
      *
      * @return array
      */
@@ -57,27 +58,27 @@ class OAT_Authorization {
             return array();
         }
 
-        if ( function_exists( 'accessSchema_client_remote_get_roles_by_email' ) ) {
-            $roles = accessSchema_client_remote_get_roles_by_email(
-                $user->user_email,
-                self::CLIENT_ID
-            );
-            return is_array( $roles ) ? $roles : array();
+        if ( function_exists( 'owc_asc_get_user_roles' ) ) {
+            $result = owc_asc_get_user_roles( self::CLIENT_ID, $user->user_email );
+            if ( is_array( $result ) && isset( $result['roles'] ) ) {
+                return $result['roles'];
+            }
+            return is_array( $result ) ? $result : array();
         }
 
         return array();
     }
 
     /**
-     * Get all user IDs that hold a given accessSchema role path.
+     * Get all user IDs that hold a given ASC role path.
      *
-     * @param string $role_path accessSchema role path.
-     * @return array User IDs.
+     * @param string $role_path ASC role path.
+     * @return array User data.
      */
     public static function get_users_with_role( $role_path ) {
-        if ( function_exists( 'accessSchema_client_remote_get_users_by_role' ) ) {
-            $users = accessSchema_client_remote_get_users_by_role( $role_path, self::CLIENT_ID );
-            return is_array( $users ) ? $users : array();
+        if ( function_exists( 'owc_asc_get_users_by_role' ) ) {
+            $result = owc_asc_get_users_by_role( self::CLIENT_ID, $role_path );
+            return is_array( $result ) ? $result : array();
         }
         return array();
     }

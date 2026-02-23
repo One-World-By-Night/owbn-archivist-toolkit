@@ -26,6 +26,15 @@ class OAT_Page_Form_Fields {
 			self::handle_get_action( $action );
 		}
 
+		// Handle POST: re-seed form fields.
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && ! empty( $_POST['oat_reseed_fields'] ) ) {
+			check_admin_referer( 'oat_reseed_fields' );
+			$counts = OAT_Seeder::run();
+			$msg    = sprintf( 'seeded&fields=%d&domains=%d&steps=%d', $counts['fields'], $counts['domains'], $counts['steps'] );
+			wp_redirect( admin_url( 'admin.php?page=oat-form-fields&message=' . $msg ) );
+			exit;
+		}
+
 		// Handle POST (add/edit save).
 		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && ! empty( $_POST['oat_save_field'] ) ) {
 			check_admin_referer( 'oat_save_field' );

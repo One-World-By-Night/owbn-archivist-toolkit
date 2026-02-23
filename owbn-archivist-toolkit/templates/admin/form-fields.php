@@ -14,6 +14,15 @@
 		<div class="notice notice-success is-dismissible"><p>Field activated.</p></div>
 	<?php elseif ( 'deactivated' === $message ) : ?>
 		<div class="notice notice-success is-dismissible"><p>Field deactivated.</p></div>
+	<?php elseif ( 0 === strpos( $message, 'seeded' ) ) : ?>
+		<?php
+		$seeded_fields  = isset( $_GET['fields'] ) ? absint( $_GET['fields'] ) : 0;
+		$seeded_domains = isset( $_GET['domains'] ) ? absint( $_GET['domains'] ) : 0;
+		$seeded_steps   = isset( $_GET['steps'] ) ? absint( $_GET['steps'] ) : 0;
+		?>
+		<div class="notice notice-success is-dismissible">
+			<p>Re-seed complete: <?php echo esc_html( $seeded_fields ); ?> field(s), <?php echo esc_html( $seeded_domains ); ?> domain(s), <?php echo esc_html( $seeded_steps ); ?> step(s) inserted.</p>
+		</div>
 	<?php endif; ?>
 
 	<?php
@@ -45,6 +54,14 @@
 				</div>
 			<?php endif; ?>
 		</div>
+	</form>
+
+	<form method="post" style="display:inline; margin-left:8px;">
+		<?php wp_nonce_field( 'oat_reseed_fields' ); ?>
+		<input type="hidden" name="oat_reseed_fields" value="1">
+		<button type="submit" class="button" onclick="return confirm('Re-seed form fields from domain definitions? Existing customizations are preserved.');">
+			Re-seed Form Fields
+		</button>
 	</form>
 
 	<?php if ( '' !== $current_domain ) : ?>
