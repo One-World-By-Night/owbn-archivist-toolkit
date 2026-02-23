@@ -126,27 +126,6 @@ class OAT_Domain_Chronicle_Reporting implements OAT_Domain_Interface {
     }
 
     /**
-     * Legacy form fields — used during migration until DB fields are seeded.
-     *
-     * @return array
-     */
-    public function get_form_fields() {
-        return array(
-            'submit' => array(
-                array( 'key' => 'report_period', 'type' => 'text', 'label' => 'Reporting Period', 'required' => true ),
-                array( 'key' => 'active_players', 'type' => 'number', 'label' => 'Active Players', 'required' => false ),
-                array( 'key' => 'active_characters', 'type' => 'number', 'label' => 'Active Characters', 'required' => false ),
-                array( 'key' => 'game_sessions', 'type' => 'number', 'label' => 'Game Sessions Held', 'required' => false ),
-                array( 'key' => 'report_notes', 'type' => 'textarea', 'label' => 'Additional Notes', 'required' => false ),
-            ),
-            'review' => array(
-                array( 'key' => 'summary', 'type' => 'readonly', 'label' => 'Report Summary' ),
-                array( 'key' => 'note', 'type' => 'textarea', 'label' => 'Review Note', 'required' => false ),
-            ),
-        );
-    }
-
-    /**
      * Seed form fields into oat_form_fields table.
      *
      * @return int Number of fields inserted.

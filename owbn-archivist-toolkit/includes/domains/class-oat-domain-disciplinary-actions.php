@@ -171,31 +171,6 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
     }
 
     /**
-     * Legacy form fields — used by pre-8.3.10 submit flow. Removed in 8.5.5.
-     *
-     * @return array
-     */
-    public function get_form_fields() {
-        return array(
-            'submit' => array(
-                array( 'key' => 'da_type', 'type' => 'select', 'label' => 'Type of Disciplinary Action', 'required' => true, 'options' => array(
-                    'chronicle' => 'Chronicle / Local',
-                    'global'    => 'Global',
-                ) ),
-                array( 'key' => 'player_name', 'type' => 'text', 'label' => 'Player receiving DA', 'required' => true ),
-                array( 'key' => 'chronicle_slug', 'type' => 'text', 'label' => 'Chronicle issuing DA', 'required' => false ),
-                array( 'key' => 'reporter_name', 'type' => 'text', 'label' => 'Person reporting / filing DA', 'required' => true ),
-                array( 'key' => 'da_details', 'type' => 'textarea', 'label' => 'Details of the disciplinary action', 'required' => true ),
-                array( 'key' => 'da_action', 'type' => 'textarea', 'label' => 'Action taken', 'required' => true ),
-                array( 'key' => 'vote_link', 'type' => 'text', 'label' => 'Link to Council vote (if applicable)', 'required' => false ),
-            ),
-            'review' => array(
-                array( 'key' => 'review_note', 'type' => 'textarea', 'label' => 'Review Comments', 'required' => false ),
-            ),
-        );
-    }
-
-    /**
      * @param object $entry
      * @param array  $meta
      * @return true|WP_Error

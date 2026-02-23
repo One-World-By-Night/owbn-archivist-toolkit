@@ -133,34 +133,6 @@ class OAT_Domain_Custom_Content implements OAT_Domain_Interface {
     }
 
     /**
-     * @return array
-     */
-    public function get_form_fields() {
-        return array(
-            'submit' => array(
-                array( 'key' => 'content_name', 'type' => 'text', 'label' => 'Content Name', 'required' => true ),
-                array( 'key' => 'content_type', 'type' => 'select', 'label' => 'Content Type', 'required' => true, 'options' => array(
-                    'discipline' => 'Discipline',
-                    'combo'      => 'Combo Discipline',
-                    'ritual'     => 'Ritual',
-                    'merit'      => 'Merit',
-                    'flaw'       => 'Flaw',
-                    'thaumaturgy_path' => 'Thaumaturgy Path',
-                    'necromancy_path'  => 'Necromancy Path',
-                    'other'      => 'Other',
-                ) ),
-                array( 'key' => 'mechanics', 'type' => 'textarea', 'label' => 'Mechanics', 'required' => true ),
-                array( 'key' => 'regulation_rules', 'type' => 'rule_picker', 'label' => 'Regulation Rules', 'required' => false ),
-                array( 'key' => 'note', 'type' => 'textarea', 'label' => 'Notes', 'required' => false ),
-            ),
-            'review' => array(
-                array( 'key' => 'summary', 'type' => 'readonly', 'label' => 'Entry Summary' ),
-                array( 'key' => 'note', 'type' => 'textarea', 'label' => 'Review Note', 'required' => true ),
-            ),
-        );
-    }
-
-    /**
      * @param object $entry
      * @param array  $meta
      * @return true|WP_Error

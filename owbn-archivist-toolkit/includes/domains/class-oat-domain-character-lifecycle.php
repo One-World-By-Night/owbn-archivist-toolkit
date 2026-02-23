@@ -135,32 +135,6 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
     }
 
     /**
-     * @return array
-     */
-    public function get_form_fields() {
-        return array(
-            'submit' => array(
-                array( 'key' => 'character_name', 'type' => 'text', 'label' => 'Character Name', 'required' => true ),
-                array( 'key' => 'action_type', 'type' => 'select', 'label' => 'Action Type', 'required' => true, 'options' => array(
-                    'transfer'             => 'Transfer',
-                    'death'                => 'Death',
-                    'registration'         => 'Registration',
-                    'ru_request'           => 'R&U Request',
-                    'learn_custom_content' => 'Learn Custom Content',
-                ) ),
-                array( 'key' => 'regulation_rules', 'type' => 'rule_picker', 'label' => 'Regulation Rules', 'required' => false ),
-                array( 'key' => 'teacher_name', 'type' => 'text', 'label' => 'Teacher Name', 'required' => false, 'condition' => array( 'action_type' => 'learn_custom_content' ) ),
-                array( 'key' => 'teaching_lineage', 'type' => 'textarea', 'label' => 'Teaching Lineage', 'required' => false, 'condition' => array( 'action_type' => 'learn_custom_content' ) ),
-                array( 'key' => 'note', 'type' => 'textarea', 'label' => 'Notes', 'required' => false ),
-            ),
-            'review' => array(
-                array( 'key' => 'summary', 'type' => 'readonly', 'label' => 'Entry Summary' ),
-                array( 'key' => 'note', 'type' => 'textarea', 'label' => 'Review Note', 'required' => true ),
-            ),
-        );
-    }
-
-    /**
      * Seed form fields into oat_form_fields table.
      *
      * @return int Number of fields inserted.

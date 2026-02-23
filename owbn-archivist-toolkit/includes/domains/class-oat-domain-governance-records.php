@@ -93,32 +93,6 @@ class OAT_Domain_Governance_Records implements OAT_Domain_Interface {
     }
 
     /**
-     * Legacy form fields — used by pre-8.3.10 submit flow. Removed in 8.5.5.
-     *
-     * @return array
-     */
-    public function get_form_fields() {
-        return array(
-            'submit' => array(
-                array( 'key' => 'reporter_name', 'type' => 'text', 'label' => 'Reporter', 'required' => true ),
-                array( 'key' => 'record_details', 'type' => 'textarea', 'label' => 'Details of governance record', 'required' => true ),
-                array( 'key' => 'associated_user', 'type' => 'text', 'label' => 'Associated User', 'required' => false ),
-                array( 'key' => 'associated_vote', 'type' => 'text', 'label' => 'Associated Vote Link', 'required' => false ),
-                array( 'key' => 'record_type', 'type' => 'select', 'label' => 'Record Type', 'required' => true, 'options' => array(
-                    'interim_appointment' => 'Interim Appointment',
-                    'election'            => 'Election Result',
-                    'policy_change'       => 'Policy Change',
-                    'organizational'      => 'Organizational Record',
-                    'other'               => 'Other',
-                ) ),
-            ),
-            'review' => array(
-                array( 'key' => 'review_note', 'type' => 'textarea', 'label' => 'Review Comments', 'required' => false ),
-            ),
-        );
-    }
-
-    /**
      * @param object $entry
      * @param array  $meta
      * @return true|WP_Error

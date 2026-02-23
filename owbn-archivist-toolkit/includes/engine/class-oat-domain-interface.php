@@ -6,7 +6,7 @@ defined( 'ABSPATH' ) || exit;
  * Interface that all OAT domains must implement.
  *
  * Each domain is a configuration of the shared workflow engine — it defines
- * its steps, meta keys, form fields, and validation rules.
+ * its steps, meta keys, and validation rules.
  */
 interface OAT_Domain_Interface {
 
@@ -48,13 +48,6 @@ interface OAT_Domain_Interface {
      * @return array
      */
     public function get_meta_keys();
-
-    /**
-     * Form field specs for submission and review forms.
-     *
-     * @return array
-     */
-    public function get_form_fields();
 
     /**
      * Domain-specific validation on submit/resubmit.
