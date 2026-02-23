@@ -97,11 +97,11 @@ class OAT_Entry_List_Table extends WP_List_Table {
     public function column_default( $item, $column_name ) {
         switch ( $column_name ) {
             case 'id':
-                $url = admin_url( 'admin.php?page=oat-entry&entry_id=' . $item->id );
+                $url = admin_url( 'admin.php?page=owc-oat-entry&entry_id=' . $item->id );
                 return '<a href="' . esc_url( $url ) . '"><strong>#' . esc_html( $item->id ) . '</strong></a>';
             case 'domain':
-                $domain = OAT_Domain_Registry::get( $item->domain );
-                return $domain ? esc_html( $domain->get_label() ) : esc_html( $item->domain );
+                $label = OAT_Domain_Registry::get_label( $item->domain );
+                return '' !== $label ? esc_html( $label ) : esc_html( $item->domain );
             case 'status':
                 return '<span class="oat-status oat-status-' . esc_attr( $item->status ) . '">' . esc_html( ucfirst( str_replace( '_', ' ', $item->status ) ) ) . '</span>';
             case 'current_step':
@@ -139,8 +139,8 @@ class OAT_Entry_List_Table extends WP_List_Table {
         echo '<select name="domain">';
         echo '<option value="">All Domains</option>';
         foreach ( $domains as $d ) {
-            $selected = $current_domain === $d->get_slug() ? ' selected' : '';
-            echo '<option value="' . esc_attr( $d->get_slug() ) . '"' . $selected . '>' . esc_html( $d->get_label() ) . '</option>';
+            $selected = $current_domain === $d['slug'] ? ' selected' : '';
+            echo '<option value="' . esc_attr( $d['slug'] ) . '"' . $selected . '>' . esc_html( $d['label'] ) . '</option>';
         }
         echo '</select>';
 

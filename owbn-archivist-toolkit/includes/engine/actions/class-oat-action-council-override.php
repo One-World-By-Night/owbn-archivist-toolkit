@@ -50,22 +50,43 @@ class OAT_Action_Council_Override {
             'note'            => $data['note'],
         ) );
 
-        // Find the archivist step in the domain template and advance to it.
-        $domain = OAT_Domain_Registry::get( $entry->domain );
-        if ( $domain ) {
-            $template = $domain->get_workflow_template();
-            $archivist_step = null;
-            foreach ( $template as $step ) {
-                if ( isset( $step['visibility_tier'] ) && $step['visibility_tier'] === OAT_Constants::TIER_ARCHIVIST ) {
-                    $archivist_step = $step['id'];
-                    break;
-                }
+        // Find the archivist step in the workflow template and advance to it.
+        $template = self::get_workflow_template( $entry->domain );
+        $archivist_step = null;
+        foreach ( $template as $step ) {
+            if ( isset( $step['visibility_tier'] ) && $step['visibility_tier'] === OAT_Constants::TIER_ARCHIVIST ) {
+                $archivist_step = $step['id'];
+                break;
             }
-            if ( $archivist_step !== null ) {
-                OAT_Workflow_Engine::advance_to_step( $entry, $archivist_step );
-            }
+        }
+        if ( $archivist_step !== null ) {
+            OAT_Workflow_Engine::advance_to_step( $entry, $archivist_step );
         }
 
         return true;
+    }
+
+    /**
+     * Get workflow template for a domain (DB first, PHP fallback).
+     *
+     * @param string $domain_slug Domain slug.
+     * @return array Array of step config arrays.
+     */
+    private static function get_workflow_template( $domain_slug ) {
+        // DB-driven steps (D-055).
+        if ( class_exists( 'OAT_Workflow_Step' ) ) {
+            $steps = OAT_Workflow_Step::get_workflow_template( $domain_slug );
+            if ( ! empty( $steps ) ) {
+                return $steps;
+            }
+        }
+
+        // PHP domain class fallback.
+        $domain = OAT_Domain_Registry::get_php_domain( $domain_slug );
+        if ( $domain ) {
+            return $domain->get_workflow_template();
+        }
+
+        return array();
     }
 }

@@ -23,6 +23,11 @@ class OAT_Install {
 
         self::register_capabilities();
 
+        // Seed domains, workflow steps, and form fields (insert-if-not-exists).
+        if ( class_exists( 'OAT_Seeder' ) ) {
+            OAT_Seeder::run();
+        }
+
         update_option( 'oat_db_version', OAT_DB_VERSION );
     }
 

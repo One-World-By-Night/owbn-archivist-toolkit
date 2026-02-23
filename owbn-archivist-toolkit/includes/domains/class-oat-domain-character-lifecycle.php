@@ -161,6 +161,236 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
     }
 
     /**
+     * Seed form fields into oat_form_fields table.
+     *
+     * @return int Number of fields inserted.
+     */
+    public function seed_form_fields() {
+        if ( ! class_exists( 'OAT_Form_Field' ) ) {
+            return 0;
+        }
+
+        return OAT_Form_Field::seed( 'character_lifecycle', array(
+            // ── Submit context ───────────────────────────────────────────────
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'chronicle_slug',
+                'field_type'      => 'chronicle_picker',
+                'label'           => 'Chronicle',
+                'required'        => 1,
+                'sort_order'      => 10,
+                'attributes_json' => wp_json_encode( array(
+                    'roles'      => array( 'HST', 'Staff', 'CM', 'Player' ),
+                    'auto_props' => array(
+                        'submitter_name'  => 'user_name',
+                        'submitter_email' => 'user_email',
+                    ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'submitter_name',
+                'field_type'      => 'auto_prop',
+                'label'           => 'Submitted By',
+                'required'        => 1,
+                'sort_order'      => 20,
+                'attributes_json' => wp_json_encode( array( 'source' => 'user_name' ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'submitter_email',
+                'field_type'      => 'auto_prop',
+                'label'           => 'Submitted By Email',
+                'required'        => 1,
+                'sort_order'      => 30,
+                'attributes_json' => wp_json_encode( array( 'source' => 'user_email' ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'character_name',
+                'field_type'      => 'text',
+                'label'           => 'Character Name',
+                'required'        => 1,
+                'sort_order'      => 40,
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'action_type',
+                'field_type'      => 'select',
+                'label'           => 'Action Type',
+                'required'        => 1,
+                'sort_order'      => 50,
+                'options_json'    => wp_json_encode( array(
+                    'transfer'             => 'Transfer',
+                    'death'                => 'Death',
+                    'registration'         => 'Registration',
+                    'ru_request'           => 'R&U Request',
+                    'learn_custom_content' => 'Learn Custom Content',
+                ) ),
+            ),
+            // ── Transfer-specific fields ──────────────────────────────────
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'transfer_to_chronicle',
+                'field_type'      => 'chronicle_picker',
+                'label'           => 'Transfer To Chronicle',
+                'required'        => 1,
+                'sort_order'      => 55,
+                'help_text'       => 'Select the chronicle this character is transferring to.',
+                'attributes_json' => wp_json_encode( array(
+                    'roles' => array( 'HST' ),
+                ) ),
+                'condition_json'  => wp_json_encode( array(
+                    'field_key' => 'action_type',
+                    'value'     => 'transfer',
+                ) ),
+            ),
+
+            // ── Death-specific fields ────────────────────────────────────────
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'death_description',
+                'field_type'      => 'textarea',
+                'label'           => 'Description of Death',
+                'sort_order'      => 56,
+                'help_text'       => 'Describe the circumstances of the character death.',
+                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+                'condition_json'  => wp_json_encode( array(
+                    'field_key' => 'action_type',
+                    'value'     => 'death',
+                ) ),
+            ),
+
+            // ── R&U / Custom Content fields ──────────────────────────────────
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'regulation_rules',
+                'field_type'      => 'rule_picker',
+                'label'           => 'Regulation Rules',
+                'sort_order'      => 60,
+                'help_text'       => 'Select applicable regulation rules.',
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'teacher_name',
+                'field_type'      => 'text',
+                'label'           => 'Teacher Name',
+                'sort_order'      => 70,
+                'condition_json'  => wp_json_encode( array(
+                    'field_key' => 'action_type',
+                    'value'     => 'learn_custom_content',
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'teaching_lineage',
+                'field_type'      => 'textarea',
+                'label'           => 'Teaching Lineage',
+                'sort_order'      => 80,
+                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+                'condition_json'  => wp_json_encode( array(
+                    'field_key' => 'action_type',
+                    'value'     => 'learn_custom_content',
+                ) ),
+            ),
+
+            // ── Hidden / system fields ───────────────────────────────────────
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'requires_coord',
+                'field_type'      => 'hidden',
+                'label'           => 'Requires Coordinator',
+                'sort_order'      => 90,
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'regulation_level',
+                'field_type'      => 'hidden',
+                'label'           => 'Regulation Level',
+                'sort_order'      => 100,
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'note',
+                'field_type'      => 'textarea',
+                'label'           => 'Notes',
+                'sort_order'      => 110,
+                'placeholder'     => 'Additional notes...',
+                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+            ),
+
+            // ── Review context (Staff Review) ────────────────────────────────
+            array(
+                'context'         => 'review',
+                'field_key'       => 'section_review',
+                'field_type'      => 'heading',
+                'label'           => 'Staff Review',
+                'sort_order'      => 10,
+            ),
+            array(
+                'context'         => 'review',
+                'field_key'       => 'review_note',
+                'field_type'      => 'textarea',
+                'label'           => 'Review Note',
+                'required'        => 1,
+                'sort_order'      => 20,
+                'placeholder'     => 'Staff review comments...',
+                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+            ),
+
+            // ── Escalate context (Coordinator Review) ────────────────────────
+            array(
+                'context'         => 'escalate',
+                'field_key'       => 'section_coord_review',
+                'field_type'      => 'heading',
+                'label'           => 'Coordinator Review',
+                'sort_order'      => 10,
+            ),
+            array(
+                'context'         => 'escalate',
+                'field_key'       => 'coord_note',
+                'field_type'      => 'textarea',
+                'label'           => 'Coordinator Note',
+                'sort_order'      => 20,
+                'placeholder'     => 'Coordinator review comments...',
+                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+            ),
+
+            // ── Resolve context (Archivist/Exec) ────────────────────────────
+            array(
+                'context'         => 'resolve',
+                'field_key'       => 'section_resolve',
+                'field_type'      => 'heading',
+                'label'           => 'Resolution',
+                'sort_order'      => 10,
+            ),
+            array(
+                'context'         => 'resolve',
+                'field_key'       => 'resolution_note',
+                'field_type'      => 'textarea',
+                'label'           => 'Resolution Notes',
+                'sort_order'      => 20,
+                'placeholder'     => 'Resolution notes...',
+                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+            ),
+            array(
+                'context'         => 'resolve',
+                'field_key'       => 'resolution_type',
+                'field_type'      => 'select',
+                'label'           => 'Resolution Type',
+                'required'        => 1,
+                'sort_order'      => 30,
+                'options_json'    => wp_json_encode( array(
+                    'approved' => 'Approved',
+                    'denied'   => 'Denied',
+                    'deferred' => 'Deferred',
+                    'returned' => 'Returned',
+                ) ),
+            ),
+        ) );
+    }
+
+    /**
      * @param object $entry
      * @param array  $meta
      * @return true|WP_Error

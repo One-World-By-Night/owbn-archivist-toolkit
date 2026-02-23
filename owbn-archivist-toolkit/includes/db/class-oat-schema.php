@@ -2,7 +2,7 @@
 /**
  * OAT Database Schema.
  *
- * All 11 table DDL statements formatted for WordPress dbDelta().
+ * All 13 table DDL statements formatted for WordPress dbDelta().
  * Source of truth: SCHEMA-DESIGN.md.
  *
  * dbDelta requirements:
@@ -177,6 +177,63 @@ class OAT_Schema {
             PRIMARY KEY  (id),
             KEY idx_entry_id (entry_id),
             KEY idx_rule_id (rule_id)
+        ) {$charset};\n\n";
+
+        // ── oat_form_fields ──────────────────────────────────────────
+        $sql .= "CREATE TABLE {$prefix}oat_form_fields (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            domain_slug varchar(64) NOT NULL,
+            context varchar(32) NOT NULL DEFAULT 'submit',
+            field_key varchar(128) NOT NULL,
+            field_type varchar(32) NOT NULL DEFAULT 'text',
+            label varchar(255) NOT NULL DEFAULT '',
+            required tinyint(1) NOT NULL DEFAULT 0,
+            sort_order int NOT NULL DEFAULT 0,
+            options_json text DEFAULT NULL,
+            placeholder varchar(255) NOT NULL DEFAULT '',
+            help_text text DEFAULT NULL,
+            default_value varchar(255) NOT NULL DEFAULT '',
+            validation_json text DEFAULT NULL,
+            condition_json text DEFAULT NULL,
+            attributes_json text DEFAULT NULL,
+            active tinyint(1) NOT NULL DEFAULT 1,
+            PRIMARY KEY  (id),
+            UNIQUE KEY domain_context_key (domain_slug,context,field_key),
+            KEY domain_context_order (domain_slug,context,sort_order)
+        ) {$charset};\n\n";
+
+        // ── oat_domains ───────────────────────────────────────────────
+        $sql .= "CREATE TABLE {$prefix}oat_domains (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            slug varchar(100) NOT NULL,
+            label varchar(255) NOT NULL,
+            archivist_mode varchar(20) NOT NULL DEFAULT 'manual',
+            active tinyint(1) NOT NULL DEFAULT 1,
+            created_at bigint(20) unsigned NOT NULL,
+            updated_at bigint(20) unsigned NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY idx_slug (slug)
+        ) {$charset};\n\n";
+
+        // ── oat_workflow_steps ─────────────────────────────────────────
+        $sql .= "CREATE TABLE {$prefix}oat_workflow_steps (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            domain_slug varchar(100) NOT NULL,
+            step_id varchar(100) NOT NULL,
+            label varchar(255) NOT NULL,
+            sort_order int unsigned NOT NULL DEFAULT 0,
+            assignee_role varchar(255) DEFAULT NULL,
+            visibility_tier varchar(20) NOT NULL DEFAULT 'staff',
+            on_approve varchar(100) DEFAULT NULL,
+            on_deny varchar(100) DEFAULT NULL,
+            on_request_changes varchar(100) DEFAULT NULL,
+            timer_json text DEFAULT NULL,
+            condition_json text DEFAULT NULL,
+            multi_approve tinyint(1) NOT NULL DEFAULT 0,
+            active tinyint(1) NOT NULL DEFAULT 1,
+            PRIMARY KEY  (id),
+            UNIQUE KEY idx_domain_step (domain_slug,step_id),
+            KEY idx_domain_order (domain_slug,sort_order)
         ) {$charset};\n\n";
 
         // ── oat_characters ──────────────────────────────────────────

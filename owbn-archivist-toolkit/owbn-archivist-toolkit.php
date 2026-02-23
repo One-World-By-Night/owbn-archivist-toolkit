@@ -14,7 +14,7 @@ define( 'OAT_VERSION', '0.1.0' );
 define( 'OAT_PLUGIN_FILE', __FILE__ );
 define( 'OAT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'OAT_DB_VERSION', '1.0.0' );
+define( 'OAT_DB_VERSION', '1.2.0' );
 
 // Autoloader.
 require_once OAT_PLUGIN_DIR . 'includes/class-oat-loader.php';
@@ -38,9 +38,6 @@ add_filter( 'oat_register_domains', function( $domains ) {
     $domains[] = new OAT_Domain_Governance_Records();
     return $domains;
 } );
-
-// AJAX handlers.
-OAT_Ajax::register();
 
 // Timer processing — WP-Cron hourly (D-051).
 add_action( 'oat_process_timers', array( 'OAT_Timer_Engine', 'process_expired_timers' ) );

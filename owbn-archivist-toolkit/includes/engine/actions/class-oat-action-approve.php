@@ -67,8 +67,7 @@ class OAT_Action_Approve {
             OAT_Entry::update_status( (int) $entry->id, OAT_Constants::STATUS_APPROVED, $step );
 
             // If archivist mode is auto, log record event.
-            $domain = OAT_Domain_Registry::get( $entry->domain );
-            if ( $domain && $domain->get_archivist_mode() === 'auto' ) {
+            if ( OAT_Domain_Registry::get_archivist_mode( $entry->domain ) === 'auto' ) {
                 OAT_Timeline::append( array(
                     'entry_id'        => (int) $entry->id,
                     'action_type'     => OAT_Constants::ACTION_RECORD,

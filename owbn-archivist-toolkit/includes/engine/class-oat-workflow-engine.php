@@ -73,21 +73,32 @@ class OAT_Workflow_Engine {
     }
 
     /**
-     * Get step configuration from the domain's workflow template.
+     * Get step configuration for an entry's domain.
+     *
+     * Checks DB-driven workflow steps first (D-055), falls back to PHP domain class.
      *
      * @param object      $entry   The entry object.
      * @param string|null $step_id Step ID (defaults to current_step).
      * @return array|null Step config or null if not found.
      */
     public static function get_step_config( $entry, $step_id = null ) {
-        $domain = OAT_Domain_Registry::get( $entry->domain );
+        $target = $step_id !== null ? $step_id : $entry->current_step;
+
+        // 1. Try DB-driven workflow steps first (D-055).
+        if ( class_exists( 'OAT_Workflow_Step' ) ) {
+            $db_config = OAT_Workflow_Step::get_step_config( $entry->domain, $target );
+            if ( $db_config !== null ) {
+                return $db_config;
+            }
+        }
+
+        // 2. Fall back to PHP domain class.
+        $domain = OAT_Domain_Registry::get_php_domain( $entry->domain );
         if ( ! $domain ) {
             return null;
         }
 
-        $target = $step_id !== null ? $step_id : $entry->current_step;
         $template = $domain->get_workflow_template();
-
         foreach ( $template as $step ) {
             if ( $step['id'] === $target ) {
                 return $step;

@@ -13,9 +13,9 @@ spl_autoload_register( function ( $class ) {
         return;
     }
 
-    // OAT_Entry        → class-oat-entry.php
-    // OAT_Page_Inbox   → class-oat-page-inbox.php
-    // OAT_Schema       → class-oat-schema.php
+    // OAT_Entry          → class-oat-entry.php
+    // OAT_Page_Entries   → class-oat-page-entries.php
+    // OAT_Schema         → class-oat-schema.php
     $file = strtolower( str_replace( '_', '-', $class ) );
     $file = 'class-' . $file . '.php';
 

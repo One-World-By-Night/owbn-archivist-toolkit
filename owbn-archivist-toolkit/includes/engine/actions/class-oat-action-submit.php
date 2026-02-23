@@ -12,9 +12,9 @@ class OAT_Action_Submit {
      */
     public static function execute( $entry, $user_id, $data = array() ) {
 
-        $domain = OAT_Domain_Registry::get( $entry->domain );
+        $domain = OAT_Domain_Registry::get_php_domain( $entry->domain );
 
-        // Domain-specific validation.
+        // Domain-specific validation (PHP class hook).
         if ( $domain ) {
             // Use provided meta, or read from DB (page handler saves meta before calling this).
             if ( isset( $data['meta'] ) && ! empty( $data['meta'] ) ) {
