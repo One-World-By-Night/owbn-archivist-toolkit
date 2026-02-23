@@ -206,6 +206,55 @@ class OAT_Entry {
     }
 
     /**
+     * Check whether an entry can be deleted (D-030, 7.9b).
+     *
+     * Requires: current user is WP administrator AND entry has never
+     * reached coordinator or archivist tier (checked via timeline).
+     *
+     * @param object $entry
+     * @return bool
+     */
+    public static function can_delete( $entry ) {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return false;
+        }
+
+        // Check timeline for any event at coordinator or archivist tier.
+        global $wpdb;
+        $table = $wpdb->prefix . 'oat_timeline';
+        $reached = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} WHERE entry_id = %d AND visibility_tier IN (%s, %s)",
+            (int) $entry->id,
+            OAT_Constants::TIER_COORDINATOR,
+            OAT_Constants::TIER_ARCHIVIST
+        ) );
+
+        return 0 === $reached;
+    }
+
+    /**
+     * Delete an entry and all related records (7.9c cascade).
+     *
+     * @param int $id
+     * @return bool
+     */
+    public static function delete_cascade( $id ) {
+        OAT_Entry_Meta::delete_for_entry( $id );
+        OAT_Timeline::delete_for_entry( $id );
+        OAT_Assignee::delete_for_entry( $id );
+        OAT_Watcher::delete_for_entry( $id );
+        OAT_Entry_Rule::delete_for_entry( $id );
+        OAT_Timer::delete_for_entry( $id );
+        OAT_Notification::delete_for_entry( $id );
+
+        if ( class_exists( 'OAT_Entry_Relationship' ) ) {
+            OAT_Entry_Relationship::delete_for_entry( $id );
+        }
+
+        return self::delete( $id );
+    }
+
+    /**
      * @param int $id
      * @return bool
      */

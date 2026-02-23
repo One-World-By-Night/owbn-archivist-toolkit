@@ -8,7 +8,7 @@
 		<a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-form-fields&domain=' . urlencode( $field['domain_slug'] ) ) ); ?>">&larr; Back to Fields</a>
 	</p>
 
-	<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=oat-form-fields' ) ); ?>">
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=oat-form-fields' ) ); ?>" enctype="multipart/form-data">
 		<?php wp_nonce_field( 'oat_save_field' ); ?>
 		<input type="hidden" name="field_id" value="<?php echo (int) $field['id']; ?>">
 
@@ -144,6 +144,22 @@
 				<td>
 					<textarea name="options_json" id="options_json" rows="4" class="large-text code"><?php echo esc_textarea( $field['options_json'] ); ?></textarea>
 					<p class="description">For select/radio/checkbox types. JSON object: <code>{"value": "Label", ...}</code></p>
+				</td>
+			</tr>
+
+			<!-- CSV Import for Options -->
+			<tr>
+				<th><label for="options_csv">Import Options CSV</label></th>
+				<td>
+					<input type="file" name="options_csv" id="options_csv" accept=".csv,text/csv">
+					<p class="description">
+						Upload a CSV (2–5 columns) to populate Options JSON as a nested structure. Last column is always the leaf item.<br>
+						<strong>2 cols</strong> <code>group,item</code> &rarr; <code>{"group": ["item", ...]}</code><br>
+						<strong>3 cols</strong> <code>l1,l2,item</code> &rarr; <code>{"l1": {"l2": ["item", ...]}}</code><br>
+						<strong>4 cols</strong> <code>l1,l2,l3,item</code> &rarr; <code>{"l1": {"l2": {"l3": ["item", ...]}}}</code><br>
+						<strong>5 cols</strong> <code>l1,l2,l3,l4,item</code> &rarr; <code>{"l1": {"l2": {"l3": {"l4": ["item", ...]}}}}</code><br>
+						First row is treated as a header and skipped. Replaces existing Options JSON when uploaded.
+					</p>
 				</td>
 			</tr>
 

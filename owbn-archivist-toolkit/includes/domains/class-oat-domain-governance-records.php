@@ -57,38 +57,11 @@ class OAT_Domain_Governance_Records implements OAT_Domain_Interface {
      */
     public function get_meta_keys() {
         return array(
-            'reporter_name' => array(
-                'label'    => 'Reporter',
-                'type'     => 'text',
-                'required' => true,
-            ),
-            'record_details' => array(
-                'label'    => 'Details of governance record',
-                'type'     => 'htmlarea',
-                'required' => true,
-            ),
-            'associated_user' => array(
-                'label'    => 'Associated User',
-                'type'     => 'text',
-                'required' => false,
-            ),
-            'associated_vote' => array(
-                'label'    => 'Associated Vote Link',
-                'type'     => 'url',
-                'required' => false,
-            ),
-            'record_type' => array(
-                'label'    => 'Record Type',
-                'type'     => 'select',
-                'required' => true,
-                'options'  => array(
-                    'interim_appointment' => 'Interim Appointment',
-                    'election'            => 'Election Result',
-                    'policy_change'       => 'Policy Change',
-                    'organizational'      => 'Organizational Record',
-                    'other'               => 'Other',
-                ),
-            ),
+            'reporter_name',
+            'record_details',
+            'associated_user',
+            'associated_vote',
+            'record_type',
         );
     }
 

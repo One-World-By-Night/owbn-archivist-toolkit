@@ -113,6 +113,16 @@ class OAT_Page_Form_Fields {
 			'active'       => ! empty( $_POST['active'] ) ? 1 : 0,
 		);
 
+		// CSV upload for options_json — overrides textarea if file provided.
+		if ( ! empty( $_FILES['options_csv']['tmp_name'] ) && is_uploaded_file( $_FILES['options_csv']['tmp_name'] ) ) {
+			$csv_json = self::parse_options_csv( $_FILES['options_csv']['tmp_name'] );
+			if ( is_wp_error( $csv_json ) ) {
+				add_settings_error( 'oat_form_fields', 'csv_error', $csv_json->get_error_message(), 'error' );
+				return;
+			}
+			$_POST['options_json'] = $csv_json;
+		}
+
 		// JSON columns — accept raw JSON strings from the textarea.
 		$json_cols = array( 'options_json', 'validation_json', 'condition_json', 'attributes_json' );
 		foreach ( $json_cols as $col ) {
@@ -196,17 +206,101 @@ class OAT_Page_Form_Fields {
 			'select'            => 'Select',
 			'checkbox'          => 'Checkbox',
 			'radio'             => 'Radio',
+			'url'               => 'URL',
 			'date'              => 'Date',
 			'hidden'            => 'Hidden',
 			'heading'           => 'Section Heading',
 			'chronicle_picker'  => 'Chronicle Picker',
 			'coordinator_picker' => 'Coordinator Picker',
 			'rule_picker'       => 'Regulation Rule Picker',
+			'character_picker'  => 'Character Picker',
+			'dependent_lookup'  => 'Dependent Lookup',
 			'auto_prop'         => 'Auto Property',
 		);
 
 		$contexts = array( 'submit', 'review', 'escalate', 'resolve' );
 
 		include OAT_PLUGIN_DIR . 'templates/admin/form-field-edit.php';
+	}
+
+	/**
+	 * Parse an uploaded CSV file into nested JSON for options_json.
+	 *
+	 * Supports 2–5 column CSVs. The last column is always the leaf item;
+	 * preceding columns define nesting levels.
+	 *
+	 *   2 cols: group,item           → {"group": ["item", ...]}
+	 *   3 cols: l1,l2,item           → {"l1": {"l2": ["item", ...]}}
+	 *   4 cols: l1,l2,l3,item        → {"l1": {"l2": {"l3": ["item", ...]}}}
+	 *   5 cols: l1,l2,l3,l4,item     → {"l1": {"l2": {"l3": {"l4": ["item", ...]}}}}
+	 *
+	 * First row is skipped as a header.
+	 *
+	 * @param string $file_path Temporary upload path.
+	 * @return string|WP_Error JSON string on success.
+	 */
+	private static function parse_options_csv( $file_path ) {
+		$handle = fopen( $file_path, 'r' );
+		if ( ! $handle ) {
+			return new WP_Error( 'csv_open', 'Could not open uploaded CSV file.' );
+		}
+
+		$header    = fgetcsv( $handle );
+		$col_count = is_array( $header ) ? count( $header ) : 0;
+
+		if ( $col_count < 2 || $col_count > 5 ) {
+			fclose( $handle );
+			return new WP_Error( 'csv_columns', 'CSV must have 2–5 columns. Found ' . $col_count . '.' );
+		}
+
+		$tree    = array();
+		$row_num = 1;
+		$depth   = $col_count - 1; // Number of nesting levels before the leaf.
+
+		while ( false !== ( $row = fgetcsv( $handle ) ) ) {
+			$row_num++;
+
+			// Skip empty rows.
+			if ( ! is_array( $row ) || ( 1 === count( $row ) && '' === trim( (string) $row[0] ) ) ) {
+				continue;
+			}
+
+			if ( count( $row ) < $col_count ) {
+				fclose( $handle );
+				return new WP_Error( 'csv_row', 'Row ' . $row_num . ' has fewer columns than the header.' );
+			}
+
+			$values = array_map( 'trim', $row );
+			$leaf   = $values[ $depth ];
+
+			// Walk/create the nested path.
+			$node = &$tree;
+			for ( $i = 0; $i < $depth; $i++ ) {
+				$key = $values[ $i ];
+				if ( ! isset( $node[ $key ] ) ) {
+					$node[ $key ] = array();
+				}
+				$node = &$node[ $key ];
+			}
+
+			// Append leaf (deduplicated).
+			if ( '' !== $leaf && ! in_array( $leaf, $node, true ) ) {
+				$node[] = $leaf;
+			}
+			unset( $node );
+		}
+
+		fclose( $handle );
+
+		if ( empty( $tree ) ) {
+			return new WP_Error( 'csv_empty', 'CSV contained no data rows.' );
+		}
+
+		$json = wp_json_encode( $tree, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE );
+		if ( false === $json ) {
+			return new WP_Error( 'csv_encode', 'Failed to encode CSV data as JSON.' );
+		}
+
+		return $json;
 	}
 }
