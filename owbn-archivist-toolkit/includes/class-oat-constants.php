@@ -82,6 +82,7 @@ class OAT_Constants {
     const REGULATION_COORDINATOR_NOTIFY   = 'coordinator_notify';
     const REGULATION_DISALLOWED           = 'disallowed';
     const REGULATION_COUNCIL_VOTE         = 'council_vote';
+    const REGULATION_VARIES               = 'varies';
     // NULL = unregulated (not stored as a constant).
 
     // ── WordPress Capabilities (D-048) ──────────────────────────────
@@ -172,6 +173,7 @@ class OAT_Constants {
             self::REGULATION_COORDINATOR_NOTIFY,
             self::REGULATION_DISALLOWED,
             self::REGULATION_COUNCIL_VOTE,
+            self::REGULATION_VARIES,
         ), true );
     }
 

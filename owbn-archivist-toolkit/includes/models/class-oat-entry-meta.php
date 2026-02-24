@@ -57,6 +57,11 @@ class OAT_Entry_Meta {
         global $wpdb;
         $table = self::table();
 
+        $key = sanitize_text_field( $key );
+        if ( is_string( $value ) ) {
+            $value = wp_kses_post( $value );
+        }
+
         $existing = $wpdb->get_row( $wpdb->prepare(
             "SELECT id FROM {$table} WHERE entry_id = %d AND meta_key = %s LIMIT 1",
             $entry_id,
@@ -90,6 +95,9 @@ class OAT_Entry_Meta {
      */
     public static function update( $id, $value ) {
         global $wpdb;
+        if ( is_string( $value ) ) {
+            $value = wp_kses_post( $value );
+        }
         return (bool) $wpdb->update(
             self::table(),
             array( 'meta_value' => $value ),

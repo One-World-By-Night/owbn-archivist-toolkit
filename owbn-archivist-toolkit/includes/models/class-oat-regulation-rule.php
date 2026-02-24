@@ -171,7 +171,13 @@ class OAT_Regulation_Rule {
 
         foreach ( $allowed as $col ) {
             if ( isset( $data[ $col ] ) ) {
-                $insert[ $col ] = $data[ $col ];
+                if ( in_array( $col, array( 'elevation', 'active' ), true ) ) {
+                    $insert[ $col ] = (int) $data[ $col ];
+                } elseif ( $data[ $col ] !== null ) {
+                    $insert[ $col ] = sanitize_text_field( $data[ $col ] );
+                } else {
+                    $insert[ $col ] = null;
+                }
                 $format[] = in_array( $col, array( 'elevation', 'active' ), true ) ? '%d' : '%s';
             }
         }

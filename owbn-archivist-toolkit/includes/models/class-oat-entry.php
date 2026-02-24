@@ -125,7 +125,11 @@ class OAT_Entry {
 
         foreach ( $allowed as $col ) {
             if ( isset( $data[ $col ] ) ) {
-                $insert[ $col ] = $data[ $col ];
+                if ( in_array( $col, array( 'originator_id', 'character_id' ), true ) ) {
+                    $insert[ $col ] = (int) $data[ $col ];
+                } else {
+                    $insert[ $col ] = sanitize_text_field( $data[ $col ] );
+                }
                 $format[] = in_array( $col, array( 'originator_id', 'character_id' ), true ) ? '%d' : '%s';
             }
         }
@@ -159,7 +163,11 @@ class OAT_Entry {
 
         foreach ( $allowed as $col ) {
             if ( isset( $data[ $col ] ) ) {
-                $update[ $col ] = $data[ $col ];
+                if ( in_array( $col, array( 'character_id' ), true ) ) {
+                    $update[ $col ] = (int) $data[ $col ];
+                } else {
+                    $update[ $col ] = sanitize_text_field( $data[ $col ] );
+                }
                 $format[] = in_array( $col, array( 'character_id' ), true ) ? '%d' : '%s';
             }
         }
