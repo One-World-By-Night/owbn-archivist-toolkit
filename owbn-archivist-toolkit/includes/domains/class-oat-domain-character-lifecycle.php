@@ -207,12 +207,12 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
                 'context'         => 'submit',
                 'field_key'       => 'transfer_to_chronicle',
                 'field_type'      => 'chronicle_picker',
-                'label'           => 'Transfer To Chronicle',
+                'label'           => 'Gaining Chronicle',
                 'required'        => 1,
                 'sort_order'      => 55,
                 'help_text'       => 'Select the chronicle this character is transferring to.',
                 'attributes_json' => wp_json_encode( array(
-                    'roles' => array( 'HST' ),
+                    'roles' => array( '*' ),
                 ) ),
                 'condition_json'  => wp_json_encode( array(
                     'field_key' => 'action_type',
@@ -243,6 +243,11 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
                 'label'           => 'Regulation Rules',
                 'sort_order'      => 60,
                 'help_text'       => 'Select applicable regulation rules.',
+                'condition_json'  => wp_json_encode( array(
+                    'field_key' => 'action_type',
+                    'operator'  => 'in',
+                    'value'     => array( 'ru_request', 'learn_custom_content', 'registration' ),
+                ) ),
             ),
             array(
                 'context'         => 'submit',
@@ -286,11 +291,10 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
             array(
                 'context'         => 'submit',
                 'field_key'       => 'note',
-                'field_type'      => 'textarea',
+                'field_type'      => 'htmlarea',
                 'label'           => 'Notes',
                 'sort_order'      => 110,
                 'placeholder'     => 'Additional notes...',
-                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
             ),
 
             // ── Review context (Staff Review) ────────────────────────────────

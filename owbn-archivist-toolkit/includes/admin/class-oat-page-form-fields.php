@@ -214,8 +214,11 @@ class OAT_Page_Form_Fields {
 			'coordinator_picker' => 'Coordinator Picker',
 			'rule_picker'       => 'Regulation Rule Picker',
 			'character_picker'  => 'Character Picker',
-			'dependent_lookup'  => 'Dependent Lookup',
-			'auto_prop'         => 'Auto Property',
+			'dependent_lookup'     => 'Dependent Lookup',
+			'auto_prop'            => 'Auto Property',
+			'user_picker'          => 'User Picker',
+			'coordinator_display'  => 'Coordinator Display',
+			'template_selector'    => 'Template Selector',
 		);
 
 		$contexts = array( 'submit', 'review', 'escalate', 'resolve' );
