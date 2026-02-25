@@ -28,6 +28,19 @@ class OAT_Action_Approve {
             }
         }
 
+        // Role-path-based: user holds the ASC role matching the step's assignee_role.
+        if ( ! $found && function_exists( 'owc_oat_user_can_act_on_step' ) && owc_oat_user_can_act_on_step( $entry, $user_id ) ) {
+            OAT_Assignee::assign( (int) $entry->id, $user_id, $step );
+            $new_assignees = OAT_Assignee::for_entry_step( (int) $entry->id, $step );
+            foreach ( $new_assignees as $a ) {
+                if ( (int) $a->user_id === $user_id && $a->status === 'pending' ) {
+                    OAT_Assignee::update_status( (int) $a->id, 'approved' );
+                    $found = true;
+                    break;
+                }
+            }
+        }
+
         if ( ! $found ) {
             return new WP_Error( 'not_assigned', 'User is not a pending assignee at this step.' );
         }
