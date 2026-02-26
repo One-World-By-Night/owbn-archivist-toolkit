@@ -19,9 +19,14 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
     }
 
     /**
-     * Workflow: Player/Staff → Staff Review → Coordinator Review → Archivist (auto).
+     * BA-003: Down-then-up signature collection workflow.
      *
-     * Exec team notified on ALL BAs as canned notification.
+     * Flow depends on submitter_role meta:
+     *   Player:      submit(sig_player) → staff_review(sig_chronicle) → coord_review(sig_coordinator) → archivist
+     *   Staff:       submit(sig_chronicle) → player_comment(sig_player) → staff_review(confirm) → coord_review(sig_coordinator) → archivist
+     *   Coordinator: submit(sig_coordinator) → staff_comment(sig_chronicle) → player_comment(sig_player) → staff_review(confirm) → coord_review(confirm) → archivist
+     *
+     * Conditional steps are skipped via evaluate_condition() in advance_to_step().
      *
      * @return array
      */
@@ -32,13 +37,48 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
                 'label'              => 'Submission',
                 'assignee_role'      => '',
                 'visibility_tier'    => OAT_Constants::TIER_STAFF,
-                'on_approve'         => 'staff_review',
+                'on_approve'         => 'staff_comment',
                 'on_deny'            => null,
                 'on_request_changes' => null,
                 'timer'              => null,
                 'condition'          => null,
                 'multi_approve'      => false,
             ),
+            // Only runs when coordinator submits — HST signs sig_chronicle.
+            array(
+                'id'                 => 'staff_comment',
+                'label'              => 'Staff Comment & Signature',
+                'assignee_role'      => 'Chronicle/{chronicle_slug}/HST',
+                'visibility_tier'    => OAT_Constants::TIER_STAFF,
+                'on_approve'         => 'player_comment',
+                'on_deny'            => null,
+                'on_request_changes' => 'submit',
+                'timer'              => null,
+                'condition'          => array(
+                    'meta_key' => 'submitter_role',
+                    'operator' => '=',
+                    'value'    => 'coordinator',
+                ),
+                'multi_approve'      => false,
+            ),
+            // Only runs when staff or coordinator submits — player signs sig_player.
+            array(
+                'id'                 => 'player_comment',
+                'label'              => 'Player Comment & Signature',
+                'assignee_role'      => 'User/{player_user_id}',
+                'visibility_tier'    => OAT_Constants::TIER_STAFF,
+                'on_approve'         => 'staff_review',
+                'on_deny'            => null,
+                'on_request_changes' => 'submit',
+                'timer'              => null,
+                'condition'          => array(
+                    'meta_key' => 'submitter_role',
+                    'operator' => 'in',
+                    'value'    => array( 'staff', 'coordinator' ),
+                ),
+                'multi_approve'      => false,
+            ),
+            // Always runs — HST confirms or signs sig_chronicle (player path).
             array(
                 'id'                 => 'staff_review',
                 'label'              => 'Staff Review',
@@ -51,6 +91,7 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
                 'condition'          => null,
                 'multi_approve'      => false,
             ),
+            // Always runs — coordinator confirms or signs sig_coordinator.
             array(
                 'id'                 => 'coord_review',
                 'label'              => 'Coordinator Review',
@@ -83,6 +124,36 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
      */
     public function get_meta_keys() {
         return array(
+            'submitter_role' => array(
+                'label'    => 'Submitter Role',
+                'type'     => 'select',
+                'required' => true,
+                'options'  => array(
+                    'player'      => 'Player',
+                    'staff'       => 'Staff (HST / CM)',
+                    'coordinator' => 'Coordinator',
+                ),
+            ),
+            'player_user' => array(
+                'label'    => 'Player this agreement is for',
+                'type'     => 'user_picker',
+                'required' => false,
+            ),
+            'player_user_id' => array(
+                'label'    => 'Player User ID',
+                'type'     => 'hidden',
+                'required' => false,
+            ),
+            'chronicle_slug' => array(
+                'label'    => 'Chronicle',
+                'type'     => 'chronicle_picker',
+                'required' => true,
+            ),
+            'coordinator_genre' => array(
+                'label'    => 'Coordinator Genre',
+                'type'     => 'coordinator_picker',
+                'required' => true,
+            ),
             'agreement_template' => array(
                 'label'    => 'Agreement Text',
                 'type'     => 'htmlarea',
@@ -117,6 +188,12 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
      * @return true|WP_Error
      */
     public function validate( $entry, $meta ) {
+        // BA-002: submitter_role determines which signature is required at submission.
+        $valid_roles = array( 'player', 'staff', 'coordinator' );
+        if ( empty( $meta['submitter_role'] ) || ! in_array( $meta['submitter_role'], $valid_roles, true ) ) {
+            return new WP_Error( 'invalid_role', 'Submitter role must be player, staff, or coordinator.' );
+        }
+
         if ( empty( $meta['agreement_template'] ) ) {
             return new WP_Error( 'missing_template', 'Agreement text is required.' );
         }
@@ -125,24 +202,31 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
             return new WP_Error( 'missing_area', 'Agreement scope/terms are required.' );
         }
 
-        // Validate player signature is agreed.
-        if ( ! empty( $meta['sig_player'] ) ) {
-            $sig = is_string( $meta['sig_player'] ) ? json_decode( $meta['sig_player'], true ) : $meta['sig_player'];
-            if ( ! is_array( $sig ) || empty( $sig['agreed'] ) ) {
-                return new WP_Error( 'missing_player_sig', 'Player signature is required.' );
+        // When staff/coordinator submits, player identification is required.
+        $role = $meta['submitter_role'];
+        if ( in_array( $role, array( 'staff', 'coordinator' ), true ) ) {
+            if ( empty( $meta['player_user'] ) && empty( $meta['player_user_id'] ) ) {
+                return new WP_Error( 'missing_player', 'Player identification is required when submitting on behalf of a player.' );
             }
-        } else {
-            return new WP_Error( 'missing_player_sig', 'Player signature is required.' );
         }
 
-        // Validate chronicle signature is agreed.
-        if ( ! empty( $meta['sig_chronicle'] ) ) {
-            $sig = is_string( $meta['sig_chronicle'] ) ? json_decode( $meta['sig_chronicle'], true ) : $meta['sig_chronicle'];
-            if ( ! is_array( $sig ) || empty( $sig['agreed'] ) ) {
-                return new WP_Error( 'missing_chronicle_sig', 'Chronicle representative signature is required.' );
+        // Only the signature matching submitter_role is required at submission.
+        // Other signatures are collected at later workflow steps.
+        $sig_map = array(
+            'player'      => 'sig_player',
+            'staff'       => 'sig_chronicle',
+            'coordinator' => 'sig_coordinator',
+        );
+        $required_sig = isset( $sig_map[ $role ] ) ? $sig_map[ $role ] : '';
+        if ( $required_sig ) {
+            if ( ! empty( $meta[ $required_sig ] ) ) {
+                $sig = is_string( $meta[ $required_sig ] ) ? json_decode( $meta[ $required_sig ], true ) : $meta[ $required_sig ];
+                if ( ! is_array( $sig ) || empty( $sig['agreed'] ) ) {
+                    return new WP_Error( 'missing_sig', sprintf( 'Your signature (%s) is required.', $required_sig ) );
+                }
+            } else {
+                return new WP_Error( 'missing_sig', sprintf( 'Your signature (%s) is required.', $required_sig ) );
             }
-        } else {
-            return new WP_Error( 'missing_chronicle_sig', 'Chronicle representative signature is required.' );
         }
 
         return true;
@@ -160,14 +244,114 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
 
         return OAT_Form_Field::seed( 'binding_agreements', array(
             // ── Submit context ──────────────────────────────────────────────
+            // BA-002: submitter_role determines workflow path and which sig is active.
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'submitter_role',
+                'field_type'      => 'select',
+                'label'           => 'Your Role',
+                'required'        => 1,
+                'sort_order'      => 5,
+                'help_text'       => 'How are you submitting this agreement?',
+                'options_json'    => wp_json_encode( array(
+                    'player'      => 'Player',
+                    'staff'       => 'Staff (HST / CM)',
+                    'coordinator' => 'Coordinator',
+                ) ),
+                'attributes_json' => wp_json_encode( array(
+                    'role_filter' => array(
+                        'staff'       => array( 'Chronicle/*/HST', 'Chronicle/*/Staff', 'Chronicle/*/CM' ),
+                        'coordinator' => array( 'Coordinator/*/Coordinator' ),
+                    ),
+                ) ),
+            ),
+            // BA-002: player_user — shown when staff/coordinator submits on behalf of a player.
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'player_user',
+                'field_type'      => 'user_picker',
+                'label'           => 'Player this agreement is for',
+                'required'        => 1,
+                'sort_order'      => 6,
+                'help_text'       => 'Search for the player. If not found, type their name.',
+                'condition_json'  => wp_json_encode( array(
+                    'field_key' => 'submitter_role',
+                    'operator'  => 'in',
+                    'value'     => array( 'staff', 'coordinator' ),
+                ) ),
+                'attributes_json' => wp_json_encode( array(
+                    'fallback'    => 'free_text',
+                    'store_id_in' => 'player_user_id',
+                ) ),
+            ),
+            array(
+                'context'    => 'submit',
+                'field_key'  => 'player_user_id',
+                'field_type' => 'hidden',
+                'label'      => 'Player User ID',
+                'sort_order' => 7,
+            ),
+            // Chronicle picker — needed for Chronicle/{chronicle_slug}/HST assignee resolution.
+            // BA: all chronicles shown (no role filtering) — agreement can involve any chronicle.
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'chronicle_slug',
+                'field_type'      => 'chronicle_picker',
+                'label'           => 'Chronicle',
+                'required'        => 1,
+                'sort_order'      => 8,
+                'help_text'       => 'Select the chronicle this agreement is associated with.',
+                'attributes_json' => wp_json_encode( array(
+                    'roles' => array( '*' ),
+                ) ),
+            ),
+            // Coordinator genre — needed for Coordinator/{coordinator_genre}/Coordinator assignee resolution.
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'coordinator_genre',
+                'field_type'      => 'coordinator_picker',
+                'label'           => 'Coordinator Genre',
+                'required'        => 1,
+                'sort_order'      => 10,
+                'help_text'       => 'Select the coordinator genre this agreement falls under.',
+                'attributes_json' => wp_json_encode( array(
+                    'roles' => array( 'Coordinator' ),
+                ) ),
+            ),
+            // BA-004: Template selector populates the agreement_template htmlarea.
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'ba_template',
+                'field_type'      => 'template_selector',
+                'label'           => 'Agreement Template',
+                'required'        => 0,
+                'sort_order'      => 12,
+                'help_text'       => 'Select a template to pre-fill the agreement text. You can edit after selection.',
+                'attributes_json' => wp_json_encode( array( 'target_field' => 'agreement_template' ) ),
+                'options_json'    => wp_json_encode( array(
+                    'standard' => array(
+                        'label'   => 'Standard Binding Agreement',
+                        'content' => '<h3>OWBN Binding Agreement</h3>'
+                            . '<p>This binding agreement is entered into on <strong>{date}</strong>.</p>'
+                            . '<p><strong>Player:</strong> {player_user}</p>'
+                            . '<p><strong>Submitted by:</strong> {submitter_name}</p>'
+                            . '<hr />'
+                            . '<h4>Agreement Terms</h4>'
+                            . '<p>[Enter specific terms and conditions here]</p>'
+                            . '<hr />'
+                            . '<h4>Acknowledgment</h4>'
+                            . '<p>By signing below, each party acknowledges they have read, understand, and agree to the terms of this binding agreement as set forth by One World by Night.</p>',
+                    ),
+                ) ),
+            ),
             array(
                 'context'    => 'submit',
                 'field_key'  => 'agreement_template',
                 'field_type' => 'htmlarea',
                 'label'      => 'Agreement Text',
                 'required'   => 1,
-                'sort_order' => 10,
-                'help_text'  => 'Pre-canned template, editable by submitter.',
+                'sort_order' => 15,
+                'help_text'  => 'Pre-filled from template above. Edit as needed.',
             ),
             array(
                 'context'         => 'submit',
@@ -184,30 +368,35 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
                 'field_type' => 'heading',
                 'label'      => 'Signatures',
                 'sort_order' => 30,
+                'help_text'  => 'Sign your role below. Other signatures are collected during review.',
+            ),
+            // BA-001: signed_by_role controls which sig is active for the submitter's role.
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'sig_player',
+                'field_type'      => 'signature',
+                'label'           => 'Player Signature',
+                'required'        => 1,
+                'sort_order'      => 40,
+                'attributes_json' => wp_json_encode( array( 'signed_by_role' => 'player' ) ),
             ),
             array(
-                'context'    => 'submit',
-                'field_key'  => 'sig_player',
-                'field_type' => 'signature',
-                'label'      => 'Player Signature',
-                'required'   => 1,
-                'sort_order' => 40,
+                'context'         => 'submit',
+                'field_key'       => 'sig_chronicle',
+                'field_type'      => 'signature',
+                'label'           => 'Chronicle Representative Signature',
+                'required'        => 1,
+                'sort_order'      => 50,
+                'attributes_json' => wp_json_encode( array( 'signed_by_role' => 'staff' ) ),
             ),
             array(
-                'context'    => 'submit',
-                'field_key'  => 'sig_chronicle',
-                'field_type' => 'signature',
-                'label'      => 'Chronicle Representative Signature',
-                'required'   => 1,
-                'sort_order' => 50,
-            ),
-            array(
-                'context'    => 'submit',
-                'field_key'  => 'sig_coordinator',
-                'field_type' => 'signature',
-                'label'      => 'Coordinator Signature (if applicable)',
-                'required'   => 0,
-                'sort_order' => 60,
+                'context'         => 'submit',
+                'field_key'       => 'sig_coordinator',
+                'field_type'      => 'signature',
+                'label'           => 'Coordinator Signature',
+                'required'        => 0,
+                'sort_order'      => 60,
+                'attributes_json' => wp_json_encode( array( 'signed_by_role' => 'coordinator' ) ),
             ),
             array(
                 'context'         => 'submit',
@@ -236,6 +425,16 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
                 'sort_order'      => 90,
                 'attributes_json' => wp_json_encode( array( 'source' => 'player_id' ) ),
             ),
+            // Auto-capture submitter's WP user ID (used by JS to auto-set player_user_id for player submitters).
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'submitter_user_id',
+                'field_type'      => 'auto_prop',
+                'label'           => 'Submitter User ID',
+                'required'        => 1,
+                'sort_order'      => 91,
+                'attributes_json' => wp_json_encode( array( 'source' => 'user_id' ) ),
+            ),
 
             // ── Review context ──────────────────────────────────────────────
             array(
@@ -254,6 +453,44 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
                 'sort_order'      => 20,
                 'placeholder'     => 'Review comments...',
                 'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+            ),
+            // BA-001: Step-aware signature fields for review panel.
+            // These use the same meta keys as submit-context sigs.
+            array(
+                'context'         => 'review',
+                'field_key'       => 'sig_player',
+                'field_type'      => 'signature',
+                'label'           => 'Player Signature',
+                'required'        => 0,
+                'sort_order'      => 30,
+                'attributes_json' => wp_json_encode( array(
+                    'signed_by_role' => 'player',
+                    'for_steps'      => array( 'player_comment' ),
+                ) ),
+            ),
+            array(
+                'context'         => 'review',
+                'field_key'       => 'sig_chronicle',
+                'field_type'      => 'signature',
+                'label'           => 'Chronicle Representative Signature',
+                'required'        => 0,
+                'sort_order'      => 40,
+                'attributes_json' => wp_json_encode( array(
+                    'signed_by_role' => 'staff',
+                    'for_steps'      => array( 'staff_comment', 'staff_review' ),
+                ) ),
+            ),
+            array(
+                'context'         => 'review',
+                'field_key'       => 'sig_coordinator',
+                'field_type'      => 'signature',
+                'label'           => 'Coordinator Signature',
+                'required'        => 0,
+                'sort_order'      => 50,
+                'attributes_json' => wp_json_encode( array(
+                    'signed_by_role' => 'coordinator',
+                    'for_steps'      => array( 'coord_review' ),
+                ) ),
             ),
 
             // ── Escalate context ────────────────────────────────────────────

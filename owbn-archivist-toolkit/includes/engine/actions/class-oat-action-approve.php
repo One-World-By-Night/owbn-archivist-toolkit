@@ -91,6 +91,60 @@ class OAT_Action_Approve {
                 ) );
             }
 
+            // DA-001: Process me-too child entries for disciplinary_actions.
+            if ( $entry->domain === 'disciplinary_actions' && class_exists( 'OAT_Entry_Meta' ) ) {
+                $me_too = OAT_Entry_Meta::get( (int) $entry->id, 'me_too_chronicles' );
+                if ( $me_too ) {
+                    $chronicles = is_string( $me_too ) ? json_decode( $me_too, true ) : (array) $me_too;
+                    if ( is_array( $chronicles ) ) {
+                        // Wrap single slug in array.
+                        if ( ! empty( $chronicles ) && ! is_array( reset( $chronicles ) ) ) {
+                            $slugs = array_filter( array_values( $chronicles ) );
+                        } else {
+                            $slugs = $chronicles;
+                        }
+                        // If it's a single string slug, wrap it.
+                        if ( is_string( $me_too ) && strpos( $me_too, '[' ) !== 0 ) {
+                            $slugs = array( $me_too );
+                        }
+                        foreach ( $slugs as $chron_slug ) {
+                            if ( empty( $chron_slug ) || $chron_slug === $entry->chronicle_slug ) {
+                                continue; // Skip the source chronicle.
+                            }
+                            // Create child entry.
+                            $child_id = OAT_Entry::create( array(
+                                'domain'         => 'disciplinary_actions',
+                                'chronicle_slug' => $chron_slug,
+                                'status'          => OAT_Constants::STATUS_APPROVED,
+                                'current_step'    => 'archivist',
+                                'submitted_by'    => $user_id,
+                            ) );
+                            if ( $child_id ) {
+                                // Copy meta from parent.
+                                $copy_keys = array( 'player_name', 'player_user_id', 'da_details', 'da_action', 'da_type', 'reporter_name' );
+                                foreach ( $copy_keys as $mk ) {
+                                    $mv = OAT_Entry_Meta::get( (int) $entry->id, $mk );
+                                    if ( $mv !== null && $mv !== '' ) {
+                                        OAT_Entry_Meta::set( $child_id, $mk, $mv );
+                                    }
+                                }
+                                // Create relationship.
+                                OAT_Entry_Relationship::create( (int) $entry->id, $child_id, 'me_too' );
+                                // Timeline.
+                                OAT_Timeline::append( array(
+                                    'entry_id'        => $child_id,
+                                    'action_type'     => OAT_Constants::ACTION_SUBMIT,
+                                    'actor_id'        => null,
+                                    'step'            => 'archivist',
+                                    'visibility_tier' => OAT_Constants::TIER_ARCHIVIST,
+                                    'note'            => sprintf( 'Me-too entry from #%d.', (int) $entry->id ),
+                                ) );
+                            }
+                        }
+                    }
+                }
+            }
+
             return true;
         }
 

@@ -246,6 +246,7 @@ class OAT_Schema {
             player_email varchar(255) NOT NULL,
             player_name varchar(255) NOT NULL,
             chronicle_slug varchar(100) DEFAULT NULL,
+            pc_npc varchar(3) NOT NULL DEFAULT 'pc',
             created_at bigint(20) unsigned NOT NULL,
             updated_at bigint(20) unsigned NOT NULL,
             PRIMARY KEY  (id),

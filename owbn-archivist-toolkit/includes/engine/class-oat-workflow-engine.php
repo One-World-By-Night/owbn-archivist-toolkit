@@ -226,14 +226,32 @@ class OAT_Workflow_Engine {
      * @return array User IDs.
      */
     public static function resolve_assignees( $entry, $role_pattern ) {
-        $role = str_replace(
-            array( '{chronicle_slug}', '{coordinator_genre}' ),
-            array(
-                isset( $entry->chronicle_slug ) ? $entry->chronicle_slug : '',
-                isset( $entry->coordinator_genre ) ? $entry->coordinator_genre : '',
-            ),
-            $role_pattern
+        $replacements = array(
+            '{chronicle_slug}'    => isset( $entry->chronicle_slug ) ? $entry->chronicle_slug : '',
+            '{coordinator_genre}' => isset( $entry->coordinator_genre ) ? $entry->coordinator_genre : '',
         );
+
+        // Resolve any remaining {meta_key} tokens from entry meta (CL-007).
+        if ( preg_match_all( '/\{([a-z_]+)\}/', $role_pattern, $matches ) ) {
+            foreach ( $matches[1] as $key ) {
+                $placeholder = '{' . $key . '}';
+                if ( ! isset( $replacements[ $placeholder ] ) ) {
+                    $meta_val = '';
+                    if ( class_exists( 'OAT_Entry_Meta' ) && isset( $entry->id ) ) {
+                        $meta_val = OAT_Entry_Meta::get( $entry->id, $key );
+                    }
+                    $replacements[ $placeholder ] = $meta_val ? $meta_val : '';
+                }
+            }
+        }
+
+        $role = str_replace( array_keys( $replacements ), array_values( $replacements ), $role_pattern );
+
+        // BA-003: Direct user assignment via User/<user_id> pattern.
+        if ( strpos( $role, 'User/' ) === 0 ) {
+            $uid = (int) substr( $role, 5 );
+            return $uid > 0 ? array( $uid ) : array();
+        }
 
         // Query accessSchema for users with this role.
         return OAT_Authorization::get_users_with_role( $role );

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OWbN Archivist Toolkit
  * Description: OWbN Archivist Toolkit — workflow engine for organizational requests and approvals.
- * Version:     0.1.1
+ * Version:     0.2.0
  * Author:      OWbN Web Team
  * Text Domain: owbn-archivist-toolkit
  * Requires PHP: 7.4
@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OAT_VERSION', '0.1.1' );
+define( 'OAT_VERSION', '0.2.0' );
 define( 'OAT_PLUGIN_FILE', __FILE__ );
 define( 'OAT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

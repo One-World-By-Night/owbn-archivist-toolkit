@@ -139,8 +139,13 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
             ),
             'player_name' => array(
                 'label'    => 'Player receiving DA',
-                'type'     => 'text',
+                'type'     => 'user_picker',
                 'required' => true,
+            ),
+            'player_user_id' => array(
+                'label'    => 'Player User ID',
+                'type'     => 'hidden',
+                'required' => false,
             ),
             'chronicle_slug' => array(
                 'label'    => 'Chronicle issuing DA',
@@ -224,13 +229,26 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
                     'global'    => 'Global',
                 ) ),
             ),
+            // DA-002: user_picker with free-text fallback.
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'player_name',
+                'field_type'      => 'user_picker',
+                'label'           => 'Player receiving DA',
+                'required'        => 1,
+                'sort_order'      => 20,
+                'help_text'       => 'Search for a player. If not found, type their name.',
+                'attributes_json' => wp_json_encode( array(
+                    'fallback'    => 'free_text',
+                    'store_id_in' => 'player_user_id',
+                ) ),
+            ),
             array(
                 'context'    => 'submit',
-                'field_key'  => 'player_name',
-                'field_type' => 'text',
-                'label'      => 'Player receiving DA',
-                'required'   => 1,
-                'sort_order' => 20,
+                'field_key'  => 'player_user_id',
+                'field_type' => 'hidden',
+                'label'      => 'Player User ID',
+                'sort_order' => 21,
             ),
             array(
                 'context'         => 'submit',
@@ -362,6 +380,19 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
                 'required'        => 0,
                 'sort_order'      => 20,
                 'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+            ),
+            // DA-001: Me-too child entries — archivist selects additional chronicles.
+            array(
+                'context'         => 'resolve',
+                'field_key'       => 'me_too_chronicles',
+                'field_type'      => 'chronicle_picker',
+                'label'           => 'Additional Chronicles Executing This DA',
+                'required'        => 0,
+                'sort_order'      => 25,
+                'help_text'       => 'Select chronicles that are also executing this disciplinary action.',
+                'attributes_json' => wp_json_encode( array(
+                    'roles' => array( '*' ),
+                ) ),
             ),
             array(
                 'context'      => 'resolve',

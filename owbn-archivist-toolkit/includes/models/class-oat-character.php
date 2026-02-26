@@ -131,6 +131,10 @@ class OAT_Character {
             $insert['chronicle_slug'] = $data['chronicle_slug'];
             $format[] = '%s';
         }
+        if ( isset( $data['pc_npc'] ) && in_array( $data['pc_npc'], array( 'pc', 'npc' ), true ) ) {
+            $insert['pc_npc'] = $data['pc_npc'];
+            $format[] = '%s';
+        }
 
         $wpdb->insert( self::table(), $insert, $format );
         return (int) $wpdb->insert_id;
@@ -144,7 +148,7 @@ class OAT_Character {
     public static function update( $id, $data ) {
         global $wpdb;
 
-        $allowed = array( 'external_uuid', 'character_name', 'wp_user_id', 'player_email', 'player_name', 'chronicle_slug' );
+        $allowed = array( 'external_uuid', 'character_name', 'wp_user_id', 'player_email', 'player_name', 'chronicle_slug', 'pc_npc' );
 
         $update = array();
         $format = array();

@@ -198,6 +198,9 @@ class OAT_Domain_Custom_Content implements OAT_Domain_Interface {
                 'sort_order'      => 20,
                 'help_text'       => 'Search for an existing character or create a new one.',
                 'options_json'    => '{}',
+                'attributes_json' => wp_json_encode( array(
+                    'filter_by' => 'submitter_role',
+                ) ),
             ),
             array(
                 'context'         => 'submit',
@@ -246,6 +249,15 @@ class OAT_Domain_Custom_Content implements OAT_Domain_Interface {
                 'label'           => 'Chronicle Where Content Was Created',
                 'required'        => 1,
                 'sort_order'      => 70,
+                'attributes_json' => wp_json_encode( array(
+                    'filter_by'   => 'submitter_role',
+                    'role_scopes' => array(
+                        'player'      => array( 'Player', 'Staff', 'CM' ),
+                        'staff'       => array( 'HST', 'Staff', 'CM' ),
+                        'coordinator' => array( '*' ),
+                        'archivist'   => array( '*' ),
+                    ),
+                ) ),
             ),
             array(
                 'context'         => 'submit',

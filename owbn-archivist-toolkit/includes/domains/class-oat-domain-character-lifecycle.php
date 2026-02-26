@@ -42,11 +42,28 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
                 'label'              => 'Staff Review',
                 'assignee_role'      => 'Chronicle/{chronicle_slug}/HST',
                 'visibility_tier'    => OAT_Constants::TIER_STAFF,
-                'on_approve'         => 'coord_review',
+                'on_approve'         => 'gaining_staff_review',
                 'on_deny'            => null,
                 'on_request_changes' => 'submit',
                 'timer'              => null,
                 'condition'          => null,
+                'multi_approve'      => false,
+            ),
+            // CL-007: Gaining chronicle HST review for transfers.
+            array(
+                'id'                 => 'gaining_staff_review',
+                'label'              => 'Gaining Chronicle Review',
+                'assignee_role'      => 'Chronicle/{transfer_to_chronicle}/HST',
+                'visibility_tier'    => OAT_Constants::TIER_STAFF,
+                'on_approve'         => 'coord_review',
+                'on_deny'            => null,
+                'on_request_changes' => 'submit',
+                'timer'              => null,
+                'condition'          => array(
+                    'meta_key' => 'action_type',
+                    'operator' => '=',
+                    'value'    => 'transfer',
+                ),
                 'multi_approve'      => false,
             ),
             array(
@@ -91,12 +108,27 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
         return array(
             'character_name' => array(
                 'label'    => 'Character Name',
-                'type'     => 'text',
+                'type'     => 'character_picker',
                 'required' => true,
             ),
             'character_id' => array(
                 'label'    => 'Character ID',
-                'type'     => 'number',
+                'type'     => 'hidden',
+                'required' => false,
+            ),
+            'pc_npc' => array(
+                'label'    => 'PC / NPC',
+                'type'     => 'hidden',
+                'required' => false,
+            ),
+            'creature_type' => array(
+                'label'    => 'Creature Type',
+                'type'     => 'hidden',
+                'required' => false,
+            ),
+            'creature_sub_type' => array(
+                'label'    => 'Creature Sub-Type',
+                'type'     => 'hidden',
                 'required' => false,
             ),
             'action_type' => array(
@@ -182,10 +214,12 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
             array(
                 'context'         => 'submit',
                 'field_key'       => 'character_name',
-                'field_type'      => 'text',
+                'field_type'      => 'character_picker',
                 'label'           => 'Character Name',
                 'required'        => 1,
                 'sort_order'      => 40,
+                'help_text'       => 'Search for an existing character or create a new one.',
+                'options_json'    => '{}',
             ),
             array(
                 'context'         => 'submit',
@@ -243,6 +277,20 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
                 'label'           => 'Regulation Rules',
                 'sort_order'      => 60,
                 'help_text'       => 'Select applicable regulation rules.',
+                'condition_json'  => wp_json_encode( array(
+                    'field_key' => 'action_type',
+                    'operator'  => 'in',
+                    'value'     => array( 'ru_request', 'learn_custom_content', 'registration' ),
+                ) ),
+            ),
+            // CL-003: Show controlling coordinator(s) from selected regulation rules.
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'coordinator_display',
+                'field_type'      => 'coordinator_display',
+                'label'           => 'Controlling Coordinator(s)',
+                'sort_order'      => 65,
+                'help_text'       => 'Automatically populated from selected regulation rules.',
                 'condition_json'  => wp_json_encode( array(
                     'field_key' => 'action_type',
                     'operator'  => 'in',
