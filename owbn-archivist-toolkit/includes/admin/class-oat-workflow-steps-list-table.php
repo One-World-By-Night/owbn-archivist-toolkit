@@ -81,10 +81,10 @@ class OAT_Workflow_Steps_List_Table extends WP_List_Table {
 				return esc_html( ucfirst( $item->visibility_tier ) );
 
 			case 'on_approve':
-				return $item->on_approve ? '<code>' . esc_html( $item->on_approve ) . '</code>' : '<em>terminal</em>';
+				return $item->on_approve ? '<code>' . esc_html( $item->on_approve ) . '</code>' : '<em>Logged</em>';
 
 			case 'on_deny':
-				return $item->on_deny ? '<code>' . esc_html( $item->on_deny ) . '</code>' : '<em>terminal</em>';
+				return $item->on_deny ? '<code>' . esc_html( $item->on_deny ) . '</code>' : '<em>Logged</em>';
 
 			case 'on_request_changes':
 				return $item->on_request_changes ? '<code>' . esc_html( $item->on_request_changes ) . '</code>' : '<em>none</em>';

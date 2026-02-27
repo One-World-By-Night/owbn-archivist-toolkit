@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OWbN Archivist Toolkit
  * Description: OWbN Archivist Toolkit — workflow engine for organizational requests and approvals.
- * Version:     0.2.0
+ * Version:     0.3.0
  * Author:      OWbN Web Team
  * Text Domain: owbn-archivist-toolkit
  * Requires PHP: 7.4
@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OAT_VERSION', '0.2.0' );
+define( 'OAT_VERSION', '0.3.0' );
 define( 'OAT_PLUGIN_FILE', __FILE__ );
 define( 'OAT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -43,8 +43,12 @@ add_filter( 'oat_register_domains', function( $domains ) {
     $domains[] = new OAT_Domain_Binding_Agreements();
     $domains[] = new OAT_Domain_Disciplinary_Actions();
     $domains[] = new OAT_Domain_Governance_Records();
+    $domains[] = new OAT_Domain_Player_Actions();
     return $domains;
 } );
+
+// Record snapshot on approval (D-062).
+OAT_Record_Snapshot::init();
 
 // Timer processing — WP-Cron hourly (D-051).
 add_action( 'oat_process_timers', array( 'OAT_Timer_Engine', 'process_expired_timers' ) );

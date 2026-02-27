@@ -45,6 +45,7 @@ class OAT_Action_Auto_Approve {
         if ( $next_step === null ) {
             // Terminal — set to auto_approved.
             OAT_Entry::update_status( (int) $entry->id, OAT_Constants::STATUS_AUTO_APPROVED, $entry->current_step );
+            do_action( 'oat_entry_approved', (int) $entry->id, $user_id, $data );
         } else {
             // Advance to next step.
             OAT_Workflow_Engine::advance_to_step( $entry, $next_step );

@@ -87,9 +87,11 @@ class OAT_Action_Approve {
                     'actor_id'        => null,
                     'step'            => $step,
                     'visibility_tier' => OAT_Constants::TIER_ARCHIVIST,
-                    'note'            => 'Auto-recorded.',
+                    'note'            => 'Auto-logged.',
                 ) );
             }
+
+            do_action( 'oat_entry_approved', (int) $entry->id, $user_id, $data );
 
             // DA-001: Process me-too child entries for disciplinary_actions.
             if ( $entry->domain === 'disciplinary_actions' && class_exists( 'OAT_Entry_Meta' ) ) {

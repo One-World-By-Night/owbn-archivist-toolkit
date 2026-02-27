@@ -23,8 +23,10 @@ class OAT_Action_Record {
             OAT_Timer::cancel( (int) $timer->id );
         }
 
-        // Set entry status to approved — terminal.
+        // Set entry status to approved — logged.
         OAT_Entry::update_status( (int) $entry->id, OAT_Constants::STATUS_APPROVED, $entry->current_step );
+
+        do_action( 'oat_entry_approved', (int) $entry->id, $user_id, $data );
 
         // Log timeline event at archivist tier.
         OAT_Timeline::append( array(
