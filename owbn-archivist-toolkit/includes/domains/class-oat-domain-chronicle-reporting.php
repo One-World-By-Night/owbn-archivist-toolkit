@@ -339,12 +339,6 @@ class OAT_Domain_Chronicle_Reporting implements OAT_Domain_Interface {
             ),
         ) );
     }
-
-    /**
-     * @param object $entry
-     * @param array  $meta
-     * @return true|WP_Error
-     */
     public function validate( $entry, $meta ) {
         if ( empty( $meta['chronicle_slug'] ) ) {
             return new WP_Error( 'missing_chronicle', 'Chronicle selection is required.' );

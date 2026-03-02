@@ -8,11 +8,6 @@ class OAT_Timer {
         global $wpdb;
         return $wpdb->prefix . 'oat_timers';
     }
-
-    /**
-     * @param array $data
-     * @return int Insert ID.
-     */
     public static function create( $data ) {
         global $wpdb;
 
@@ -36,11 +31,6 @@ class OAT_Timer {
         ), array( '%d', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d' ) );
         return (int) $wpdb->insert_id;
     }
-
-    /**
-     * @param int $entry_id
-     * @return object|null
-     */
     public static function active_for_entry( $entry_id ) {
         global $wpdb;
         return $wpdb->get_row( $wpdb->prepare(
@@ -49,12 +39,6 @@ class OAT_Timer {
             OAT_Constants::TIMER_ACTIVE
         ) );
     }
-
-    /**
-     * @param int    $id
-     * @param string $status
-     * @return bool
-     */
     public static function update_status( $id, $status ) {
         $valid = array(
             OAT_Constants::TIMER_ACTIVE,
@@ -75,11 +59,6 @@ class OAT_Timer {
             array( '%d' )
         );
     }
-
-    /**
-     * @param int $id
-     * @return bool
-     */
     public static function pause( $id ) {
         global $wpdb;
         return (bool) $wpdb->update(
@@ -90,12 +69,6 @@ class OAT_Timer {
             array( '%d' )
         );
     }
-
-    /**
-     * @param int $id
-     * @param int $remaining_seconds
-     * @return bool
-     */
     public static function resume( $id, $remaining_seconds ) {
         global $wpdb;
         return (bool) $wpdb->query( $wpdb->prepare(
@@ -105,11 +78,6 @@ class OAT_Timer {
             $id
         ) );
     }
-
-    /**
-     * @param int $id
-     * @return bool
-     */
     public static function fire( $id ) {
         global $wpdb;
         return (bool) $wpdb->update(
@@ -120,11 +88,6 @@ class OAT_Timer {
             array( '%d' )
         );
     }
-
-    /**
-     * @param int $id
-     * @return bool
-     */
     public static function cancel( $id ) {
         global $wpdb;
         return (bool) $wpdb->update(
@@ -135,11 +98,6 @@ class OAT_Timer {
             array( '%d' )
         );
     }
-
-    /**
-     * @param int $id
-     * @return int New bump count.
-     */
     public static function increment_bump( $id ) {
         global $wpdb;
         $wpdb->query( $wpdb->prepare(
@@ -151,12 +109,6 @@ class OAT_Timer {
             $id
         ) );
     }
-
-    /**
-     * @param int $id
-     * @param int $additional_seconds
-     * @return bool
-     */
     public static function extend( $id, $additional_seconds ) {
         global $wpdb;
         return (bool) $wpdb->query( $wpdb->prepare(
@@ -177,11 +129,6 @@ class OAT_Timer {
             time()
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return array All timer rows (historical + active).
-     */
     public static function for_entry( $entry_id ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -189,11 +136,6 @@ class OAT_Timer {
             $entry_id
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return bool
-     */
     public static function delete_for_entry( $entry_id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array( 'entry_id' => $entry_id ), array( '%d' ) );

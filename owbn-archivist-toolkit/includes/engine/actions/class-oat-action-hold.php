@@ -3,13 +3,6 @@
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Action_Hold {
-
-    /**
-     * @param object $entry
-     * @param int    $user_id
-     * @param array  $data Keys: 'note' (required).
-     * @return true|WP_Error
-     */
     public static function execute( $entry, $user_id, $data = array() ) {
         if ( ! OAT_Authorization::check( OAT_Constants::CAP_EXEC_OVERSIGHT, 'exec' ) ) {
             return new WP_Error( 'unauthorized', 'Only Exec Oversight can place an entry on hold.' );

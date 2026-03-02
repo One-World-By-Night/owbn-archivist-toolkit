@@ -415,12 +415,6 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
             ),
         ) );
     }
-
-    /**
-     * @param object $entry
-     * @param array  $meta
-     * @return true|WP_Error
-     */
     public function validate( $entry, $meta ) {
         if ( empty( $meta['character_name'] ) ) {
             return new WP_Error( 'missing_character_name', 'Character name is required.' );

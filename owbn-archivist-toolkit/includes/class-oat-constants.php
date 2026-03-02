@@ -96,11 +96,6 @@ class OAT_Constants {
     const CAP_ADMIN          = 'oat_admin';
 
     // ── Validation Helpers ──────────────────────────────────────────
-
-    /**
-     * @param string $status
-     * @return bool
-     */
     public static function is_valid_status( $status ) {
         return in_array( $status, array(
             self::STATUS_PENDING,
@@ -112,11 +107,6 @@ class OAT_Constants {
             self::STATUS_AUTO_DENIED,
         ), true );
     }
-
-    /**
-     * @param string $status
-     * @return bool
-     */
     public static function is_terminal_status( $status ) {
         return in_array( $status, array(
             self::STATUS_APPROVED,
@@ -126,11 +116,6 @@ class OAT_Constants {
             self::STATUS_AUTO_DENIED,
         ), true );
     }
-
-    /**
-     * @param string $action
-     * @return bool
-     */
     public static function is_valid_action( $action ) {
         return in_array( $action, array(
             self::ACTION_SUBMIT,
@@ -150,11 +135,6 @@ class OAT_Constants {
             self::ACTION_TIMER_EXTEND,
         ), true );
     }
-
-    /**
-     * @param string $tier
-     * @return bool
-     */
     public static function is_valid_tier( $tier ) {
         return in_array( $tier, array(
             self::TIER_STAFF,
@@ -162,11 +142,6 @@ class OAT_Constants {
             self::TIER_ARCHIVIST,
         ), true );
     }
-
-    /**
-     * @param string $level
-     * @return bool
-     */
     public static function is_valid_regulation_level( $level ) {
         return in_array( $level, array(
             self::REGULATION_COORDINATOR_APPROVAL,

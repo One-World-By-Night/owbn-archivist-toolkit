@@ -123,12 +123,6 @@ class OAT_Form_Fields_List_Table extends WP_List_Table {
 			$this->get_sortable_columns(),
 		);
 	}
-
-	/**
-	 * @param array  $item
-	 * @param string $column_name
-	 * @return string
-	 */
 	public function column_default( $item, $column_name ) {
 		switch ( $column_name ) {
 			case 'sort_order':

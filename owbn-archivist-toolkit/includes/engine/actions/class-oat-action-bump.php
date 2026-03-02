@@ -3,13 +3,6 @@
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Action_Bump {
-
-    /**
-     * @param object $entry
-     * @param int    $user_id
-     * @param array  $data Keys: 'note' (optional).
-     * @return true|WP_Error
-     */
     public static function execute( $entry, $user_id, $data = array() ) {
         // Verify active timer exists.
         $timer = OAT_Timer::active_for_entry( (int) $entry->id );

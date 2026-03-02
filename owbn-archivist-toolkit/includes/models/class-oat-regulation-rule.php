@@ -8,11 +8,6 @@ class OAT_Regulation_Rule {
         global $wpdb;
         return $wpdb->prefix . 'oat_regulation_rules';
     }
-
-    /**
-     * @param int $id
-     * @return object|null
-     */
     public static function find( $id ) {
         global $wpdb;
         return $wpdb->get_row( $wpdb->prepare(
@@ -20,11 +15,6 @@ class OAT_Regulation_Rule {
             $id
         ) );
     }
-
-    /**
-     * @param array $args
-     * @return array
-     */
     public static function all( $args = array() ) {
         global $wpdb;
         $table = self::table();
@@ -70,11 +60,6 @@ class OAT_Regulation_Rule {
 
         return $wpdb->get_results( $wpdb->prepare( $sql, $values ) );
     }
-
-    /**
-     * @param array $args
-     * @return int
-     */
     public static function count( $args = array() ) {
         global $wpdb;
         $table = self::table();
@@ -113,12 +98,6 @@ class OAT_Regulation_Rule {
         global $wpdb;
         return $wpdb->get_col( 'SELECT DISTINCT genre FROM ' . self::table() . ' WHERE active = 1 ORDER BY genre ASC' );
     }
-
-    /**
-     * @param string      $term
-     * @param string|null $genre
-     * @return array
-     */
     public static function search( $term, $genre = null ) {
         global $wpdb;
         $table = self::table();
@@ -145,11 +124,6 @@ class OAT_Regulation_Rule {
 
         return $wpdb->get_results( $wpdb->prepare( $sql, $values ) );
     }
-
-    /**
-     * @param array $data
-     * @return int Insert ID.
-     */
     public static function create( $data ) {
         global $wpdb;
 
@@ -235,11 +209,6 @@ class OAT_Regulation_Rule {
 
         return self::create( $new_data );
     }
-
-    /**
-     * @param int $id
-     * @return bool
-     */
     public static function deactivate( $id ) {
         global $wpdb;
         return (bool) $wpdb->update(
@@ -250,11 +219,6 @@ class OAT_Regulation_Rule {
             array( '%d' )
         );
     }
-
-    /**
-     * @param string $file_path
-     * @return array ['inserted' => int, 'skipped' => int, 'errors' => array]
-     */
     public static function import_csv( $file_path ) {
         $result = array( 'inserted' => 0, 'skipped' => 0, 'errors' => array() );
 

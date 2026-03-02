@@ -29,8 +29,6 @@ class OAT_Domain_Registry {
 	public static function get_all() {
 		if ( self::$domains === null ) {
 			self::$domains = array();
-
-			// 1. Load PHP-registered domains.
 			self::load_php_domains();
 			foreach ( self::$php_domains as $slug => $domain ) {
 				self::$domains[ $slug ] = array(
@@ -41,8 +39,6 @@ class OAT_Domain_Registry {
 					'source'         => 'php',
 				);
 			}
-
-			// 2. Overlay DB-defined domains (take precedence).
 			if ( class_exists( 'OAT_Domain' ) ) {
 				$db_domains = OAT_Domain::get_all( false );
 				if ( is_array( $db_domains ) ) {

@@ -92,12 +92,6 @@ class OAT_Domain_Player_Actions implements OAT_Domain_Interface {
             'notes',
         );
     }
-
-    /**
-     * @param object $entry
-     * @param array  $meta
-     * @return true|WP_Error
-     */
     public function validate( $entry, $meta ) {
         $valid_types = array( 'join_chronicle', 'genre_register' );
         if ( empty( $meta['action_type'] ) || ! in_array( $meta['action_type'], $valid_types, true ) ) {

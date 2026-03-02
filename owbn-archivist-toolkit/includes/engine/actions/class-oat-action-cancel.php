@@ -3,13 +3,6 @@
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Action_Cancel {
-
-    /**
-     * @param object $entry
-     * @param int    $user_id
-     * @param array  $data Keys: 'note' (required).
-     * @return true|WP_Error
-     */
     public static function execute( $entry, $user_id, $data = array() ) {
         if ( empty( $data['note'] ) ) {
             return new WP_Error( 'missing_note', 'A note is required.' );

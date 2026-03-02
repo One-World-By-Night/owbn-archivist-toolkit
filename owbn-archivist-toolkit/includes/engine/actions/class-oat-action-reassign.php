@@ -3,13 +3,6 @@
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Action_Reassign {
-
-    /**
-     * @param object $entry
-     * @param int    $user_id The user performing the reassignment.
-     * @param array  $data Keys: 'note' (required), 'target_user_id' (required).
-     * @return true|WP_Error
-     */
     public static function execute( $entry, $user_id, $data = array() ) {
         if ( empty( $data['note'] ) ) {
             return new WP_Error( 'missing_note', 'A note is required.' );

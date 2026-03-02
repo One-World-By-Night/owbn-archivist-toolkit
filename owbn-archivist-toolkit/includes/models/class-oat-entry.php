@@ -8,11 +8,6 @@ class OAT_Entry {
         global $wpdb;
         return $wpdb->prefix . 'oat_entries';
     }
-
-    /**
-     * @param int $id
-     * @return object|null
-     */
     public static function find( $id ) {
         global $wpdb;
         return $wpdb->get_row( $wpdb->prepare(
@@ -20,11 +15,6 @@ class OAT_Entry {
             $id
         ) );
     }
-
-    /**
-     * @param array $args
-     * @return array
-     */
     public static function all( $args = array() ) {
         global $wpdb;
         $table = self::table();
@@ -69,11 +59,6 @@ class OAT_Entry {
         }
         return $wpdb->get_results( $sql );
     }
-
-    /**
-     * @param array $args
-     * @return int
-     */
     public static function count( $args = array() ) {
         global $wpdb;
         $table = self::table();
@@ -107,11 +92,6 @@ class OAT_Entry {
         }
         return (int) $wpdb->get_var( $sql );
     }
-
-    /**
-     * @param array $data
-     * @return int Insert ID.
-     */
     public static function create( $data ) {
         global $wpdb;
 
@@ -147,12 +127,6 @@ class OAT_Entry {
         $wpdb->insert( self::table(), $insert, $format );
         return (int) $wpdb->insert_id;
     }
-
-    /**
-     * @param int   $id
-     * @param array $data
-     * @return bool
-     */
     public static function update( $id, $data ) {
         global $wpdb;
 
@@ -185,14 +159,6 @@ class OAT_Entry {
 
         return (bool) $wpdb->update( self::table(), $update, array( 'id' => $id ), $format, array( '%d' ) );
     }
-
-    /**
-     * @param int    $id
-     * @param string $status
-     * @param string $step
-     * @param bool   $force Bypass terminal status check (for council_override).
-     * @return bool
-     */
     public static function update_status( $id, $status, $step, $force = false ) {
         if ( ! OAT_Constants::is_valid_status( $status ) ) {
             return false;
@@ -261,21 +227,10 @@ class OAT_Entry {
 
         return self::delete( $id );
     }
-
-    /**
-     * @param int $id
-     * @return bool
-     */
     public static function delete( $id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array( 'id' => $id ), array( '%d' ) );
     }
-
-    /**
-     * @param int   $user_id
-     * @param array $args
-     * @return array
-     */
     public static function for_originator( $user_id, $args = array() ) {
         $args['originator_id'] = $user_id;
         return self::all( $args );

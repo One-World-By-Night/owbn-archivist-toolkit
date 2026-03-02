@@ -8,11 +8,6 @@ class OAT_Notification {
         global $wpdb;
         return $wpdb->prefix . 'oat_notifications';
     }
-
-    /**
-     * @param array $data
-     * @return int Insert ID.
-     */
     public static function create( $data ) {
         global $wpdb;
 
@@ -39,11 +34,6 @@ class OAT_Notification {
         ), array( '%d', '%d', '%s', '%s', '%s', '%d' ) );
         return (int) $wpdb->insert_id;
     }
-
-    /**
-     * @param int $id
-     * @return bool
-     */
     public static function mark_sent( $id ) {
         global $wpdb;
         return (bool) $wpdb->update(
@@ -54,11 +44,6 @@ class OAT_Notification {
             array( '%d' )
         );
     }
-
-    /**
-     * @param int $id
-     * @return bool
-     */
     public static function mark_failed( $id ) {
         global $wpdb;
         return (bool) $wpdb->update(
@@ -69,11 +54,6 @@ class OAT_Notification {
             array( '%d' )
         );
     }
-
-    /**
-     * @param int $entry_id
-     * @return array
-     */
     public static function for_entry( $entry_id ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -81,12 +61,6 @@ class OAT_Notification {
             $entry_id
         ) );
     }
-
-    /**
-     * @param int   $user_id
-     * @param array $args
-     * @return array
-     */
     public static function for_user( $user_id, $args = array() ) {
         global $wpdb;
         $table = self::table();
@@ -122,11 +96,6 @@ class OAT_Notification {
             OAT_Constants::NOTIFICATION_PENDING
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return bool
-     */
     public static function delete_for_entry( $entry_id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array( 'entry_id' => $entry_id ), array( '%d' ) );

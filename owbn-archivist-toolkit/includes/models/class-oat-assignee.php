@@ -13,13 +13,6 @@ class OAT_Assignee {
         global $wpdb;
         return $wpdb->prefix . 'oat_entries';
     }
-
-    /**
-     * @param int    $entry_id
-     * @param int    $user_id
-     * @param string $step
-     * @return int Insert ID.
-     */
     public static function assign( $entry_id, $user_id, $step ) {
         global $wpdb;
         $wpdb->insert( self::table(), array(
@@ -31,12 +24,6 @@ class OAT_Assignee {
         ), array( '%d', '%d', '%s', '%s', '%d' ) );
         return (int) $wpdb->insert_id;
     }
-
-    /**
-     * @param int    $id
-     * @param string $status
-     * @return bool
-     */
     public static function update_status( $id, $status ) {
         $valid = array( 'pending', 'approved', 'denied', 'reassigned', 'delegated' );
         if ( ! in_array( $status, $valid, true ) ) {
@@ -54,12 +41,6 @@ class OAT_Assignee {
 
         return (bool) $wpdb->update( self::table(), $update, array( 'id' => $id ), $format, array( '%d' ) );
     }
-
-    /**
-     * @param int    $entry_id
-     * @param string $step
-     * @return array
-     */
     public static function for_entry_step( $entry_id, $step ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -68,11 +49,6 @@ class OAT_Assignee {
             $step
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return array
-     */
     public static function for_entry( $entry_id ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -80,11 +56,6 @@ class OAT_Assignee {
             $entry_id
         ) );
     }
-
-    /**
-     * @param int $user_id
-     * @return array
-     */
     public static function inbox( $user_id ) {
         global $wpdb;
         $a = self::table();
@@ -128,12 +99,6 @@ class OAT_Assignee {
             $step
         ) );
     }
-
-    /**
-     * @param int    $entry_id
-     * @param string $step
-     * @return bool
-     */
     public static function reset_step( $entry_id, $step ) {
         global $wpdb;
         return (bool) $wpdb->query( $wpdb->prepare(
@@ -142,12 +107,6 @@ class OAT_Assignee {
             $step
         ) );
     }
-
-    /**
-     * @param int    $entry_id
-     * @param string $step
-     * @return bool
-     */
     public static function all_approved( $entry_id, $step ) {
         global $wpdb;
         $table = self::table();
@@ -170,12 +129,6 @@ class OAT_Assignee {
 
         return $total === $approved;
     }
-
-    /**
-     * @param int    $entry_id
-     * @param string $step
-     * @return bool
-     */
     public static function any_denied( $entry_id, $step ) {
         global $wpdb;
         return (bool) $wpdb->get_var( $wpdb->prepare(
@@ -184,11 +137,6 @@ class OAT_Assignee {
             $step
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return bool
-     */
     public static function delete_for_entry( $entry_id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array( 'entry_id' => $entry_id ), array( '%d' ) );

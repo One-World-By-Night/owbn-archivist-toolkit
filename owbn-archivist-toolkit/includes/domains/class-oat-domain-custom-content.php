@@ -109,12 +109,6 @@ class OAT_Domain_Custom_Content implements OAT_Domain_Interface {
             'ru_rules',
         );
     }
-
-    /**
-     * @param object $entry
-     * @param array  $meta
-     * @return true|WP_Error
-     */
     public function validate( $entry, $meta ) {
         $valid_roles = array( 'player', 'staff', 'coordinator', 'archivist' );
         if ( empty( $meta['submitter_role'] ) || ! in_array( $meta['submitter_role'], $valid_roles, true ) ) {

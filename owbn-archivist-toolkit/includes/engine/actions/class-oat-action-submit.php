@@ -3,13 +3,6 @@
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Action_Submit {
-
-    /**
-     * @param object $entry
-     * @param int    $user_id
-     * @param array  $data Keys: 'note' (optional), 'meta' (optional array of key => value).
-     * @return true|WP_Error
-     */
     public static function execute( $entry, $user_id, $data = array() ) {
 
         $domain = OAT_Domain_Registry::get_php_domain( $entry->domain );

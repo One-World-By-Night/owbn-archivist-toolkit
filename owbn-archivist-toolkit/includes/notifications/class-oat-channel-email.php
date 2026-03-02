@@ -30,12 +30,6 @@ class OAT_Channel_Email implements OAT_Notification_Channel {
 
         return wp_mail( $user->user_email, $subject, $body );
     }
-
-    /**
-     * @param string $event_type
-     * @param array  $context
-     * @return string
-     */
     private function build_subject( $event_type, $context ) {
         $domain   = isset( $context['domain'] ) ? $context['domain'] : 'OAT';
         $entry_id = isset( $context['entry_id'] ) ? $context['entry_id'] : '';
@@ -44,12 +38,6 @@ class OAT_Channel_Email implements OAT_Notification_Channel {
 
         return sprintf( '[OAT] %s — %s #%s', $label, $domain, $entry_id );
     }
-
-    /**
-     * @param string $event_type
-     * @param array  $context
-     * @return string
-     */
     private function build_body( $event_type, $context ) {
         $lines = array();
 

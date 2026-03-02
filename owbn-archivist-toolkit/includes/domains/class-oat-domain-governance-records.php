@@ -64,12 +64,6 @@ class OAT_Domain_Governance_Records implements OAT_Domain_Interface {
             'record_type',
         );
     }
-
-    /**
-     * @param object $entry
-     * @param array  $meta
-     * @return true|WP_Error
-     */
     public function validate( $entry, $meta ) {
         if ( empty( $meta['reporter_name'] ) ) {
             return new WP_Error( 'missing_reporter', 'Reporter name is required.' );

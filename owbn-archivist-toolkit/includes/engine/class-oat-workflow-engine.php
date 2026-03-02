@@ -20,7 +20,6 @@ class OAT_Workflow_Engine {
      * @return true|WP_Error
      */
     public static function process_action( $entry_id, $action, $user_id, $data = array() ) {
-        // 1. Load entry.
         $entry = OAT_Entry::find( $entry_id );
         if ( ! $entry ) {
             return new WP_Error( 'not_found', 'Entry not found.' );
@@ -30,13 +29,9 @@ class OAT_Workflow_Engine {
         if ( OAT_Constants::is_terminal_status( $entry->status ) && $action !== OAT_Constants::ACTION_COUNCIL_OVERRIDE ) {
             return new WP_Error( 'terminal', 'Entry is in terminal status.' );
         }
-
-        // 3. Validate action type.
         if ( ! OAT_Constants::is_valid_action( $action ) ) {
             return new WP_Error( 'invalid_action', 'Unknown action type.' );
         }
-
-        // 4. Dispatch to action handler.
         $handler = self::get_handler( $action );
         if ( ! $handler ) {
             return new WP_Error( 'no_handler', 'No handler for action.' );
@@ -83,16 +78,12 @@ class OAT_Workflow_Engine {
      */
     public static function get_step_config( $entry, $step_id = null ) {
         $target = $step_id !== null ? $step_id : $entry->current_step;
-
-        // 1. Try DB-driven workflow steps first (D-055).
         if ( class_exists( 'OAT_Workflow_Step' ) ) {
             $db_config = OAT_Workflow_Step::get_step_config( $entry->domain, $target );
             if ( $db_config !== null ) {
                 return $db_config;
             }
         }
-
-        // 2. Fall back to PHP domain class.
         $domain = OAT_Domain_Registry::get_php_domain( $entry->domain );
         if ( ! $domain ) {
             return null;

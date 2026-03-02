@@ -30,11 +30,6 @@ class OAT_Character {
             substr( $hex, 8, 12 )
         );
     }
-
-    /**
-     * @param int $id
-     * @return object|null
-     */
     public static function find( $id ) {
         global $wpdb;
         return $wpdb->get_row( $wpdb->prepare(
@@ -42,11 +37,6 @@ class OAT_Character {
             $id
         ) );
     }
-
-    /**
-     * @param string $uuid
-     * @return object|null
-     */
     public static function find_by_uuid( $uuid ) {
         global $wpdb;
         return $wpdb->get_row( $wpdb->prepare(
@@ -54,11 +44,6 @@ class OAT_Character {
             $uuid
         ) );
     }
-
-    /**
-     * @param string $external_uuid
-     * @return object|null
-     */
     public static function find_by_external_uuid( $external_uuid ) {
         global $wpdb;
         return $wpdb->get_row( $wpdb->prepare(
@@ -66,11 +51,6 @@ class OAT_Character {
             $external_uuid
         ) );
     }
-
-    /**
-     * @param string $email
-     * @return array One player may have multiple characters.
-     */
     public static function find_by_email( $email ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -78,11 +58,6 @@ class OAT_Character {
             $email
         ) );
     }
-
-    /**
-     * @param string $chronicle_slug
-     * @return array
-     */
     public static function for_chronicle( $chronicle_slug ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -90,11 +65,6 @@ class OAT_Character {
             $chronicle_slug
         ) );
     }
-
-    /**
-     * @param array $data Required: player_email, player_name. Optional: uuid, external_uuid, character_name, wp_user_id, chronicle_slug.
-     * @return int Insert ID.
-     */
     public static function create( $data ) {
         global $wpdb;
 
@@ -139,12 +109,6 @@ class OAT_Character {
         $wpdb->insert( self::table(), $insert, $format );
         return (int) $wpdb->insert_id;
     }
-
-    /**
-     * @param int   $id
-     * @param array $data Updatable: external_uuid, character_name, wp_user_id, player_email, player_name, chronicle_slug.
-     * @return bool
-     */
     public static function update( $id, $data ) {
         global $wpdb;
 
@@ -175,12 +139,6 @@ class OAT_Character {
             array( '%d' )
         );
     }
-
-    /**
-     * @param int $id
-     * @param int $wp_user_id
-     * @return bool
-     */
     public static function link_user( $id, $wp_user_id ) {
         return self::update( $id, array( 'wp_user_id' => $wp_user_id ) );
     }

@@ -8,13 +8,6 @@ class OAT_Entry_Relationship {
         global $wpdb;
         return $wpdb->prefix . 'oat_entry_relationships';
     }
-
-    /**
-     * @param int    $source_id
-     * @param int    $target_id
-     * @param string $type
-     * @return int Insert ID.
-     */
     public static function create( $source_id, $target_id, $type ) {
         global $wpdb;
         $wpdb->insert( self::table(), array(
@@ -25,11 +18,6 @@ class OAT_Entry_Relationship {
         ), array( '%d', '%d', '%s', '%d' ) );
         return (int) $wpdb->insert_id;
     }
-
-    /**
-     * @param int $entry_id
-     * @return array
-     */
     public static function for_source( $entry_id ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -37,11 +25,6 @@ class OAT_Entry_Relationship {
             $entry_id
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return array
-     */
     public static function for_target( $entry_id ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(

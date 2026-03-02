@@ -13,12 +13,6 @@ class OAT_Entry_Rule {
         global $wpdb;
         return $wpdb->prefix . 'oat_regulation_rules';
     }
-
-    /**
-     * @param int $entry_id
-     * @param int $rule_id
-     * @return int Insert ID.
-     */
     public static function create( $entry_id, $rule_id ) {
         global $wpdb;
         $wpdb->insert( self::table(), array(
@@ -38,11 +32,6 @@ class OAT_Entry_Rule {
     public static function for_entry( $entry_id ) {
         return self::rules_for_entry( $entry_id );
     }
-
-    /**
-     * @param int $entry_id
-     * @return array Full rule objects for this entry.
-     */
     public static function rules_for_entry( $entry_id ) {
         global $wpdb;
         $er = self::table();
@@ -53,11 +42,6 @@ class OAT_Entry_Rule {
             $entry_id
         ) );
     }
-
-    /**
-     * @param int $rule_id
-     * @return array Entry IDs linked to this rule.
-     */
     public static function entries_for_rule( $rule_id ) {
         global $wpdb;
         return $wpdb->get_col( $wpdb->prepare(
@@ -65,11 +49,6 @@ class OAT_Entry_Rule {
             $rule_id
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return bool True if any linked rule has elevation = 1.
-     */
     public static function has_elevation( $entry_id ) {
         global $wpdb;
         $er = self::table();
@@ -80,11 +59,6 @@ class OAT_Entry_Rule {
             $entry_id
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return bool
-     */
     public static function delete_for_entry( $entry_id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array( 'entry_id' => $entry_id ), array( '%d' ) );

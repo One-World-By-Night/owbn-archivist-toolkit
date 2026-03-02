@@ -73,12 +73,6 @@ class OAT_Domains_List_Table extends WP_List_Table {
 			return 'desc' === $order ? -$cmp : $cmp;
 		} );
 	}
-
-	/**
-	 * @param object $item
-	 * @param string $column_name
-	 * @return string
-	 */
 	public function column_default( $item, $column_name ) {
 		switch ( $column_name ) {
 			case 'slug':
@@ -109,11 +103,6 @@ class OAT_Domains_List_Table extends WP_List_Table {
 				return '';
 		}
 	}
-
-	/**
-	 * @param object $item
-	 * @return string
-	 */
 	private static function render_actions( $item ) {
 		$actions = array();
 

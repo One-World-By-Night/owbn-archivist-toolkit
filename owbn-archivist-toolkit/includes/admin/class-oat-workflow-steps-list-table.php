@@ -56,12 +56,6 @@ class OAT_Workflow_Steps_List_Table extends WP_List_Table {
 
 		$this->items = OAT_Workflow_Step::get_for_domain( $this->domain_slug, true );
 	}
-
-	/**
-	 * @param object $item
-	 * @param string $column_name
-	 * @return string
-	 */
 	public function column_default( $item, $column_name ) {
 		switch ( $column_name ) {
 			case 'sort_order':
@@ -113,12 +107,6 @@ class OAT_Workflow_Steps_List_Table extends WP_List_Table {
 				return '';
 		}
 	}
-
-	/**
-	 * @param object $item
-	 * @param string $domain_slug
-	 * @return string
-	 */
 	private static function render_actions( $item, $domain_slug ) {
 		$actions = array();
 

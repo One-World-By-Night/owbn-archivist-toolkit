@@ -82,12 +82,6 @@ class OAT_Rules_List_Table extends WP_List_Table {
             $this->get_sortable_columns(),
         );
     }
-
-    /**
-     * @param object $item
-     * @param string $column_name
-     * @return string
-     */
     public function column_default( $item, $column_name ) {
         switch ( $column_name ) {
             case 'id':
@@ -133,11 +127,6 @@ class OAT_Rules_List_Table extends WP_List_Table {
 
         return esc_html( $item->id ) . $this->row_actions( $actions );
     }
-
-    /**
-     * @param string $which
-     * @return void
-     */
     protected function extra_tablenav( $which ) {
         if ( $which !== 'top' ) {
             return;

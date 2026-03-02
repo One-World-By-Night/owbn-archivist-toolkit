@@ -8,12 +8,6 @@ class OAT_Entry_Meta {
         global $wpdb;
         return $wpdb->prefix . 'oat_entry_meta';
     }
-
-    /**
-     * @param int    $entry_id
-     * @param string $key
-     * @return string|null
-     */
     public static function get( $entry_id, $key ) {
         global $wpdb;
         return $wpdb->get_var( $wpdb->prepare(
@@ -32,11 +26,6 @@ class OAT_Entry_Meta {
     public static function all( $entry_id ) {
         return self::get_all( $entry_id );
     }
-
-    /**
-     * @param int $entry_id
-     * @return array
-     */
     public static function get_all( $entry_id ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -87,12 +76,6 @@ class OAT_Entry_Meta {
         ), array( '%d', '%s', '%s', '%d' ) );
         return (int) $wpdb->insert_id;
     }
-
-    /**
-     * @param int    $id
-     * @param string $value
-     * @return bool
-     */
     public static function update( $id, $value ) {
         global $wpdb;
         if ( is_string( $value ) ) {
@@ -106,21 +89,10 @@ class OAT_Entry_Meta {
             array( '%d' )
         );
     }
-
-    /**
-     * @param int $entry_id
-     * @return bool
-     */
     public static function delete_for_entry( $entry_id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array( 'entry_id' => $entry_id ), array( '%d' ) );
     }
-
-    /**
-     * @param int    $entry_id
-     * @param string $key
-     * @return array
-     */
     public static function get_by_key( $entry_id, $key ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(

@@ -8,11 +8,6 @@ class OAT_Timeline {
         global $wpdb;
         return $wpdb->prefix . 'oat_timeline';
     }
-
-    /**
-     * @param array $data
-     * @return int Insert ID.
-     */
     public static function append( $data ) {
         global $wpdb;
 
@@ -58,12 +53,6 @@ class OAT_Timeline {
 
         return $id;
     }
-
-    /**
-     * @param int         $entry_id
-     * @param string|null $max_tier
-     * @return array
-     */
     public static function for_entry( $entry_id, $max_tier = null ) {
         global $wpdb;
         $table = self::table();
@@ -88,11 +77,6 @@ class OAT_Timeline {
         $sql .= ' ORDER BY created_at ASC';
         return $wpdb->get_results( $wpdb->prepare( $sql, $args ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return int
-     */
     public static function count_for_entry( $entry_id ) {
         global $wpdb;
         return (int) $wpdb->get_var( $wpdb->prepare(
@@ -100,11 +84,6 @@ class OAT_Timeline {
             $entry_id
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return bool
-     */
     public static function delete_for_entry( $entry_id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array( 'entry_id' => $entry_id ), array( '%d' ) );

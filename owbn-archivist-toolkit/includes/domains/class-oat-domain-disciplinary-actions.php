@@ -174,12 +174,6 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
             ),
         );
     }
-
-    /**
-     * @param object $entry
-     * @param array  $meta
-     * @return true|WP_Error
-     */
     public function validate( $entry, $meta ) {
         $valid_types = array( 'chronicle', 'global' );
         if ( empty( $meta['da_type'] ) || ! in_array( $meta['da_type'], $valid_types, true ) ) {

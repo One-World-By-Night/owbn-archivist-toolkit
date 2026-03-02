@@ -181,12 +181,6 @@ class OAT_Domain_Binding_Agreements implements OAT_Domain_Interface {
             ),
         );
     }
-
-    /**
-     * @param object $entry
-     * @param array  $meta
-     * @return true|WP_Error
-     */
     public function validate( $entry, $meta ) {
         // BA-002: submitter_role determines which signature is required at submission.
         $valid_roles = array( 'player', 'staff', 'coordinator' );

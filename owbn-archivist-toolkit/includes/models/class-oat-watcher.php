@@ -8,13 +8,6 @@ class OAT_Watcher {
         global $wpdb;
         return $wpdb->prefix . 'oat_watchers';
     }
-
-    /**
-     * @param int $entry_id
-     * @param int $user_id
-     * @param int $added_by
-     * @return int Insert ID.
-     */
     public static function add( $entry_id, $user_id, $added_by ) {
         global $wpdb;
         $wpdb->insert( self::table(), array(
@@ -25,12 +18,6 @@ class OAT_Watcher {
         ), array( '%d', '%d', '%d', '%d' ) );
         return (int) $wpdb->insert_id;
     }
-
-    /**
-     * @param int $entry_id
-     * @param int $user_id
-     * @return bool
-     */
     public static function remove( $entry_id, $user_id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array(
@@ -38,11 +25,6 @@ class OAT_Watcher {
             'user_id'  => $user_id,
         ), array( '%d', '%d' ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return array
-     */
     public static function for_entry( $entry_id ) {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
@@ -50,11 +32,6 @@ class OAT_Watcher {
             $entry_id
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return array Flat array of user IDs.
-     */
     public static function user_ids_for_entry( $entry_id ) {
         global $wpdb;
         return $wpdb->get_col( $wpdb->prepare(
@@ -83,12 +60,6 @@ class OAT_Watcher {
             $user_id
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @param int $user_id
-     * @return bool
-     */
     public static function is_watching( $entry_id, $user_id ) {
         global $wpdb;
         return (bool) $wpdb->get_var( $wpdb->prepare(
@@ -97,11 +68,6 @@ class OAT_Watcher {
             $user_id
         ) );
     }
-
-    /**
-     * @param int $entry_id
-     * @return bool
-     */
     public static function delete_for_entry( $entry_id ) {
         global $wpdb;
         return (bool) $wpdb->delete( self::table(), array( 'entry_id' => $entry_id ), array( '%d' ) );
