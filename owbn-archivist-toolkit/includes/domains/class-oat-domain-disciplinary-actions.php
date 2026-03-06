@@ -128,6 +128,15 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
      */
     public function get_meta_keys() {
         return array(
+            'record_type' => array(
+                'label'    => 'Disciplinary Record Type',
+                'type'     => 'select',
+                'required' => true,
+                'options'  => array(
+                    'new'       => 'New',
+                    'reduction' => 'Reduction',
+                ),
+            ),
             'da_type' => array(
                 'label'    => 'Type of Disciplinary Action',
                 'type'     => 'select',
@@ -172,9 +181,63 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
                 'type'     => 'url',
                 'required' => false,
             ),
+            'vote_link_punishment' => array(
+                'label'    => 'Link to Council vote (punishment)',
+                'type'     => 'url',
+                'required' => false,
+            ),
+            'notification_type' => array(
+                'label'    => 'DA Notification',
+                'type'     => 'select',
+                'required' => true,
+                'options'  => array(
+                    'system' => 'System',
+                    'manual' => 'Manual',
+                ),
+            ),
+            'additional_notes' => array(
+                'label'    => 'Additional Notes',
+                'type'     => 'textarea',
+                'required' => false,
+            ),
+            'location_clarification' => array(
+                'label'    => 'Local DA Clarification',
+                'type'     => 'text',
+                'required' => false,
+            ),
+            'coord_removal' => array(
+                'label'    => 'Coordinator Removal?',
+                'type'     => 'checkbox',
+                'required' => false,
+            ),
+            'st_removal' => array(
+                'label'    => 'Storyteller Removal?',
+                'type'     => 'checkbox',
+                'required' => false,
+            ),
+            'st_removal_chronicle' => array(
+                'label'    => 'ST Removal: Chronicle',
+                'type'     => 'text',
+                'required' => false,
+            ),
+            'st_removal_timeframe' => array(
+                'label'    => 'ST Removal: Timeframe',
+                'type'     => 'text',
+                'required' => false,
+            ),
+            'archived' => array(
+                'label'    => 'Archived',
+                'type'     => 'checkbox',
+                'required' => false,
+            ),
         );
     }
     public function validate( $entry, $meta ) {
+        $valid_record_types = array( 'new', 'reduction' );
+        if ( empty( $meta['record_type'] ) || ! in_array( $meta['record_type'], $valid_record_types, true ) ) {
+            return new WP_Error( 'invalid_record_type', 'Record type must be new or reduction.' );
+        }
+
         $valid_types = array( 'chronicle', 'global' );
         if ( empty( $meta['da_type'] ) || ! in_array( $meta['da_type'], $valid_types, true ) ) {
             return new WP_Error( 'invalid_da_type', 'DA type must be chronicle or global.' );
@@ -196,6 +259,13 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
             return new WP_Error( 'missing_action', 'Action taken is required.' );
         }
 
+        if ( ! empty( $meta['notification_type'] ) ) {
+            $valid_notif = array( 'system', 'manual' );
+            if ( ! in_array( $meta['notification_type'], $valid_notif, true ) ) {
+                return new WP_Error( 'invalid_notification_type', 'Notification type must be system or manual.' );
+            }
+        }
+
         return true;
     }
 
@@ -211,6 +281,18 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
 
         return OAT_Form_Field::seed( 'disciplinary_actions', array(
             // ── Submit context ──────────────────────────────────────────────
+            array(
+                'context'      => 'submit',
+                'field_key'    => 'record_type',
+                'field_type'   => 'select',
+                'label'        => 'Disciplinary Record Type',
+                'required'     => 1,
+                'sort_order'   => 5,
+                'options_json' => wp_json_encode( array(
+                    'new'       => 'New',
+                    'reduction' => 'Reduction',
+                ) ),
+            ),
             array(
                 'context'      => 'submit',
                 'field_key'    => 'da_type',
@@ -257,6 +339,17 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
                 ) ),
             ),
             array(
+                'context'        => 'submit',
+                'field_key'      => 'location_clarification',
+                'field_type'     => 'text',
+                'label'          => 'Local DA Clarification',
+                'sort_order'     => 35,
+                'condition_json' => wp_json_encode( array(
+                    'field_key' => 'da_type',
+                    'value'     => 'chronicle',
+                ) ),
+            ),
+            array(
                 'context'    => 'submit',
                 'field_key'  => 'reporter_name',
                 'field_type' => 'text',
@@ -281,15 +374,82 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
                 'sort_order' => 60,
             ),
             array(
+                'context'    => 'submit',
+                'field_key'  => 'coord_removal',
+                'field_type' => 'checkbox',
+                'label'      => 'Coordinator Removal?',
+                'sort_order' => 65,
+            ),
+            array(
+                'context'    => 'submit',
+                'field_key'  => 'st_removal',
+                'field_type' => 'checkbox',
+                'label'      => 'Storyteller Removal?',
+                'sort_order' => 67,
+            ),
+            array(
+                'context'        => 'submit',
+                'field_key'      => 'st_removal_chronicle',
+                'field_type'     => 'text',
+                'label'          => 'ST Removal: Chronicle',
+                'sort_order'     => 68,
+                'condition_json' => wp_json_encode( array(
+                    'field_key' => 'st_removal',
+                    'value'     => '1',
+                ) ),
+            ),
+            array(
+                'context'        => 'submit',
+                'field_key'      => 'st_removal_timeframe',
+                'field_type'     => 'text',
+                'label'          => 'ST Removal: Timeframe',
+                'sort_order'     => 69,
+                'condition_json' => wp_json_encode( array(
+                    'field_key' => 'st_removal',
+                    'value'     => '1',
+                ) ),
+            ),
+            array(
                 'context'        => 'submit',
                 'field_key'      => 'vote_link',
                 'field_type'     => 'url',
-                'label'          => 'Link to Council vote (if applicable)',
+                'label'          => 'Link to Council vote (guilt)',
                 'required'       => 0,
                 'sort_order'     => 70,
                 'condition_json' => wp_json_encode( array(
                     'field_key' => 'da_type',
                     'value'     => 'global',
+                ) ),
+            ),
+            array(
+                'context'        => 'submit',
+                'field_key'      => 'vote_link_punishment',
+                'field_type'     => 'url',
+                'label'          => 'Link to Council vote (punishment)',
+                'sort_order'     => 72,
+                'condition_json' => wp_json_encode( array(
+                    'field_key' => 'da_type',
+                    'value'     => 'global',
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'additional_notes',
+                'field_type'      => 'textarea',
+                'label'           => 'Additional Notes',
+                'sort_order'      => 75,
+                'attributes_json' => wp_json_encode( array( 'rows' => 6 ) ),
+            ),
+            array(
+                'context'      => 'submit',
+                'field_key'    => 'notification_type',
+                'field_type'   => 'select',
+                'label'        => 'DA Notification',
+                'required'     => 1,
+                'sort_order'   => 78,
+                'options_json' => wp_json_encode( array(
+                    'system' => 'System',
+                    'manual' => 'Manual',
                 ) ),
             ),
             array(
@@ -318,6 +478,14 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
                 'required'        => 1,
                 'sort_order'      => 100,
                 'attributes_json' => wp_json_encode( array( 'source' => 'player_id' ) ),
+            ),
+
+            array(
+                'context'    => 'submit',
+                'field_key'  => 'archived',
+                'field_type' => 'checkbox',
+                'label'      => 'Archived',
+                'sort_order' => 105,
             ),
 
             // ── Review context ──────────────────────────────────────────────

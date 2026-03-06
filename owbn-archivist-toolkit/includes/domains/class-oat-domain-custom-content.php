@@ -107,6 +107,9 @@ class OAT_Domain_Custom_Content implements OAT_Domain_Interface {
             'creature_type',
             'creature_sub_type',
             'ru_rules',
+            'blood_magic_category',
+            'discipline_requirements',
+            'archival_date',
         );
     }
     public function validate( $entry, $meta ) {
@@ -218,6 +221,28 @@ class OAT_Domain_Custom_Content implements OAT_Domain_Interface {
                 ) ),
             ),
             array(
+                'context'        => 'submit',
+                'field_key'      => 'blood_magic_category',
+                'field_type'     => 'text',
+                'label'          => 'Blood Magic Category',
+                'sort_order'     => 42,
+                'help_text'      => 'Blood magic category (e.g. Thaumaturgy, Necromancy).',
+                'condition_json' => wp_json_encode( array(
+                    'field_key' => 'content_type',
+                    'operator'  => 'in',
+                    'value'     => array( 'blood_magic', 'ritual' ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'discipline_requirements',
+                'field_type'      => 'textarea',
+                'label'           => 'Discipline Requirements',
+                'sort_order'      => 44,
+                'help_text'       => 'Prerequisite disciplines (one per line).',
+                'attributes_json' => wp_json_encode( array( 'rows' => 6 ) ),
+            ),
+            array(
                 'context'         => 'submit',
                 'field_key'       => 'xp_cost',
                 'field_type'      => 'number',
@@ -267,6 +292,13 @@ class OAT_Domain_Custom_Content implements OAT_Domain_Interface {
                     'role_path'  => 'chronicle/{value}/hst',
                     'fallback'   => 'editable',
                 ) ),
+            ),
+            array(
+                'context'    => 'submit',
+                'field_key'  => 'archival_date',
+                'field_type' => 'date',
+                'label'      => 'Date of Archival',
+                'sort_order' => 85,
             ),
             array(
                 'context'         => 'submit',

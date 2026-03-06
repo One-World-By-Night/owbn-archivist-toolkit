@@ -131,6 +131,18 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
                 'type'     => 'hidden',
                 'required' => false,
             ),
+            'ru_sub_status' => array(
+                'label'    => 'Character Status',
+                'type'     => 'select',
+                'required' => false,
+                'options'  => array(
+                    'active'     => 'Active',
+                    'dead'       => 'Dead',
+                    'inactive'   => 'Inactive',
+                    'removed_ic' => 'Removed IC',
+                    'removed_ooc' => 'Removed OOC',
+                ),
+            ),
             'action_type' => array(
                 'label'    => 'Action Type',
                 'type'     => 'select',
@@ -220,6 +232,20 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
                 'sort_order'      => 40,
                 'help_text'       => 'Search for an existing character or create a new one.',
                 'options_json'    => '{}',
+            ),
+            array(
+                'context'      => 'submit',
+                'field_key'    => 'ru_sub_status',
+                'field_type'   => 'select',
+                'label'        => 'Character Status',
+                'sort_order'   => 45,
+                'options_json' => wp_json_encode( array(
+                    'active'      => 'Active',
+                    'dead'        => 'Dead',
+                    'inactive'    => 'Inactive',
+                    'removed_ic'  => 'Removed IC',
+                    'removed_ooc' => 'Removed OOC',
+                ) ),
             ),
             array(
                 'context'         => 'submit',
@@ -423,6 +449,13 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
         $valid_types = array( 'transfer', 'death', 'registration', 'ru_request', 'learn_custom_content' );
         if ( empty( $meta['action_type'] ) || ! in_array( $meta['action_type'], $valid_types, true ) ) {
             return new WP_Error( 'invalid_action_type', 'Invalid action type.' );
+        }
+
+        if ( ! empty( $meta['ru_sub_status'] ) ) {
+            $valid_statuses = array( 'active', 'dead', 'inactive', 'removed_ic', 'removed_ooc' );
+            if ( ! in_array( $meta['ru_sub_status'], $valid_statuses, true ) ) {
+                return new WP_Error( 'invalid_ru_sub_status', 'Invalid character status.' );
+            }
         }
 
         return true;
