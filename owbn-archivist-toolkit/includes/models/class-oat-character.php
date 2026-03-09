@@ -119,7 +119,13 @@ class OAT_Character {
         }
 
         $wpdb->insert( self::table(), $insert, $format );
-        return (int) $wpdb->insert_id;
+        $id = (int) $wpdb->insert_id;
+
+        if ( $id ) {
+            do_action( 'oat_character_created', $id, $insert );
+        }
+
+        return $id;
     }
     public static function update( $id, $data ) {
         global $wpdb;
@@ -140,16 +146,33 @@ class OAT_Character {
             return false;
         }
 
+        // Snapshot old chronicle_slug before update for transfer detection.
+        $old_chronicle = null;
+        if ( array_key_exists( 'chronicle_slug', $update ) ) {
+            $old = self::find( $id );
+            $old_chronicle = $old ? $old->chronicle_slug : null;
+        }
+
         $update['updated_at'] = time();
         $format[] = '%d';
 
-        return (bool) $wpdb->update(
+        $result = (bool) $wpdb->update(
             self::table(),
             $update,
             array( 'id' => $id ),
             $format,
             array( '%d' )
         );
+
+        // Fire transfer action if chronicle_slug actually changed.
+        if ( $result && $old_chronicle !== null ) {
+            $new_chronicle = $update['chronicle_slug'];
+            if ( $new_chronicle !== $old_chronicle ) {
+                do_action( 'oat_character_transferred', $id, $old_chronicle, $new_chronicle );
+            }
+        }
+
+        return $result;
     }
     public static function link_user( $id, $wp_user_id ) {
         return self::update( $id, array( 'wp_user_id' => $wp_user_id ) );

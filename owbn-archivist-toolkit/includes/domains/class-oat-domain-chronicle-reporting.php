@@ -295,6 +295,7 @@ class OAT_Domain_Chronicle_Reporting implements OAT_Domain_Interface {
                 'sort_order'      => 100,
                 'help_text'       => 'Defined as actions that would be noticed by the population.',
                 'attributes_json' => wp_json_encode( array( 'rows' => 6 ) ),
+                'public_registry' => 1,
             ),
             array(
                 'context'         => 'submit',

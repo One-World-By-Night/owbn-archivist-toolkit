@@ -200,6 +200,7 @@ class OAT_Schema {
             condition_json text DEFAULT NULL,
             attributes_json text DEFAULT NULL,
             active tinyint(1) NOT NULL DEFAULT 1,
+            public_registry tinyint(1) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
             UNIQUE KEY domain_context_key (domain_slug,context,field_key),
             KEY domain_context_order (domain_slug,context,sort_order),
@@ -267,6 +268,22 @@ class OAT_Schema {
             PRIMARY KEY  (id),
             UNIQUE KEY idx_domain_step (domain_slug,step_id),
             KEY idx_domain_order (domain_slug,sort_order)
+        ) {$charset};\n\n";
+
+        // ── oat_registry_access ───────────────────────────────────────
+        $sql .= "CREATE TABLE {$prefix}oat_registry_access (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            character_id bigint(20) unsigned NOT NULL,
+            grant_type varchar(50) NOT NULL,
+            grant_value varchar(255) NOT NULL,
+            granted_by bigint(20) unsigned DEFAULT NULL,
+            starts_at bigint(20) unsigned DEFAULT NULL,
+            expires_at bigint(20) unsigned DEFAULT NULL,
+            created_at bigint(20) unsigned NOT NULL,
+            PRIMARY KEY  (id),
+            KEY idx_character_id (character_id),
+            KEY idx_grant_type_value (grant_type,grant_value),
+            KEY idx_expires_at (expires_at)
         ) {$charset};\n\n";
 
         // ── oat_characters ──────────────────────────────────────────

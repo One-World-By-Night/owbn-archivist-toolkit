@@ -260,6 +260,24 @@ class OAT_Form_Field {
 		) );
 	}
 
+	/**
+	 * Get all active fields flagged as public_registry.
+	 *
+	 * @return array Field keys grouped by form_slug.
+	 */
+	public static function get_public_registry_keys() {
+		global $wpdb;
+		$rows = $wpdb->get_results(
+			'SELECT form_slug, field_key FROM ' . self::table() . ' WHERE public_registry = 1 AND active = 1'
+		);
+		$keys = array();
+		foreach ( $rows as $row ) {
+			$slug = $row->form_slug ?: 'unknown';
+			$keys[ $slug ][] = $row->field_key;
+		}
+		return $keys;
+	}
+
 	private static function row_to_field( $row ) {
 		$field = array(
 			'id'          => (int) $row->id,
@@ -277,10 +295,11 @@ class OAT_Form_Field {
 			'active'      => (bool) $row->active,
 		);
 
-		$field['options']    = self::json_decode_safe( $row->options_json );
-		$field['validation'] = self::json_decode_safe( $row->validation_json );
-		$field['condition']  = self::json_decode_safe( $row->condition_json );
-		$field['attributes'] = self::json_decode_safe( $row->attributes_json );
+		$field['options']         = self::json_decode_safe( $row->options_json );
+		$field['validation']      = self::json_decode_safe( $row->validation_json );
+		$field['condition']       = self::json_decode_safe( $row->condition_json );
+		$field['attributes']      = self::json_decode_safe( $row->attributes_json );
+		$field['public_registry'] = isset( $row->public_registry ) ? (bool) $row->public_registry : false;
 
 		return $field;
 	}
@@ -309,6 +328,10 @@ class OAT_Form_Field {
 
 		if ( isset( $data['active'] ) ) {
 			$row['active'] = $data['active'] ? 1 : 0;
+		}
+
+		if ( isset( $data['public_registry'] ) ) {
+			$row['public_registry'] = $data['public_registry'] ? 1 : 0;
 		}
 
 		$json_cols = array(

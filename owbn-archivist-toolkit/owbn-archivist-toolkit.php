@@ -3,7 +3,7 @@
  * Plugin Name: OWbN Archivist Toolkit
  * Plugin URI: https://github.com/One-World-By-Night/owbn-archivist-toolkit
  * Description: Workflow engine for organizational requests and approvals.
- * Version:     0.7.0
+ * Version:     1.0.0
  * Author:      OWbN Web Team
  * License:     GPL-2.0-or-later
  * Text Domain: owbn-archivist-toolkit
@@ -12,11 +12,11 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OAT_VERSION', '0.7.0' );
+define( 'OAT_VERSION', '1.0.0' );
 define( 'OAT_PLUGIN_FILE', __FILE__ );
 define( 'OAT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'OAT_DB_VERSION', '1.4.0' );
+define( 'OAT_DB_VERSION', '1.5.0' );
 
 // Autoloader.
 require_once OAT_PLUGIN_DIR . 'includes/class-oat-loader.php';
@@ -35,6 +35,7 @@ OAT_Ajax::init();
 
 // REST API (cross-site endpoints).
 add_action( 'rest_api_init', array( 'OAT_REST', 'register_routes' ) );
+add_action( 'rest_api_init', array( 'OAT_REST_Registry', 'register_routes' ) );
 
 // Register with centralized ASC module in owbn-client.
 add_action( 'init', function() {
@@ -57,6 +58,9 @@ add_filter( 'oat_register_domains', function( $domains ) {
 
 // Record snapshot on approval (D-062).
 OAT_Record_Snapshot::init();
+
+// Registry visibility — auto-grant hooks.
+OAT_Registry_Hooks::init();
 
 // Timer processing — WP-Cron hourly (D-051).
 add_action( 'oat_process_timers', array( 'OAT_Timer_Engine', 'process_expired_timers' ) );

@@ -110,7 +110,8 @@ class OAT_Page_Form_Fields {
 			'placeholder'  => isset( $_POST['placeholder'] ) ? sanitize_text_field( $_POST['placeholder'] ) : '',
 			'help_text'    => isset( $_POST['help_text'] ) ? sanitize_text_field( $_POST['help_text'] ) : '',
 			'default_value' => isset( $_POST['default_value'] ) ? sanitize_text_field( $_POST['default_value'] ) : '',
-			'active'       => ! empty( $_POST['active'] ) ? 1 : 0,
+			'active'          => ! empty( $_POST['active'] ) ? 1 : 0,
+			'public_registry' => ! empty( $_POST['public_registry'] ) ? 1 : 0,
 		);
 
 		// CSV upload for options_json — overrides textarea if file provided.
@@ -184,6 +185,7 @@ class OAT_Page_Form_Fields {
 				'help_text'       => '',
 				'default_value'   => '',
 				'active'          => 1,
+				'public_registry' => 0,
 				'options_json'    => '',
 				'validation_json' => '',
 				'condition_json'  => '',

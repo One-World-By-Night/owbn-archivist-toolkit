@@ -113,6 +113,17 @@
 				</td>
 			</tr>
 
+			<!-- Public Registry -->
+			<tr>
+				<th>Public Registry</th>
+				<td>
+					<label>
+						<input type="checkbox" name="public_registry" value="1"<?php checked( ! empty( $field['public_registry'] ) ); ?>>
+						Show in public registry views (e.g., Fame lists). Visible to anyone who can see the character.
+					</label>
+				</td>
+			</tr>
+
 			<!-- Placeholder -->
 			<tr>
 				<th><label for="placeholder">Placeholder</label></th>

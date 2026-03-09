@@ -103,8 +103,8 @@ class OAT_Authorization {
             return array( 'player' );
         }
 
-        // Archivist / Exec.
-        if ( current_user_can( OAT_Constants::CAP_ARCHIVIST ) || current_user_can( OAT_Constants::CAP_EXEC_OVERSIGHT ) ) {
+        // Archivist / Exec / WP Admin.
+        if ( current_user_can( OAT_Constants::CAP_ARCHIVIST ) || current_user_can( OAT_Constants::CAP_EXEC_OVERSIGHT ) || current_user_can( 'manage_options' ) ) {
             $roles[] = 'archivist';
         }
 
