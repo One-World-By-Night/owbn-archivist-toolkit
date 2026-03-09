@@ -108,16 +108,20 @@ class OAT_Authorization {
             $roles[] = 'archivist';
         }
 
-        // Coordinator (any coordinator ASC role).
         $asc_roles = self::get_user_roles();
         $has_coord = false;
         $has_staff = false;
 
         foreach ( $asc_roles as $role ) {
-            if ( preg_match( '#^coordinator/#i', $role ) ) {
+            if ( preg_match( '#^coordinator/[^/]+/(coordinator|sub-coordinator)$#i', $role ) ) {
                 $has_coord = true;
             }
-            if ( preg_match( '#^chronicle/[^/]+/(hst|staff|cm|ast)#i', $role ) ) {
+            if ( preg_match( '#^exec/#i', $role ) ) {
+                if ( ! in_array( 'archivist', $roles, true ) ) {
+                    $roles[] = 'archivist';
+                }
+            }
+            if ( preg_match( '#^chronicle/[^/]+/(hst|staff|cm|ast|sug)#i', $role ) ) {
                 $has_staff = true;
             }
         }

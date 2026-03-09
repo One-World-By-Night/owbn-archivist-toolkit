@@ -1,22 +1,9 @@
 <?php
-/**
- * OAT Admin.
- *
- * Registers the admin menu, enqueues assets, and routes to page classes.
- */
 
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Admin {
 
-    /**
-     * Register the OAT admin menu and submenu pages.
-     *
-     * Archivist-only: All Entries + Regulation Rules.
-     * User-facing pages (Inbox, Submit, Entry Detail) are in owbn-client OAT module.
-     *
-     * @return void
-     */
     public static function register_menus() {
         add_menu_page(
             'OAT',
@@ -82,12 +69,6 @@ class OAT_Admin {
         );
     }
 
-    /**
-     * Enqueue admin CSS and JS on OAT pages only.
-     *
-     * @param string $hook The current admin page hook suffix.
-     * @return void
-     */
     public static function enqueue_assets( $hook ) {
         if ( strpos( $hook, 'oat-' ) === false ) {
             return;
@@ -100,7 +81,6 @@ class OAT_Admin {
             OAT_VERSION
         );
 
-        // Character picker: Select2 + AJAX autocomplete.
         wp_enqueue_script( 'select2' );
         wp_enqueue_style( 'select2' );
 

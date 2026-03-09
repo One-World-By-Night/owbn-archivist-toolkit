@@ -9,12 +9,6 @@ class OAT_Domain_Form {
 		return $wpdb->prefix . 'oat_domain_forms';
 	}
 
-	/**
-	 * Get all forms assigned to a domain, ordered by sort_order.
-	 *
-	 * @param int $domain_id Domain row ID.
-	 * @return array Array of oat_forms rows.
-	 */
 	public static function get_forms_for_domain( $domain_id ) {
 		global $wpdb;
 		$jt = self::table();
@@ -30,12 +24,6 @@ class OAT_Domain_Form {
 		) );
 	}
 
-	/**
-	 * Get forms for a domain by slug (convenience wrapper).
-	 *
-	 * @param string $domain_slug Domain slug.
-	 * @return array Array of oat_forms rows.
-	 */
 	public static function get_forms_for_domain_slug( $domain_slug ) {
 		if ( ! class_exists( 'OAT_Domain' ) ) {
 			return [];
@@ -47,12 +35,6 @@ class OAT_Domain_Form {
 		return self::get_forms_for_domain( (int) $domain->id );
 	}
 
-	/**
-	 * Get all domains a form is assigned to.
-	 *
-	 * @param int $form_id Form row ID.
-	 * @return array Array of oat_domains rows.
-	 */
 	public static function get_domains_for_form( $form_id ) {
 		global $wpdb;
 		$jt = self::table();
@@ -68,18 +50,9 @@ class OAT_Domain_Form {
 		) );
 	}
 
-	/**
-	 * Assign a form to a domain.
-	 *
-	 * @param int $domain_id Domain row ID.
-	 * @param int $form_id   Form row ID.
-	 * @param int $sort_order Sort order within domain.
-	 * @return int|false Insert ID or false.
-	 */
 	public static function assign( $domain_id, $form_id, $sort_order = 0 ) {
 		global $wpdb;
 
-		// Skip if already assigned.
 		$exists = $wpdb->get_var( $wpdb->prepare(
 			'SELECT id FROM ' . self::table() . ' WHERE domain_id = %d AND form_id = %d',
 			$domain_id,
@@ -100,9 +73,6 @@ class OAT_Domain_Form {
 		return $wpdb->insert_id ? (int) $wpdb->insert_id : false;
 	}
 
-	/**
-	 * Unassign a form from a domain.
-	 */
 	public static function unassign( $domain_id, $form_id ) {
 		global $wpdb;
 		return (bool) $wpdb->delete( self::table(), [
@@ -111,12 +81,6 @@ class OAT_Domain_Form {
 		] );
 	}
 
-	/**
-	 * Replace all form assignments for a domain.
-	 *
-	 * @param int   $domain_id Domain row ID.
-	 * @param array $form_ids  Array of form IDs to assign (ordered).
-	 */
 	public static function sync_domain( $domain_id, array $form_ids ) {
 		global $wpdb;
 
@@ -127,17 +91,11 @@ class OAT_Domain_Form {
 		}
 	}
 
-	/**
-	 * Delete all assignments for a domain.
-	 */
 	public static function delete_for_domain( $domain_id ) {
 		global $wpdb;
 		return (int) $wpdb->delete( self::table(), [ 'domain_id' => (int) $domain_id ] );
 	}
 
-	/**
-	 * Delete all assignments for a form.
-	 */
 	public static function delete_for_form( $form_id ) {
 		global $wpdb;
 		return (int) $wpdb->delete( self::table(), [ 'form_id' => (int) $form_id ] );

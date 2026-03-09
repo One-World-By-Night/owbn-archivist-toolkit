@@ -195,7 +195,6 @@ class OAT_Entry {
             return false;
         }
 
-        // Check timeline for any event at coordinator or archivist tier.
         global $wpdb;
         $table = $wpdb->prefix . 'oat_timeline';
         $reached = (int) $wpdb->get_var( $wpdb->prepare(

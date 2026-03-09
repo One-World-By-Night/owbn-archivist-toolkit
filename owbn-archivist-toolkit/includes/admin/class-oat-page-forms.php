@@ -87,7 +87,6 @@ class OAT_Page_Forms {
 			return;
 		}
 
-		// Sync domain assignments.
 		$assigned_domains = isset( $_POST['domain_ids'] ) ? array_map( 'absint', $_POST['domain_ids'] ) : [];
 		self::sync_domain_assignments( $saved_id, $assigned_domains );
 
@@ -98,10 +97,8 @@ class OAT_Page_Forms {
 	}
 
 	private static function sync_domain_assignments( $form_id, array $domain_ids ) {
-		// Remove all current assignments for this form.
 		OAT_Domain_Form::delete_for_form( $form_id );
 
-		// Re-assign selected domains.
 		foreach ( $domain_ids as $order => $domain_id ) {
 			OAT_Domain_Form::assign( $domain_id, $form_id, $order );
 		}
@@ -133,7 +130,6 @@ class OAT_Page_Forms {
 		$title      = $is_edit ? 'Edit Form' : 'Add Form';
 		$all_domains = OAT_Domain::get_all( true );
 
-		// Get currently assigned domain IDs.
 		$assigned_domain_ids = [];
 		if ( $is_edit ) {
 			$assigned = OAT_Domain_Form::get_domains_for_form( $form_id );

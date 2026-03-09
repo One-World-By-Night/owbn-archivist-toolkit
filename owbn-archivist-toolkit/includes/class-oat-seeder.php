@@ -1,25 +1,9 @@
 <?php
-/**
- * OAT Seeder.
- *
- * Populates oat_domains, oat_workflow_steps, and oat_form_fields tables
- * with default definitions from PHP domain classes. Only inserts rows
- * that don't already exist — admin customizations are preserved on
- * re-activation.
- */
 
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Seeder {
 
-	/**
-	 * Run seeding for all registered domains.
-	 *
-	 * Called during activation (after tables are created) and
-	 * optionally from an admin "Re-seed" button.
-	 *
-	 * @return array Counts: 'domains', 'steps', 'forms', 'fields'.
-	 */
 	public static function run() {
 		$counts = array(
 			'domains' => 0,
@@ -35,16 +19,10 @@ class OAT_Seeder {
 				continue;
 			}
 
-			// Seed domain definition.
 			$counts['domains'] += self::seed_domain( $domain );
-
-			// Seed workflow steps.
 			$counts['steps'] += self::seed_workflow_steps( $domain );
-
-			// Seed form + assign to domain.
 			$counts['forms'] += self::seed_form_for_domain( $domain );
 
-			// Seed form fields (using form_slug = domain slug).
 			if ( method_exists( $domain, 'seed_form_fields' ) ) {
 				$counts['fields'] += $domain->seed_form_fields();
 			}
@@ -53,15 +31,6 @@ class OAT_Seeder {
 		return $counts;
 	}
 
-	/**
-	 * Seed a form for a domain and assign via junction table.
-	 *
-	 * Each PHP domain class gets one form with slug = domain slug.
-	 * Insert-if-not-exists preserves admin customizations.
-	 *
-	 * @param OAT_Domain_Interface $domain Domain instance.
-	 * @return int 1 if a new form was created, 0 if already exists.
-	 */
 	private static function seed_form_for_domain( $domain ) {
 		if ( ! class_exists( 'OAT_Form' ) || ! class_exists( 'OAT_Domain_Form' ) || ! class_exists( 'OAT_Domain' ) ) {
 			return 0;
@@ -81,7 +50,6 @@ class OAT_Seeder {
 			$form_id = (int) $existing->id;
 		}
 
-		// Assign form to domain if not already assigned.
 		if ( $form_id ) {
 			$domain_row = OAT_Domain::find_by_slug( $slug );
 			if ( $domain_row ) {
@@ -92,12 +60,6 @@ class OAT_Seeder {
 		return $created;
 	}
 
-	/**
-	 * Seed a domain row from a PHP domain class.
-	 *
-	 * @param OAT_Domain_Interface $domain Domain instance.
-	 * @return int 1 if inserted, 0 if already exists.
-	 */
 	private static function seed_domain( $domain ) {
 		if ( ! class_exists( 'OAT_Domain' ) ) {
 			return 0;
@@ -113,12 +75,6 @@ class OAT_Seeder {
 		return $result !== false ? 1 : 0;
 	}
 
-	/**
-	 * Seed workflow steps from a PHP domain class.
-	 *
-	 * @param OAT_Domain_Interface $domain Domain instance.
-	 * @return int Number of steps inserted.
-	 */
 	private static function seed_workflow_steps( $domain ) {
 		if ( ! class_exists( 'OAT_Workflow_Step' ) ) {
 			return 0;
