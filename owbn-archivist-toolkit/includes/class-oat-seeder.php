@@ -21,7 +21,7 @@ class OAT_Seeder {
 
 			$counts['domains'] += self::seed_domain( $domain );
 			$counts['steps'] += self::seed_workflow_steps( $domain );
-			$counts['forms'] += self::seed_form_for_domain( $domain );
+			$counts['forms'] += self::seed_forms_for_domain( $domain );
 
 			if ( method_exists( $domain, 'seed_form_fields' ) ) {
 				$counts['fields'] += $domain->seed_form_fields();
@@ -31,29 +31,38 @@ class OAT_Seeder {
 		return $counts;
 	}
 
-	private static function seed_form_for_domain( $domain ) {
+	private static function seed_forms_for_domain( $domain ) {
 		if ( ! class_exists( 'OAT_Form' ) || ! class_exists( 'OAT_Domain_Form' ) || ! class_exists( 'OAT_Domain' ) ) {
 			return 0;
 		}
 
-		$slug     = $domain->get_slug();
-		$existing = OAT_Form::find_by_slug( $slug );
-		$created  = 0;
-
-		if ( ! $existing ) {
-			$form_id = OAT_Form::seed( [
-				'slug'  => $slug,
-				'label' => $domain->get_label(),
-			] );
-			$created = $form_id ? 1 : 0;
-		} else {
-			$form_id = (int) $existing->id;
+		$domain_row = OAT_Domain::find_by_slug( $domain->get_slug() );
+		if ( ! $domain_row ) {
+			return 0;
 		}
 
-		if ( $form_id ) {
-			$domain_row = OAT_Domain::find_by_slug( $slug );
-			if ( $domain_row ) {
-				OAT_Domain_Form::assign( (int) $domain_row->id, (int) $form_id );
+		$domain_id = (int) $domain_row->id;
+		$created   = 0;
+
+		// Multi-form domains define get_forms(); single-form domains fall back to one form matching the domain slug.
+		if ( method_exists( $domain, 'get_forms' ) ) {
+			$forms = $domain->get_forms();
+		} else {
+			$forms = array(
+				array( 'slug' => $domain->get_slug(), 'label' => $domain->get_label() ),
+			);
+		}
+
+		foreach ( $forms as $order => $form_def ) {
+			$form_id = OAT_Form::seed( array(
+				'slug'       => $form_def['slug'],
+				'label'      => $form_def['label'],
+				'sort_order' => $order * 10,
+			) );
+
+			if ( $form_id ) {
+				OAT_Domain_Form::assign( $domain_id, (int) $form_id, $order );
+				$created++;
 			}
 		}
 
