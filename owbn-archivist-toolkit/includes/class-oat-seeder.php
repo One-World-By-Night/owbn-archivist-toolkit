@@ -18,12 +18,13 @@ class OAT_Seeder {
 	 * Called during activation (after tables are created) and
 	 * optionally from an admin "Re-seed" button.
 	 *
-	 * @return array Counts: 'domains', 'steps', 'fields'.
+	 * @return array Counts: 'domains', 'steps', 'forms', 'fields'.
 	 */
 	public static function run() {
 		$counts = array(
 			'domains' => 0,
 			'steps'   => 0,
+			'forms'   => 0,
 			'fields'  => 0,
 		);
 
@@ -40,13 +41,55 @@ class OAT_Seeder {
 			// Seed workflow steps.
 			$counts['steps'] += self::seed_workflow_steps( $domain );
 
-			// Seed form fields.
+			// Seed form + assign to domain.
+			$counts['forms'] += self::seed_form_for_domain( $domain );
+
+			// Seed form fields (using form_slug = domain slug).
 			if ( method_exists( $domain, 'seed_form_fields' ) ) {
 				$counts['fields'] += $domain->seed_form_fields();
 			}
 		}
 
 		return $counts;
+	}
+
+	/**
+	 * Seed a form for a domain and assign via junction table.
+	 *
+	 * Each PHP domain class gets one form with slug = domain slug.
+	 * Insert-if-not-exists preserves admin customizations.
+	 *
+	 * @param OAT_Domain_Interface $domain Domain instance.
+	 * @return int 1 if a new form was created, 0 if already exists.
+	 */
+	private static function seed_form_for_domain( $domain ) {
+		if ( ! class_exists( 'OAT_Form' ) || ! class_exists( 'OAT_Domain_Form' ) || ! class_exists( 'OAT_Domain' ) ) {
+			return 0;
+		}
+
+		$slug     = $domain->get_slug();
+		$existing = OAT_Form::find_by_slug( $slug );
+		$created  = 0;
+
+		if ( ! $existing ) {
+			$form_id = OAT_Form::seed( [
+				'slug'  => $slug,
+				'label' => $domain->get_label(),
+			] );
+			$created = $form_id ? 1 : 0;
+		} else {
+			$form_id = (int) $existing->id;
+		}
+
+		// Assign form to domain if not already assigned.
+		if ( $form_id ) {
+			$domain_row = OAT_Domain::find_by_slug( $slug );
+			if ( $domain_row ) {
+				OAT_Domain_Form::assign( (int) $domain_row->id, (int) $form_id );
+			}
+		}
+
+		return $created;
 	}
 
 	/**

@@ -6,7 +6,12 @@ defined( 'ABSPATH' ) || exit;
  * Interface that all OAT domains must implement.
  *
  * Each domain is a configuration of the shared workflow engine — it defines
- * its steps, meta keys, and validation rules.
+ * its workflow steps and validation rules. Form fields are now managed via
+ * the oat_forms / oat_form_fields tables (Phase 9).
+ *
+ * Optional methods (not in interface, checked via method_exists):
+ *   get_meta_keys()    — legacy fallback for owbn-client pre-migration compat
+ *   seed_form_fields() — seeds form field rows during activation
  */
 interface OAT_Domain_Interface {
 
@@ -23,31 +28,9 @@ interface OAT_Domain_Interface {
     /**
      * Workflow template — array of step definitions.
      *
-     * Each step is an associative array with keys:
-     *   'id'                 => string,
-     *   'label'              => string,
-     *   'assignee_role'      => string (accessSchema role path pattern),
-     *   'visibility_tier'    => string ('staff'|'coordinator'|'archivist'),
-     *   'on_approve'         => string|null (next step ID or null for terminal),
-     *   'on_deny'            => string|null,
-     *   'on_request_changes' => string|null (previous step ID),
-     *   'timer'              => array|null (timer config),
-     *   'condition'          => array|null (conditional routing),
-     *   'multi_approve'      => bool (default false),
-     *
      * @return array
      */
     public function get_workflow_template();
-
-    /**
-     * Meta key definitions — array of key name => config.
-     *
-     * Config keys: 'label', 'type' ('text'|'textarea'|'select'|'number'),
-     * 'required' (bool), 'options' (for select).
-     *
-     * @return array
-     */
-    public function get_meta_keys();
 
     /**
      * Domain-specific validation on submit/resubmit.

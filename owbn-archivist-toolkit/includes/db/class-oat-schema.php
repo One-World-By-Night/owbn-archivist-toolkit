@@ -2,7 +2,7 @@
 /**
  * OAT Database Schema.
  *
- * All 13 table DDL statements formatted for WordPress dbDelta().
+ * All 15 table DDL statements formatted for WordPress dbDelta().
  * Source of truth: SCHEMA-DESIGN.md.
  *
  * dbDelta requirements:
@@ -33,6 +33,7 @@ class OAT_Schema {
         $sql .= "CREATE TABLE {$prefix}oat_entries (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             domain varchar(255) NOT NULL,
+            form_slug varchar(100) DEFAULT NULL,
             status varchar(50) NOT NULL DEFAULT 'pending',
             current_step varchar(255) NOT NULL,
             originator_id bigint(20) unsigned NOT NULL,
@@ -43,6 +44,7 @@ class OAT_Schema {
             updated_at bigint(20) unsigned NOT NULL,
             PRIMARY KEY  (id),
             KEY idx_domain_status (domain,status),
+            KEY idx_form_slug (form_slug),
             KEY idx_status (status),
             KEY idx_originator_id (originator_id),
             KEY idx_chronicle_slug (chronicle_slug),
@@ -183,6 +185,7 @@ class OAT_Schema {
         $sql .= "CREATE TABLE {$prefix}oat_form_fields (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             domain_slug varchar(64) NOT NULL,
+            form_slug varchar(100) DEFAULT NULL,
             context varchar(32) NOT NULL DEFAULT 'submit',
             field_key varchar(128) NOT NULL,
             field_type varchar(32) NOT NULL DEFAULT 'text',
@@ -199,7 +202,35 @@ class OAT_Schema {
             active tinyint(1) NOT NULL DEFAULT 1,
             PRIMARY KEY  (id),
             UNIQUE KEY domain_context_key (domain_slug,context,field_key),
-            KEY domain_context_order (domain_slug,context,sort_order)
+            KEY domain_context_order (domain_slug,context,sort_order),
+            KEY idx_form_context_order (form_slug,context,sort_order)
+        ) {$charset};\n\n";
+
+        // ── oat_forms ──────────────────────────────────────────────────
+        $sql .= "CREATE TABLE {$prefix}oat_forms (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            slug varchar(100) NOT NULL,
+            label varchar(255) NOT NULL,
+            description text DEFAULT NULL,
+            active tinyint(1) NOT NULL DEFAULT 1,
+            sort_order int NOT NULL DEFAULT 0,
+            created_at bigint(20) unsigned NOT NULL,
+            updated_at bigint(20) unsigned NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY idx_slug (slug),
+            KEY idx_sort_order (sort_order)
+        ) {$charset};\n\n";
+
+        // ── oat_domain_forms ───────────────────────────────────────────
+        $sql .= "CREATE TABLE {$prefix}oat_domain_forms (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            domain_id bigint(20) unsigned NOT NULL,
+            form_id bigint(20) unsigned NOT NULL,
+            sort_order int NOT NULL DEFAULT 0,
+            created_at bigint(20) unsigned NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY idx_domain_form (domain_id,form_id),
+            KEY idx_form_id (form_id)
         ) {$charset};\n\n";
 
         // ── oat_domains ───────────────────────────────────────────────

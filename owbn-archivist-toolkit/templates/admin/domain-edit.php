@@ -75,10 +75,29 @@
 
 	<?php if ( $is_edit ) : ?>
 		<hr>
+		<h2>Assigned Forms</h2>
+		<?php
+		$assigned_forms = OAT_Domain_Form::get_forms_for_domain( (int) $domain['id'] );
+		if ( $assigned_forms ) : ?>
+			<ul>
+				<?php foreach ( $assigned_forms as $af ) : ?>
+					<li>
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-forms&action=edit&form_id=' . $af->id ) ); ?>">
+							<?php echo esc_html( $af->label ); ?>
+						</a>
+						<span style="color:#999;">(<?php echo esc_html( $af->slug ); ?>)</span>
+						&mdash;
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-form-fields&form_slug=' . urlencode( $af->slug ) ) ); ?>">Fields</a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		<?php else : ?>
+			<p>No forms assigned. <a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-forms&action=add' ) ); ?>">Create a form</a> and assign it to this domain.</p>
+		<?php endif; ?>
+
 		<h2>Quick Links</h2>
 		<ul>
 			<li><a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-workflow-steps&domain=' . urlencode( $domain['slug'] ) ) ); ?>">Manage Workflow Steps</a></li>
-			<li><a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-form-fields&domain=' . urlencode( $domain['slug'] ) ) ); ?>">Manage Form Fields</a></li>
 		</ul>
 	<?php endif; ?>
 </div>

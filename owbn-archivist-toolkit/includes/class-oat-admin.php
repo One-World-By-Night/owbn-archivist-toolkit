@@ -56,6 +56,15 @@ class OAT_Admin {
 
         add_submenu_page(
             'oat-entries',
+            'Forms',
+            'Forms',
+            OAT_Constants::CAP_ADMIN,
+            'oat-forms',
+            array( 'OAT_Page_Forms', 'render' )
+        );
+
+        add_submenu_page(
+            'oat-entries',
             'Workflow Steps',
             'Workflow Steps',
             OAT_Constants::CAP_ADMIN,

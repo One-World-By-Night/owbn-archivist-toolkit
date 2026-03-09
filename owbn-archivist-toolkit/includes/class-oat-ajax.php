@@ -16,6 +16,7 @@ class OAT_Ajax {
     public static function init() {
         add_action( 'wp_ajax_oat_character_search', array( __CLASS__, 'character_search' ) );
         add_action( 'wp_ajax_oat_save_domain_order', array( __CLASS__, 'save_domain_order' ) );
+        add_action( 'wp_ajax_oat_get_domain_forms', array( __CLASS__, 'get_domain_forms' ) );
     }
 
     /**
@@ -56,6 +57,38 @@ class OAT_Ajax {
                     'creature_type'  => $row->creature_type ?? '',
                     'status'         => $row->status ?? 'active',
                 ),
+            );
+        }
+
+        wp_send_json_success( $out );
+    }
+
+    /**
+     * AJAX: Get forms available for a domain.
+     *
+     * Expected POST params:
+     *   domain_slug  - Domain slug.
+     *   _ajax_nonce  - Nonce for oat_nonce.
+     *
+     * Returns JSON array of { id, slug, label } objects.
+     */
+    public static function get_domain_forms() {
+        check_ajax_referer( 'oat_nonce', '_ajax_nonce' );
+
+        $domain_slug = isset( $_POST['domain_slug'] ) ? sanitize_text_field( wp_unslash( $_POST['domain_slug'] ) ) : '';
+
+        if ( '' === $domain_slug ) {
+            wp_send_json_error( 'No domain specified.' );
+        }
+
+        $forms = OAT_Domain_Registry::get_forms( $domain_slug );
+
+        $out = array();
+        foreach ( $forms as $form ) {
+            $out[] = array(
+                'id'    => (int) $form->id,
+                'slug'  => $form->slug,
+                'label' => $form->label,
             );
         }
 

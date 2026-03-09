@@ -115,6 +115,35 @@ class OAT_Domain_Registry {
 	}
 
 	/**
+	 * Get forms assigned to a domain.
+	 *
+	 * @param string $domain_slug Domain slug.
+	 * @return array Array of oat_forms rows.
+	 */
+	public static function get_forms( $domain_slug ) {
+		if ( ! class_exists( 'OAT_Domain_Form' ) ) {
+			return array();
+		}
+		return OAT_Domain_Form::get_forms_for_domain_slug( $domain_slug );
+	}
+
+	/**
+	 * Get the single form for a domain, or null if multiple/none.
+	 *
+	 * Used by the submit flow to auto-select when only one form exists.
+	 *
+	 * @param string $domain_slug Domain slug.
+	 * @return object|null Single form row, or null.
+	 */
+	public static function get_single_form( $domain_slug ) {
+		$forms = self::get_forms( $domain_slug );
+		if ( count( $forms ) === 1 ) {
+			return $forms[0];
+		}
+		return null;
+	}
+
+	/**
 	 * Reset cached data (for testing).
 	 */
 	public static function reset() {

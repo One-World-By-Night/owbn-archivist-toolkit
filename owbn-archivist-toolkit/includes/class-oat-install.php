@@ -18,12 +18,19 @@ class OAT_Install {
     public static function activate() {
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
+        $installed = get_option( 'oat_db_version', '0' );
+
         $sql = OAT_Schema::get_tables();
         dbDelta( $sql );
 
         self::register_capabilities();
 
-        // Seed domains, workflow steps, and form fields (insert-if-not-exists).
+        // Migrate form_slug data if upgrading from pre-Phase-9 schema.
+        if ( version_compare( $installed, '1.4.0', '<' ) ) {
+            self::migrate_form_slugs();
+        }
+
+        // Seed domains, workflow steps, forms, and form fields.
         if ( class_exists( 'OAT_Seeder' ) ) {
             OAT_Seeder::run();
         }
@@ -40,6 +47,80 @@ class OAT_Install {
         $installed = get_option( 'oat_db_version', '0' );
         if ( version_compare( $installed, OAT_DB_VERSION, '<' ) ) {
             self::activate();
+        }
+    }
+
+    /**
+     * Backfill form_slug on oat_form_fields from domain_slug,
+     * and create oat_forms rows + junction entries for existing domains.
+     */
+    private static function migrate_form_slugs() {
+        global $wpdb;
+
+        $ff_table = $wpdb->prefix . 'oat_form_fields';
+        $f_table  = $wpdb->prefix . 'oat_forms';
+        $df_table = $wpdb->prefix . 'oat_domain_forms';
+        $d_table  = $wpdb->prefix . 'oat_domains';
+        $now      = time();
+
+        // 1. Copy domain_slug → form_slug where form_slug is NULL.
+        $wpdb->query(
+            "UPDATE {$ff_table} SET form_slug = domain_slug WHERE form_slug IS NULL OR form_slug = ''"
+        );
+
+        // 2. Create an oat_forms row for each distinct form_slug that doesn't already exist.
+        $slugs = $wpdb->get_col( "SELECT DISTINCT form_slug FROM {$ff_table} WHERE form_slug IS NOT NULL AND form_slug != ''" );
+
+        foreach ( $slugs as $slug ) {
+            $exists = $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM {$f_table} WHERE slug = %s",
+                $slug
+            ) );
+
+            if ( ! $exists ) {
+                // Derive label from domain row if available.
+                $domain_label = $wpdb->get_var( $wpdb->prepare(
+                    "SELECT label FROM {$d_table} WHERE slug = %s",
+                    $slug
+                ) );
+
+                $wpdb->insert( $f_table, [
+                    'slug'       => $slug,
+                    'label'      => $domain_label ? $domain_label : ucwords( str_replace( '_', ' ', $slug ) ),
+                    'active'     => 1,
+                    'sort_order' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ] );
+            }
+        }
+
+        // 3. Create junction rows: assign each form to its matching domain.
+        $domains = $wpdb->get_results( "SELECT id, slug FROM {$d_table}" );
+        foreach ( $domains as $domain ) {
+            $form_id = $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM {$f_table} WHERE slug = %s",
+                $domain->slug
+            ) );
+
+            if ( ! $form_id ) {
+                continue;
+            }
+
+            $junction_exists = $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM {$df_table} WHERE domain_id = %d AND form_id = %d",
+                $domain->id,
+                $form_id
+            ) );
+
+            if ( ! $junction_exists ) {
+                $wpdb->insert( $df_table, [
+                    'domain_id'  => (int) $domain->id,
+                    'form_id'    => (int) $form_id,
+                    'sort_order' => 0,
+                    'created_at' => $now,
+                ] );
+            }
         }
     }
 

@@ -24,6 +24,7 @@ class OAT_Entry {
 
         $filters = array(
             'domain'           => '%s',
+            'form_slug'        => '%s',
             'status'           => '%s',
             'originator_id'    => '%d',
             'chronicle_slug'   => '%s',
@@ -43,7 +44,7 @@ class OAT_Entry {
             $sql .= ' WHERE ' . implode( ' AND ', $where );
         }
 
-        $allowed_orderby = array( 'created_at', 'updated_at', 'id', 'domain', 'status' );
+        $allowed_orderby = array( 'created_at', 'updated_at', 'id', 'domain', 'form_slug', 'status' );
         $orderby = isset( $args['orderby'] ) && in_array( $args['orderby'], $allowed_orderby, true )
             ? $args['orderby']
             : 'created_at';
@@ -68,6 +69,7 @@ class OAT_Entry {
 
         $filters = array(
             'domain'           => '%s',
+            'form_slug'        => '%s',
             'status'           => '%s',
             'originator_id'    => '%d',
             'chronicle_slug'   => '%s',
@@ -96,7 +98,7 @@ class OAT_Entry {
         global $wpdb;
 
         $allowed = array(
-            'domain', 'status', 'current_step', 'originator_id',
+            'domain', 'form_slug', 'status', 'current_step', 'originator_id',
             'chronicle_slug', 'character_id', 'coordinator_genre',
         );
 

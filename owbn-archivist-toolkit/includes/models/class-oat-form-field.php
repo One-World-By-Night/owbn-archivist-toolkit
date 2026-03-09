@@ -18,16 +18,57 @@ class OAT_Form_Field {
 	/**
 	 * Get all active fields for a domain + context, ordered by sort_order.
 	 *
-	 * @param string $domain_slug Domain slug.
+	 * Checks form_slug first (Phase 9), falls back to domain_slug for
+	 * backwards compatibility with pre-migration data.
+	 *
+	 * @param string $domain_slug Domain slug (also used as form_slug fallback).
 	 * @param string $context     Context (submit, review, escalate, resolve).
 	 * @return array Array of field definition arrays.
 	 */
 	public static function get_fields( $domain_slug, $context = 'submit' ) {
 		global $wpdb;
+		$table = self::table();
+
+		// Try form_slug first.
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$table} WHERE form_slug = %s AND context = %s AND active = 1 ORDER BY sort_order ASC",
+			$domain_slug,
+			$context
+		) );
+
+		// Fall back to domain_slug for pre-migration rows.
+		if ( empty( $rows ) ) {
+			$rows = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$table} WHERE domain_slug = %s AND context = %s AND active = 1 ORDER BY sort_order ASC",
+				$domain_slug,
+				$context
+			) );
+		}
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$fields = array();
+		foreach ( $rows as $row ) {
+			$fields[] = self::row_to_field( $row );
+		}
+		return $fields;
+	}
+
+	/**
+	 * Get all active fields for a form_slug + context.
+	 *
+	 * @param string $form_slug Form slug.
+	 * @param string $context   Context.
+	 * @return array Array of field definition arrays.
+	 */
+	public static function get_fields_by_form( $form_slug, $context = 'submit' ) {
+		global $wpdb;
 
 		$rows = $wpdb->get_results( $wpdb->prepare(
-			'SELECT * FROM ' . self::table() . ' WHERE domain_slug = %s AND context = %s AND active = 1 ORDER BY sort_order ASC',
-			$domain_slug,
+			'SELECT * FROM ' . self::table() . ' WHERE form_slug = %s AND context = %s AND active = 1 ORDER BY sort_order ASC',
+			$form_slug,
 			$context
 		) );
 
@@ -43,28 +84,34 @@ class OAT_Form_Field {
 	}
 
 	/**
-	 * Get a single field by domain + context + key.
+	 * Get a single field by form_slug (or domain_slug fallback) + context + key.
 	 *
-	 * @param string $domain_slug Domain slug.
-	 * @param string $context     Context.
-	 * @param string $field_key   Field key.
+	 * @param string $slug      Form slug (or domain slug for pre-migration data).
+	 * @param string $context   Context.
+	 * @param string $field_key Field key.
 	 * @return array|null Field definition or null.
 	 */
-	public static function get_field( $domain_slug, $context, $field_key ) {
+	public static function get_field( $slug, $context, $field_key ) {
 		global $wpdb;
+		$table = self::table();
 
 		$row = $wpdb->get_row( $wpdb->prepare(
-			'SELECT * FROM ' . self::table() . ' WHERE domain_slug = %s AND context = %s AND field_key = %s LIMIT 1',
-			$domain_slug,
+			"SELECT * FROM {$table} WHERE form_slug = %s AND context = %s AND field_key = %s LIMIT 1",
+			$slug,
 			$context,
 			$field_key
 		) );
 
 		if ( ! $row ) {
-			return null;
+			$row = $wpdb->get_row( $wpdb->prepare(
+				"SELECT * FROM {$table} WHERE domain_slug = %s AND context = %s AND field_key = %s LIMIT 1",
+				$slug,
+				$context,
+				$field_key
+			) );
 		}
 
-		return self::row_to_field( $row );
+		return $row ? self::row_to_field( $row ) : null;
 	}
 
 	/**
@@ -82,22 +129,60 @@ class OAT_Form_Field {
 	}
 
 	/**
-	 * Get all fields for a domain (all contexts), optionally including inactive.
+	 * Get all fields for a form (all contexts), optionally including inactive.
 	 *
-	 * @param string $domain_slug  Domain slug.
+	 * Tries form_slug first, falls back to domain_slug.
+	 *
+	 * @param string $slug             Form slug (or domain slug fallback).
 	 * @param bool   $include_inactive Whether to include inactive fields.
 	 * @return array Array of field definition arrays.
 	 */
-	public static function all_for_domain( $domain_slug, $include_inactive = false ) {
+	public static function all_for_domain( $slug, $include_inactive = false ) {
 		global $wpdb;
+		$table = self::table();
 
-		$where = $include_inactive
-			? $wpdb->prepare( 'WHERE domain_slug = %s', $domain_slug )
-			: $wpdb->prepare( 'WHERE domain_slug = %s AND active = 1', $domain_slug );
+		$active_clause = $include_inactive ? '' : ' AND active = 1';
 
-		$rows = $wpdb->get_results(
-			'SELECT * FROM ' . self::table() . ' ' . $where . ' ORDER BY context ASC, sort_order ASC'
-		);
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$table} WHERE form_slug = %s{$active_clause} ORDER BY context ASC, sort_order ASC",
+			$slug
+		) );
+
+		if ( empty( $rows ) ) {
+			$rows = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$table} WHERE domain_slug = %s{$active_clause} ORDER BY context ASC, sort_order ASC",
+				$slug
+			) );
+		}
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$fields = array();
+		foreach ( $rows as $row ) {
+			$fields[] = self::row_to_field( $row );
+		}
+		return $fields;
+	}
+
+	/**
+	 * Get all fields for a form_slug (all contexts).
+	 *
+	 * @param string $form_slug        Form slug.
+	 * @param bool   $include_inactive Whether to include inactive fields.
+	 * @return array
+	 */
+	public static function all_for_form( $form_slug, $include_inactive = false ) {
+		global $wpdb;
+		$table = self::table();
+
+		$active_clause = $include_inactive ? '' : ' AND active = 1';
+
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$table} WHERE form_slug = %s{$active_clause} ORDER BY context ASC, sort_order ASC",
+			$form_slug
+		) );
 
 		if ( ! is_array( $rows ) ) {
 			return array();
@@ -177,14 +262,15 @@ class OAT_Form_Field {
 	}
 
 	/**
-	 * Seed fields for a domain from an array of definitions.
-	 * Only inserts if the domain+context+key combination doesn't exist.
+	 * Seed fields for a form (and optional domain) from an array of definitions.
+	 * Only inserts if the form_slug+context+key combination doesn't exist.
+	 * Falls back to domain_slug+context+key check for pre-migration compat.
 	 *
-	 * @param string $domain_slug Domain slug.
-	 * @param array  $fields      Array of field definitions.
+	 * @param string $slug   Form slug (or domain slug for legacy callers).
+	 * @param array  $fields Array of field definitions.
 	 * @return int Number of fields inserted.
 	 */
-	public static function seed( $domain_slug, array $fields ) {
+	public static function seed( $slug, array $fields ) {
 		global $wpdb;
 		$table    = self::table();
 		$inserted = 0;
@@ -197,19 +283,29 @@ class OAT_Form_Field {
 				continue;
 			}
 
-			// Skip if already exists.
+			// Skip if already exists (check form_slug first, then domain_slug).
 			$exists = $wpdb->get_var( $wpdb->prepare(
-				"SELECT id FROM {$table} WHERE domain_slug = %s AND context = %s AND field_key = %s LIMIT 1",
-				$domain_slug,
+				"SELECT id FROM {$table} WHERE form_slug = %s AND context = %s AND field_key = %s LIMIT 1",
+				$slug,
 				$context,
 				$field_key
 			) );
+
+			if ( ! $exists ) {
+				$exists = $wpdb->get_var( $wpdb->prepare(
+					"SELECT id FROM {$table} WHERE domain_slug = %s AND context = %s AND field_key = %s LIMIT 1",
+					$slug,
+					$context,
+					$field_key
+				) );
+			}
 
 			if ( $exists ) {
 				continue;
 			}
 
-			$field['domain_slug'] = $domain_slug;
+			$field['domain_slug'] = $slug;
+			$field['form_slug']   = $slug;
 			$row_data = self::prepare_row( $field );
 
 			$wpdb->insert( $table, $row_data );
@@ -281,6 +377,7 @@ class OAT_Form_Field {
 		$field = array(
 			'id'          => (int) $row->id,
 			'domain_slug' => $row->domain_slug,
+			'form_slug'   => isset( $row->form_slug ) ? $row->form_slug : $row->domain_slug,
 			'context'     => $row->context,
 			'key'         => $row->field_key,
 			'type'        => $row->field_type,
@@ -312,7 +409,7 @@ class OAT_Form_Field {
 		$row = array();
 
 		$text_cols = array(
-			'domain_slug', 'context', 'field_key', 'field_type',
+			'domain_slug', 'form_slug', 'context', 'field_key', 'field_type',
 			'label', 'placeholder', 'help_text', 'default_value',
 		);
 
