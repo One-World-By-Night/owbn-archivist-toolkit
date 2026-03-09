@@ -32,16 +32,30 @@ class OAT_REST_Registry {
             ),
         ) );
 
-        // Registry entries for one character.
+        // Registry entries for one character (GET) + update character (PUT).
         register_rest_route( self::API_NAMESPACE, '/registry/character/(?P<id>\d+)', array(
-            'methods'             => 'GET',
-            'callback'            => array( __CLASS__, 'get_character_registry' ),
-            'permission_callback' => array( __CLASS__, 'check_logged_in' ),
-            'args'                => array(
-                'id' => array(
-                    'required'          => true,
-                    'type'              => 'integer',
-                    'sanitize_callback' => 'absint',
+            array(
+                'methods'             => 'GET',
+                'callback'            => array( __CLASS__, 'get_character_registry' ),
+                'permission_callback' => array( __CLASS__, 'check_logged_in' ),
+                'args'                => array(
+                    'id' => array(
+                        'required'          => true,
+                        'type'              => 'integer',
+                        'sanitize_callback' => 'absint',
+                    ),
+                ),
+            ),
+            array(
+                'methods'             => 'PUT',
+                'callback'            => array( __CLASS__, 'update_character' ),
+                'permission_callback' => array( __CLASS__, 'check_staff_or_archivist' ),
+                'args'                => array(
+                    'id' => array(
+                        'required'          => true,
+                        'type'              => 'integer',
+                        'sanitize_callback' => 'absint',
+                    ),
                 ),
             ),
         ) );
@@ -207,7 +221,7 @@ class OAT_REST_Registry {
         }
 
         return new WP_REST_Response( array(
-            'character' => self::format_character( $character ),
+            'character' => self::format_character_full( $character ),
             'grants'    => self::format_grants( $grants ),
             'entries'   => $entries_data,
         ), 200 );
@@ -305,6 +319,64 @@ class OAT_REST_Registry {
         return new WP_REST_Response( array( 'success' => true ), 200 );
     }
 
+    /**
+     * PUT /oat/v1/registry/character/{id}
+     *
+     * Update character fields. Staff can update characters in their chronicle,
+     * coordinators can update characters with an active coordinator grant for
+     * their genre, archivists can update any character.
+     */
+    public static function update_character( $request ) {
+        $character_id = (int) $request->get_param( 'id' );
+        $character    = OAT_Character::find( $character_id );
+
+        if ( ! $character ) {
+            return new WP_Error( 'not_found', 'Character not found.', array( 'status' => 404 ) );
+        }
+
+        if ( ! self::can_manage_character( $character ) ) {
+            return OAT_Authorization::denied( 'You do not have permission to update this character.' );
+        }
+
+        // Collect updatable fields from the request body.
+        $allowed = array(
+            'character_name', 'player_email', 'player_name',
+            'chronicle_slug', 'pc_npc', 'creature_type', 'creature_sub_type',
+            'status', 'npc_coordinator', 'npc_type',
+            'external_uuid', 'fame_json', 'connections_json',
+        );
+
+        $json   = $request->get_json_params();
+        $update = array();
+        foreach ( $allowed as $field ) {
+            if ( array_key_exists( $field, $json ) ) {
+                $update[ $field ] = sanitize_text_field( $json[ $field ] );
+            }
+        }
+
+        if ( empty( $update ) ) {
+            return new WP_Error( 'no_fields', 'No updatable fields provided.', array( 'status' => 400 ) );
+        }
+
+        // Validate pc_npc if provided.
+        if ( isset( $update['pc_npc'] ) && ! in_array( $update['pc_npc'], array( 'pc', 'npc' ), true ) ) {
+            return new WP_Error( 'invalid_pc_npc', 'pc_npc must be "pc" or "npc".', array( 'status' => 400 ) );
+        }
+
+        $result = OAT_Character::update( $character_id, $update );
+
+        if ( ! $result ) {
+            return new WP_Error( 'update_failed', 'Character update failed.', array( 'status' => 500 ) );
+        }
+
+        // Return refreshed character data.
+        $updated = OAT_Character::find( $character_id );
+        return new WP_REST_Response( array(
+            'success'   => true,
+            'character' => self::format_character_full( $updated ),
+        ), 200 );
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private static function can_view_chronicle( $chronicle_slug ) {
@@ -355,6 +427,41 @@ class OAT_REST_Registry {
         }
 
         // Coordinator — character has an active coordinator grant matching viewer's genres.
+        if ( in_array( 'coordinator', $roles, true ) ) {
+            $genres = self::get_viewer_genres();
+            foreach ( $genres as $genre ) {
+                if ( OAT_Registry_Access::has_access( (int) $character->id, 'coordinator', $genre ) ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Can the current user update this character?
+     * Staff: character is in their chronicle.
+     * Coordinator: character has an active coordinator grant for their genre.
+     * Archivist: any character.
+     */
+    private static function can_manage_character( $character ) {
+        if ( ! $character ) {
+            return false;
+        }
+        $roles = OAT_Authorization::get_character_search_roles();
+
+        if ( in_array( 'archivist', $roles, true ) ) {
+            return true;
+        }
+
+        if ( in_array( 'staff', $roles, true ) ) {
+            $slugs = self::get_viewer_chronicle_slugs();
+            if ( in_array( $character->chronicle_slug, $slugs, true ) ) {
+                return true;
+            }
+        }
+
         if ( in_array( 'coordinator', $roles, true ) ) {
             $genres = self::get_viewer_genres();
             foreach ( $genres as $genre ) {
@@ -437,6 +544,30 @@ class OAT_REST_Registry {
             'status'         => $c->status,
             'entry_counts'   => isset( $c->entry_counts ) ? $c->entry_counts : array(),
             'is_owner'       => $user_id && (int) $c->wp_user_id === $user_id,
+        );
+    }
+
+    private static function format_character_full( $c ) {
+        $user_id = get_current_user_id();
+        return array(
+            'id'                => (int) $c->id,
+            'uuid'              => $c->uuid,
+            'external_uuid'     => $c->external_uuid,
+            'character_name'    => $c->character_name,
+            'player_email'      => $c->player_email,
+            'player_name'       => $c->player_name,
+            'chronicle_slug'    => $c->chronicle_slug,
+            'pc_npc'            => $c->pc_npc,
+            'creature_type'     => $c->creature_type,
+            'creature_sub_type' => $c->creature_sub_type,
+            'status'            => $c->status,
+            'npc_coordinator'   => $c->npc_coordinator,
+            'npc_type'          => $c->npc_type,
+            'fame_json'         => $c->fame_json,
+            'connections_json'  => $c->connections_json,
+            'entry_counts'      => isset( $c->entry_counts ) ? $c->entry_counts : array(),
+            'is_owner'          => $user_id && (int) $c->wp_user_id === $user_id,
+            'can_edit'          => self::can_manage_character( $c ),
         );
     }
 
