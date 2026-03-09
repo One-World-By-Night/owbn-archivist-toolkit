@@ -54,10 +54,10 @@ class OAT_Domain {
 		$table = self::table();
 
 		if ( $include_inactive ) {
-			return $wpdb->get_results( "SELECT * FROM {$table} ORDER BY label ASC" );
+			return $wpdb->get_results( "SELECT * FROM {$table} ORDER BY sort_order ASC, label ASC" );
 		}
 
-		return $wpdb->get_results( "SELECT * FROM {$table} WHERE active = 1 ORDER BY label ASC" );
+		return $wpdb->get_results( "SELECT * FROM {$table} WHERE active = 1 ORDER BY sort_order ASC, label ASC" );
 	}
 
 	/**
@@ -81,6 +81,7 @@ class OAT_Domain {
 			'label'          => isset( $data['label'] ) ? sanitize_text_field( $data['label'] ) : $slug,
 			'archivist_mode' => isset( $data['archivist_mode'] ) ? sanitize_text_field( $data['archivist_mode'] ) : 'manual',
 			'active'         => isset( $data['active'] ) ? ( $data['active'] ? 1 : 0 ) : 1,
+			'sort_order'     => isset( $data['sort_order'] ) ? absint( $data['sort_order'] ) : 0,
 			'updated_at'     => $now,
 		);
 

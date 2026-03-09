@@ -26,8 +26,10 @@ class OAT_Domains_List_Table extends WP_List_Table {
 	 */
 	public function get_columns() {
 		return array(
+			'drag'           => '<span class="dashicons dashicons-menu" title="Drag to reorder"></span>',
 			'slug'           => 'Slug',
 			'label'          => 'Label',
+			'sort_order'     => 'Order',
 			'archivist_mode' => 'Archivist Mode',
 			'active'         => 'Active',
 			'workflow'       => 'Workflow Steps',
@@ -41,8 +43,9 @@ class OAT_Domains_List_Table extends WP_List_Table {
 	 */
 	public function get_sortable_columns() {
 		return array(
-			'slug'  => array( 'slug', false ),
-			'label' => array( 'label', false ),
+			'slug'       => array( 'slug', false ),
+			'label'      => array( 'label', false ),
+			'sort_order' => array( 'sort_order', true ),
 		);
 	}
 
@@ -65,22 +68,44 @@ class OAT_Domains_List_Table extends WP_List_Table {
 		}
 
 		// Sort.
-		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( $_GET['orderby'] ) : 'label';
+		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( $_GET['orderby'] ) : 'sort_order';
 		$order   = isset( $_GET['order'] ) && 'desc' === $_GET['order'] ? 'desc' : 'asc';
 
 		usort( $this->items, function ( $a, $b ) use ( $orderby, $order ) {
-			$cmp = strcmp( $a->$orderby, $b->$orderby );
+			if ( 'sort_order' === $orderby ) {
+				$cmp = (int) $a->sort_order - (int) $b->sort_order;
+				if ( 0 === $cmp ) {
+					$cmp = strcmp( $a->label, $b->label );
+				}
+			} else {
+				$cmp = strcmp( $a->$orderby, $b->$orderby );
+			}
 			return 'desc' === $order ? -$cmp : $cmp;
 		} );
 	}
+	/**
+	 * Emit data-id on each row for drag-and-drop reordering.
+	 */
+	public function single_row( $item ) {
+		echo '<tr data-id="' . (int) $item->id . '">';
+		$this->single_row_columns( $item );
+		echo '</tr>';
+	}
+
 	public function column_default( $item, $column_name ) {
 		switch ( $column_name ) {
+			case 'drag':
+				return '<span class="dashicons dashicons-menu oat-drag-handle" style="cursor:grab;color:#999;"></span>';
+
 			case 'slug':
 				$url = admin_url( 'admin.php?page=oat-domains&action=edit&domain_id=' . $item->id );
 				return '<a href="' . esc_url( $url ) . '"><strong>' . esc_html( $item->slug ) . '</strong></a>';
 
 			case 'label':
 				return esc_html( $item->label );
+
+			case 'sort_order':
+				return (int) $item->sort_order;
 
 			case 'archivist_mode':
 				return esc_html( ucfirst( $item->archivist_mode ) );

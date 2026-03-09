@@ -154,4 +154,133 @@ class OAT_Character {
     public static function link_user( $id, $wp_user_id ) {
         return self::update( $id, array( 'wp_user_id' => $wp_user_id ) );
     }
+
+    /**
+     * Search characters by name with optional LIMIT.
+     *
+     * @param string $term  Search term (matched with LIKE %term%).
+     * @param int    $limit Max results.
+     * @return array
+     */
+    public static function search( $term, $limit = 20 ) {
+        global $wpdb;
+        return $wpdb->get_results( $wpdb->prepare(
+            'SELECT * FROM ' . self::table() . ' WHERE character_name LIKE %s ORDER BY character_name ASC LIMIT %d',
+            '%' . $wpdb->esc_like( $term ) . '%',
+            $limit
+        ) );
+    }
+
+    /**
+     * Search characters scoped by the submitter role context.
+     *
+     * Scoping rules:
+     *   player      → own characters only (by email)
+     *   staff       → characters in the user's chronicle(s)
+     *   coordinator → all characters
+     *   archivist   → all characters
+     *
+     * @param string $term           Search term.
+     * @param string $submitter_role One of: player, staff, coordinator, archivist.
+     * @param int    $limit          Max results.
+     * @return array
+     */
+    public static function for_user_scoped( $term, $submitter_role = 'player', $limit = 20 ) {
+        global $wpdb;
+
+        $like  = '%' . $wpdb->esc_like( $term ) . '%';
+        $table = self::table();
+
+        // Coordinator and archivist see everything.
+        if ( in_array( $submitter_role, array( 'coordinator', 'archivist' ), true ) ) {
+            return $wpdb->get_results( $wpdb->prepare(
+                "SELECT * FROM {$table} WHERE character_name LIKE %s ORDER BY character_name ASC LIMIT %d",
+                $like,
+                $limit
+            ) );
+        }
+
+        // Staff see characters in their chronicle(s).
+        if ( $submitter_role === 'staff' ) {
+            $chronicle_slugs = self::get_user_chronicle_slugs();
+            if ( empty( $chronicle_slugs ) ) {
+                return self::for_user_scoped( $term, 'player', $limit );
+            }
+
+            $placeholders = implode( ',', array_fill( 0, count( $chronicle_slugs ), '%s' ) );
+            $args         = $chronicle_slugs;
+            $args[]       = $like;
+            $args[]       = $limit;
+
+            return $wpdb->get_results( $wpdb->prepare(
+                "SELECT * FROM {$table} WHERE chronicle_slug IN ({$placeholders}) AND character_name LIKE %s ORDER BY character_name ASC LIMIT %d",
+                $args
+            ) );
+        }
+
+        // Player sees own characters only.
+        $user = wp_get_current_user();
+        if ( ! $user || ! $user->exists() ) {
+            return array();
+        }
+
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$table} WHERE player_email = %s AND character_name LIKE %s ORDER BY character_name ASC LIMIT %d",
+            $user->user_email,
+            $like,
+            $limit
+        ) );
+    }
+
+    /**
+     * Reassociate characters from an old email to a new WP user.
+     *
+     * Sets wp_user_id on all characters matching old_email.
+     * Optionally updates player_email if a new email is provided.
+     *
+     * @param string   $old_email      The Drupal-era email to match.
+     * @param int      $new_wp_user_id The WP user ID to associate.
+     * @param string   $new_email      Optional new email to replace old_email.
+     * @return int Number of characters updated.
+     */
+    public static function reassociate( $old_email, $new_wp_user_id, $new_email = '' ) {
+        global $wpdb;
+        $table = self::table();
+        $now   = time();
+
+        if ( $new_email && $new_email !== $old_email ) {
+            return (int) $wpdb->query( $wpdb->prepare(
+                "UPDATE {$table} SET wp_user_id = %d, player_email = %s, updated_at = %d WHERE player_email = %s",
+                $new_wp_user_id,
+                $new_email,
+                $now,
+                $old_email
+            ) );
+        }
+
+        return (int) $wpdb->query( $wpdb->prepare(
+            "UPDATE {$table} SET wp_user_id = %d, updated_at = %d WHERE player_email = %s",
+            $new_wp_user_id,
+            $now,
+            $old_email
+        ) );
+    }
+
+    /**
+     * Get chronicle slugs the current user has staff access to.
+     *
+     * @return array Chronicle slug strings.
+     */
+    private static function get_user_chronicle_slugs() {
+        $roles = OAT_Authorization::get_user_roles();
+        $slugs = array();
+
+        foreach ( $roles as $role ) {
+            if ( preg_match( '#^chronicle/([^/]+)/(hst|staff|cm|ast)#i', $role, $m ) ) {
+                $slugs[] = $m[1];
+            }
+        }
+
+        return array_unique( $slugs );
+    }
 }

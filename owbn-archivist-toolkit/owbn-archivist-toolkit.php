@@ -3,7 +3,7 @@
  * Plugin Name: OWbN Archivist Toolkit
  * Plugin URI: https://github.com/One-World-By-Night/owbn-archivist-toolkit
  * Description: Workflow engine for organizational requests and approvals.
- * Version:     0.4.0
+ * Version:     0.5.1
  * Author:      OWbN Web Team
  * License:     GPL-2.0-or-later
  * Text Domain: owbn-archivist-toolkit
@@ -12,11 +12,11 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OAT_VERSION', '0.4.0' );
+define( 'OAT_VERSION', '0.5.1' );
 define( 'OAT_PLUGIN_FILE', __FILE__ );
 define( 'OAT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'OAT_DB_VERSION', '1.3.0' );
+define( 'OAT_DB_VERSION', '1.3.1' );
 
 // Autoloader.
 require_once OAT_PLUGIN_DIR . 'includes/class-oat-loader.php';
@@ -29,6 +29,12 @@ register_deactivation_hook( __FILE__, array( 'OAT_Uninstall', 'deactivate' ) );
 add_action( 'admin_menu', array( 'OAT_Admin', 'register_menus' ) );
 add_action( 'admin_enqueue_scripts', array( 'OAT_Admin', 'enqueue_assets' ) );
 add_action( 'admin_init', array( 'OAT_Install', 'check_version' ) );
+
+// AJAX handlers.
+OAT_Ajax::init();
+
+// REST API (cross-site endpoints).
+add_action( 'rest_api_init', array( 'OAT_REST', 'register_routes' ) );
 
 // Register with centralized ASC module in owbn-client.
 add_action( 'init', function() {

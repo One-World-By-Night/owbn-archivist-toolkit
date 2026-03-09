@@ -48,6 +48,7 @@ class OAT_Domain_Registry {
 							'label'          => $row->label,
 							'archivist_mode' => $row->archivist_mode,
 							'active'         => (bool) $row->active,
+							'sort_order'     => isset( $row->sort_order ) ? (int) $row->sort_order : 0,
 							'source'         => 'db',
 						);
 					}

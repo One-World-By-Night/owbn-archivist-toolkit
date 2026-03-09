@@ -194,6 +194,23 @@
     margin: 20px 0;
 }
 
+/* Domain drag-and-drop reorder */
+.oat-sortable-placeholder {
+    background: #f0f6fc;
+    border: 2px dashed #2271b1;
+    visibility: visible !important;
+}
+
+.oat-drag-handle:hover {
+    color: #2271b1 !important;
+}
+
+.column-drag {
+    width: 30px;
+    padding: 8px 4px !important;
+    text-align: center;
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
     .oat-dashboard-cards,

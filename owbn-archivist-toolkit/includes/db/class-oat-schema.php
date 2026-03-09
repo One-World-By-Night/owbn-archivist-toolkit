@@ -209,10 +209,12 @@ class OAT_Schema {
             label varchar(255) NOT NULL,
             archivist_mode varchar(20) NOT NULL DEFAULT 'manual',
             active tinyint(1) NOT NULL DEFAULT 1,
+            sort_order int NOT NULL DEFAULT 0,
             created_at bigint(20) unsigned NOT NULL,
             updated_at bigint(20) unsigned NOT NULL,
             PRIMARY KEY  (id),
-            UNIQUE KEY idx_slug (slug)
+            UNIQUE KEY idx_slug (slug),
+            KEY idx_sort_order (sort_order)
         ) {$charset};\n\n";
 
         // ── oat_workflow_steps ─────────────────────────────────────────

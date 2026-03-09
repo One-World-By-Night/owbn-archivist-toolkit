@@ -98,6 +98,7 @@ class OAT_Page_Domains {
 			'label'          => sanitize_text_field( $_POST['label'] ),
 			'archivist_mode' => sanitize_text_field( $_POST['archivist_mode'] ),
 			'active'         => ! empty( $_POST['active'] ) ? 1 : 0,
+			'sort_order'     => isset( $_POST['sort_order'] ) ? absint( $_POST['sort_order'] ) : 0,
 		);
 
 		if ( empty( $data['slug'] ) || empty( $data['label'] ) ) {
@@ -148,6 +149,7 @@ class OAT_Page_Domains {
 				'label'          => '',
 				'archivist_mode' => 'manual',
 				'active'         => 1,
+				'sort_order'     => 0,
 			);
 		}
 

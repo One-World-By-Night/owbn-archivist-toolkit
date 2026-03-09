@@ -49,6 +49,15 @@
 				</td>
 			</tr>
 
+			<!-- Sort Order -->
+			<tr>
+				<th><label for="sort_order">Sort Order</label></th>
+				<td>
+					<input type="number" name="sort_order" id="sort_order" value="<?php echo (int) ( $domain['sort_order'] ?? 0 ); ?>" class="small-text" min="0" step="1">
+					<p class="description">Lower numbers appear first in dropdowns. Domains with the same sort order are sorted alphabetically.</p>
+				</td>
+			</tr>
+
 			<!-- Active -->
 			<tr>
 				<th>Active</th>

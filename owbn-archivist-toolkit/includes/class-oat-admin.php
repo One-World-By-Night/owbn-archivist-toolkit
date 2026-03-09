@@ -90,5 +90,39 @@ class OAT_Admin {
             array(),
             OAT_VERSION
         );
+
+        // Character picker: Select2 + AJAX autocomplete.
+        wp_enqueue_script( 'select2' );
+        wp_enqueue_style( 'select2' );
+
+        wp_enqueue_script(
+            'oat-character-picker',
+            OAT_PLUGIN_URL . 'assets/js/oat-character-picker.js',
+            array( 'jquery', 'select2' ),
+            OAT_VERSION,
+            true
+        );
+
+        wp_localize_script( 'oat-character-picker', 'oatCharacterPicker', array(
+            'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+            'nonce'        => wp_create_nonce( 'oat_character_search' ),
+            'allowedRoles' => OAT_Authorization::get_character_search_roles(),
+        ) );
+
+        // Domain drag-and-drop reordering (domains list page only).
+        if ( isset( $_GET['page'] ) && 'oat-domains' === $_GET['page'] && empty( $_GET['action'] ) ) {
+            wp_enqueue_script( 'jquery-ui-sortable' );
+            wp_enqueue_script(
+                'oat-domain-sort',
+                OAT_PLUGIN_URL . 'assets/js/oat-domain-sort.js',
+                array( 'jquery', 'jquery-ui-sortable' ),
+                OAT_VERSION,
+                true
+            );
+            wp_localize_script( 'oat-domain-sort', 'oatDomainSort', array(
+                'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+                'nonce'   => wp_create_nonce( 'oat_domain_order' ),
+            ) );
+        }
     }
 }

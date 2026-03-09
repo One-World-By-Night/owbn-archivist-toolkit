@@ -84,6 +84,78 @@ class OAT_Authorization {
     }
 
     /**
+     * Get the character-search roles the current user qualifies for.
+     *
+     * Returns an array of submitter_role values the user is allowed to use,
+     * ordered from most permissive to least:
+     *   archivist   → all characters
+     *   coordinator → all characters
+     *   staff       → characters in the user's chronicle(s)
+     *   player      → own characters only (always granted)
+     *
+     * @return array e.g. ['staff', 'player'] or ['archivist', 'coordinator', 'staff', 'player']
+     */
+    public static function get_character_search_roles() {
+        $roles   = array();
+        $user    = wp_get_current_user();
+
+        if ( ! $user || ! $user->exists() ) {
+            return array( 'player' );
+        }
+
+        // Archivist / Exec.
+        if ( current_user_can( OAT_Constants::CAP_ARCHIVIST ) || current_user_can( OAT_Constants::CAP_EXEC_OVERSIGHT ) ) {
+            $roles[] = 'archivist';
+        }
+
+        // Coordinator (any coordinator ASC role).
+        $asc_roles = self::get_user_roles();
+        $has_coord = false;
+        $has_staff = false;
+
+        foreach ( $asc_roles as $role ) {
+            if ( preg_match( '#^coordinator/#i', $role ) ) {
+                $has_coord = true;
+            }
+            if ( preg_match( '#^chronicle/[^/]+/(hst|staff|cm|ast)#i', $role ) ) {
+                $has_staff = true;
+            }
+        }
+
+        if ( $has_coord ) {
+            $roles[] = 'coordinator';
+        }
+        if ( $has_staff ) {
+            $roles[] = 'staff';
+        }
+
+        // Player is always available.
+        $roles[] = 'player';
+
+        return $roles;
+    }
+
+    /**
+     * Cap a requested submitter_role to the user's actual permissions.
+     *
+     * If the requested role is not in the user's allowed roles,
+     * returns the most permissive role they do have.
+     *
+     * @param string $requested_role The role the client submitted.
+     * @return string The enforced role.
+     */
+    public static function enforce_character_search_role( $requested_role ) {
+        $allowed = self::get_character_search_roles();
+
+        if ( in_array( $requested_role, $allowed, true ) ) {
+            return $requested_role;
+        }
+
+        // Return the most permissive role the user actually has.
+        return $allowed[0];
+    }
+
+    /**
      * Return a WP_Error for permission denied.
      *
      * @param string $message
