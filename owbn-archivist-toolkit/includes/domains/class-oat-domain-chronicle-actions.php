@@ -18,6 +18,13 @@ class OAT_Domain_Chronicle_Actions implements OAT_Domain_Interface {
         return 'Chronicle Actions';
     }
 
+    public function get_forms() {
+        return array(
+            array( 'slug' => 'ca_reporting',        'label' => 'Chronicle Report' ),
+            array( 'slug' => 'ca_manage_satellites', 'label' => 'Manage Satellites' ),
+        );
+    }
+
     /**
      * Workflow: Staff → Archivist (auto). No coordinator step, no timer.
      *
@@ -175,7 +182,7 @@ class OAT_Domain_Chronicle_Actions implements OAT_Domain_Interface {
             return 0;
         }
 
-        return OAT_Form_Field::seed( 'chronicle_reporting', array(
+        $count = OAT_Form_Field::seed( 'ca_reporting', array(
             // ── Submit context ───────────────────────────────────────────────
             array(
                 'context'         => 'submit',
@@ -443,6 +450,188 @@ class OAT_Domain_Chronicle_Actions implements OAT_Domain_Interface {
                 ) ),
             ),
         ) );
+
+        $count += OAT_Form_Field::seed( 'ca_manage_satellites', array(
+            // ── Submit context ───────────────────────────────────────────────
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'parent_chronicle',
+                'field_type'      => 'chronicle_picker',
+                'label'           => 'Your Chronicle',
+                'required'        => 1,
+                'sort_order'      => 10,
+                'help_text'       => 'Select your chronicle. Only non-probationary, non-satellite chronicles are shown.',
+                'attributes_json' => wp_json_encode( array(
+                    'roles'  => array( 'HST', 'CM' ),
+                    'filter' => array(
+                        'probationary' => false,
+                        'satellite'    => false,
+                    ),
+                    'auto_props' => array(
+                        'submitter_name'  => 'user_name',
+                        'submitter_email' => 'user_email',
+                    ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'action_type',
+                'field_type'      => 'select',
+                'label'           => 'What would you like to do?',
+                'required'        => 1,
+                'sort_order'      => 20,
+                'options_json'    => wp_json_encode( array(
+                    'create_new'    => 'Create a New Satellite Chronicle',
+                    'decommission'  => 'Decommission an Existing Satellite',
+                    'transition'    => 'Propose Transition to Full Chronicle',
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'satellite_chronicle',
+                'field_type'      => 'satellite_picker',
+                'label'           => 'Select Satellite',
+                'sort_order'      => 30,
+                'help_text'       => 'Choose the satellite chronicle.',
+                'attributes_json' => wp_json_encode( array(
+                    'depends_on'   => 'parent_chronicle',
+                    'visible_when' => array( 'action_type' => array( 'decommission', 'transition' ) ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'satellite_name',
+                'field_type'      => 'text',
+                'label'           => 'Satellite Chronicle Name',
+                'sort_order'      => 50,
+                'help_text'       => 'Use the same format as the parent game name.',
+                'attributes_json' => wp_json_encode( array(
+                    'visible_when' => array( 'action_type' => array( 'create_new' ) ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'satellite_genre',
+                'field_type'      => 'multi_select',
+                'label'           => 'Satellite Chronicle Genre',
+                'sort_order'      => 60,
+                'attributes_json' => wp_json_encode( array(
+                    'source'       => 'owbn_genre_list',
+                    'visible_when' => array( 'action_type' => array( 'create_new' ) ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'satellite_st_name',
+                'field_type'      => 'text',
+                'label'           => 'ST of Satellite Chronicle',
+                'sort_order'      => 70,
+                'help_text'       => 'Full name required for website setup. The listed name may be a nickname or abbreviation.',
+                'attributes_json' => wp_json_encode( array(
+                    'visible_when' => array( 'action_type' => array( 'create_new' ) ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'satellite_st_email',
+                'field_type'      => 'email',
+                'label'           => 'ST Email Address',
+                'sort_order'      => 80,
+                'help_text'       => 'Individual email required for website setup. A group email can be set later via the Chronicle Information Form.',
+                'attributes_json' => wp_json_encode( array(
+                    'visible_when' => array( 'action_type' => array( 'create_new' ) ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'satellite_territory_note',
+                'field_type'      => 'notice',
+                'label'           => 'Satellite games may exist only within the territory the home chronicle owns.',
+                'sort_order'      => 85,
+                'attributes_json' => wp_json_encode( array(
+                    'visible_when' => array( 'action_type' => array( 'create_new' ) ),
+                    'style'        => 'warning',
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'reason',
+                'field_type'      => 'textarea',
+                'label'           => 'Reason / Notes',
+                'sort_order'      => 90,
+                'attributes_json' => wp_json_encode( array(
+                    'rows'         => 6,
+                    'visible_when' => array( 'action_type' => array( 'decommission', 'transition' ) ),
+                ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'submitter_name',
+                'field_type'      => 'auto_prop',
+                'label'           => 'Your Name',
+                'required'        => 1,
+                'sort_order'      => 100,
+                'attributes_json' => wp_json_encode( array( 'source' => 'user_name' ) ),
+            ),
+            array(
+                'context'         => 'submit',
+                'field_key'       => 'submitter_email',
+                'field_type'      => 'auto_prop',
+                'label'           => 'Your Email',
+                'required'        => 1,
+                'sort_order'      => 110,
+                'attributes_json' => wp_json_encode( array( 'source' => 'user_email' ) ),
+            ),
+            // ── Review context ──────────────────────────────────────────────
+            array(
+                'context'         => 'review',
+                'field_key'       => 'section_review',
+                'field_type'      => 'heading',
+                'label'           => 'Membership Review',
+                'sort_order'      => 10,
+            ),
+            array(
+                'context'         => 'review',
+                'field_key'       => 'review_note',
+                'field_type'      => 'textarea',
+                'label'           => 'Review Comments',
+                'sort_order'      => 20,
+                'placeholder'     => 'Review comments...',
+                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+            ),
+            // ── Resolve context ─────────────────────────────────────────────
+            array(
+                'context'         => 'resolve',
+                'field_key'       => 'section_resolve',
+                'field_type'      => 'heading',
+                'label'           => 'Resolution',
+                'sort_order'      => 10,
+            ),
+            array(
+                'context'         => 'resolve',
+                'field_key'       => 'resolution_note',
+                'field_type'      => 'textarea',
+                'label'           => 'Resolution Notes',
+                'sort_order'      => 20,
+                'placeholder'     => 'Resolution notes...',
+                'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+            ),
+            array(
+                'context'         => 'resolve',
+                'field_key'       => 'resolution_type',
+                'field_type'      => 'select',
+                'label'           => 'Resolution Type',
+                'required'        => 1,
+                'sort_order'      => 30,
+                'options_json'    => wp_json_encode( array(
+                    'approved' => 'Approved',
+                    'denied'   => 'Denied',
+                    'returned' => 'Returned',
+                ) ),
+            ),
+        ) );
+
+        return $count;
     }
     public function validate( $entry, $meta ) {
         if ( empty( $meta['chronicle_slug'] ) ) {
