@@ -3,7 +3,7 @@
  * Plugin Name: OWbN Archivist Toolkit
  * Plugin URI: https://github.com/One-World-By-Night/owbn-archivist-toolkit
  * Description: Workflow engine for organizational requests and approvals.
- * Version:     1.0.1
+ * Version:     1.1.0
  * Author:      OWbN Web Team
  * License:     GPL-2.0-or-later
  * Text Domain: owbn-archivist-toolkit
@@ -48,7 +48,8 @@ add_action( 'init', function() {
 add_filter( 'oat_register_domains', function( $domains ) {
     $domains[] = new OAT_Domain_Character_Lifecycle();
     $domains[] = new OAT_Domain_Custom_Content();
-    $domains[] = new OAT_Domain_Chronicle_Reporting();
+    $domains[] = new OAT_Domain_Chronicle_Actions();
+    $domains[] = new OAT_Domain_Manage_Satellites();
     $domains[] = new OAT_Domain_Binding_Agreements();
     $domains[] = new OAT_Domain_Disciplinary_Actions();
     $domains[] = new OAT_Domain_Governance_Records();

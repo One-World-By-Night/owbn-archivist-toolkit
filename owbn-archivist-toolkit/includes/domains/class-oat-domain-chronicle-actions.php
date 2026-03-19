@@ -2,20 +2,20 @@
 
 defined( 'ABSPATH' ) || exit;
 
-class OAT_Domain_Chronicle_Reporting implements OAT_Domain_Interface {
+class OAT_Domain_Chronicle_Actions implements OAT_Domain_Interface {
 
     /**
      * @return string
      */
     public function get_slug() {
-        return 'chronicle_reporting';
+        return 'chronicle_actions';
     }
 
     /**
      * @return string
      */
     public function get_label() {
-        return 'Chronicle Reporting';
+        return 'Chronicle Actions';
     }
 
     /**

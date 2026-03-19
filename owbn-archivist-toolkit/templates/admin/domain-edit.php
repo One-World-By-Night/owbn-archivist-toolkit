@@ -23,7 +23,7 @@
 						<p class="description">Slug cannot be changed after creation.</p>
 					<?php else : ?>
 						<input type="text" name="slug" id="slug" value="<?php echo esc_attr( $domain['slug'] ); ?>" class="regular-text" required pattern="[a-z0-9_]+" title="Lowercase letters, numbers, and underscores only.">
-						<p class="description">Unique identifier (e.g., <code>chronicle_reporting</code>). Cannot be changed later.</p>
+						<p class="description">Unique identifier (e.g., <code>chronicle_actions</code>). Cannot be changed later.</p>
 					<?php endif; ?>
 				</td>
 			</tr>
