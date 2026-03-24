@@ -68,7 +68,8 @@ class OAT_Character {
     public static function create( $data ) {
         global $wpdb;
 
-        if ( empty( $data['player_email'] ) || empty( $data['player_name'] ) ) {
+        $is_npc = isset( $data['pc_npc'] ) && $data['pc_npc'] === 'npc';
+        if ( ! $is_npc && ( empty( $data['player_email'] ) || empty( $data['player_name'] ) ) ) {
             return 0;
         }
 

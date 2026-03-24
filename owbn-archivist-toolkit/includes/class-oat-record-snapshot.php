@@ -28,7 +28,7 @@ class OAT_Record_Snapshot {
 	 * @param array $data     Action data.
 	 */
 	public static function capture( $entry_id, $user_id, $data ) {
-		$entry = OAT_Entry::get( (int) $entry_id );
+		$entry = OAT_Entry::find( (int) $entry_id );
 		if ( ! $entry ) {
 			return;
 		}

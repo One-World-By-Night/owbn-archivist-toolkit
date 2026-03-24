@@ -116,7 +116,7 @@ class OAT_Authorization {
             if ( preg_match( '#^coordinator/[^/]+/(coordinator|sub-coordinator)$#i', $role ) ) {
                 $has_coord = true;
             }
-            if ( preg_match( '#^exec/#i', $role ) ) {
+            if ( preg_match( '#^exec/(archivist|web|head-coordinator|ahc1|ahc2|admin)/coordinator$#i', $role ) ) {
                 if ( ! in_array( 'archivist', $roles, true ) ) {
                     $roles[] = 'archivist';
                 }

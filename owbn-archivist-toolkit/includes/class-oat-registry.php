@@ -173,26 +173,33 @@ class OAT_Registry {
 
         if ( $top_role === 'archivist' ) {
             $characters = self::get_all_characters();
-        } elseif ( $top_role === 'coordinator' ) {
-            $genres = self::get_user_coordinator_genres();
-            foreach ( $genres as $genre ) {
-                $chars = self::get_characters_for_coordinator( $genre );
-                foreach ( $chars as $c ) {
-                    $characters[ $c->id ] = $c;
-                }
-            }
-            $characters = array_values( $characters );
-        } elseif ( $top_role === 'staff' ) {
-            $slugs = self::get_user_chronicle_slugs();
-            foreach ( $slugs as $slug ) {
-                $chars = self::get_characters_for_chronicle( $slug );
-                foreach ( $chars as $c ) {
-                    $characters[ $c->id ] = $c;
-                }
-            }
-            $characters = array_values( $characters );
         } else {
-            $characters = self::get_characters_for_player( $user_id );
+            // Merge all applicable scopes — a coordinator who is also staff
+            // should see both coord-genre characters and chronicle characters.
+            if ( in_array( 'coordinator', $search_roles, true ) ) {
+                $genres = self::get_user_coordinator_genres();
+                foreach ( $genres as $genre ) {
+                    $chars = self::get_characters_for_coordinator( $genre );
+                    foreach ( $chars as $c ) {
+                        $characters[ $c->id ] = $c;
+                    }
+                }
+            }
+            if ( in_array( 'staff', $search_roles, true ) ) {
+                $slugs = self::get_user_chronicle_slugs();
+                foreach ( $slugs as $slug ) {
+                    $chars = self::get_characters_for_chronicle( $slug );
+                    foreach ( $chars as $c ) {
+                        $characters[ $c->id ] = $c;
+                    }
+                }
+            }
+            // Always include own characters.
+            $own = self::get_characters_for_player( $user_id );
+            foreach ( $own as $c ) {
+                $characters[ $c->id ] = $c;
+            }
+            $characters = array_values( $characters );
         }
 
         // Attach entry counts.

@@ -211,7 +211,7 @@ class OAT_Domain_Player_Actions implements OAT_Domain_Interface {
             return;
         }
 
-        $entry = OAT_Entry::get( (int) $entry_id );
+        $entry = OAT_Entry::find( (int) $entry_id );
         if ( ! $entry || $entry->domain !== 'player_actions' ) {
             return;
         }
