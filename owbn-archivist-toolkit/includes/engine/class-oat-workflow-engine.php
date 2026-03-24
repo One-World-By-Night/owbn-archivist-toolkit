@@ -201,6 +201,10 @@ class OAT_Workflow_Engine {
                 return (int) $value < (int) $condition['value'];
             case 'in':
                 return in_array( $value, (array) $condition['value'], true );
+            case 'starts_with':
+                return strpos( $value, $condition['value'] ) === 0;
+            case 'ends_with':
+                return substr( $value, -strlen( $condition['value'] ) ) === $condition['value'];
             default:
                 return false;
         }
