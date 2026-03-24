@@ -131,12 +131,14 @@ class OAT_Schema {
             pc_level varchar(50) DEFAULT NULL,
             npc_level varchar(50) DEFAULT NULL,
             controlling_coordinator varchar(255) NOT NULL,
+            section_ref varchar(50) DEFAULT NULL,
             elevation tinyint(1) NOT NULL DEFAULT 0,
             active tinyint(1) NOT NULL DEFAULT 1,
             created_at bigint(20) unsigned NOT NULL,
             PRIMARY KEY  (id),
             KEY idx_genre (genre),
-            KEY idx_active (active)
+            KEY idx_active (active),
+            KEY idx_section_ref (section_ref)
         ) {$charset};\n\n";
 
         // ── oat_timers ──────────────────────────────────────────────

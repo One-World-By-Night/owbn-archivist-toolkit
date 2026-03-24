@@ -22,6 +22,7 @@ class OAT_Rules_List_Table extends WP_List_Table {
     public function get_columns() {
         return array(
             'id'                      => 'ID',
+            'section_ref'             => 'Ref',
             'genre'                   => 'Genre',
             'category'                => 'Category',
             'subcategory'             => 'Subcategory',
@@ -86,6 +87,7 @@ class OAT_Rules_List_Table extends WP_List_Table {
         switch ( $column_name ) {
             case 'id':
                 return esc_html( $item->id );
+            case 'section_ref':
             case 'genre':
             case 'category':
             case 'subcategory':

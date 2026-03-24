@@ -40,6 +40,9 @@ class OAT_Page_Rules {
         } elseif ( ! empty( $_POST['oat_import_csv'] ) ) {
             check_admin_referer( 'oat_import_csv' );
             self::handle_csv_import();
+        } elseif ( ! empty( $_POST['oat_sync_csv'] ) ) {
+            check_admin_referer( 'oat_sync_csv' );
+            self::handle_csv_sync();
         } elseif ( ! empty( $_POST['oat_deactivate_rule'] ) ) {
             check_admin_referer( 'oat_deactivate_rule' );
             self::handle_deactivate();
@@ -92,6 +95,27 @@ class OAT_Page_Rules {
             $msg = sprintf( 'Import complete: %d inserted, %d skipped.', $result['inserted'], $result['skipped'] );
             add_settings_error( 'oat_rules', 'import_success', $msg, 'success' );
         }
+    }
+
+    private static function handle_csv_sync() {
+        if ( empty( $_FILES['csv_file'] ) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK ) {
+            add_settings_error( 'oat_rules', 'upload_error', 'File upload failed.', 'error' );
+            return;
+        }
+
+        $file = $_FILES['csv_file']['tmp_name'];
+        $result = OAT_Regulation_Rule::sync_csv( $file );
+
+        $msg = sprintf(
+            'Sync complete: %d unchanged, %d updated, %d renumbered, %d inserted, %d removed, %d skipped.',
+            $result['unchanged'], $result['updated'], $result['ref_moved'],
+            $result['inserted'], $result['removed'], $result['skipped']
+        );
+        $type = empty( $result['errors'] ) ? 'success' : 'warning';
+        if ( ! empty( $result['errors'] ) ) {
+            $msg .= ' Errors: ' . implode( '; ', array_slice( $result['errors'], 0, 5 ) );
+        }
+        add_settings_error( 'oat_rules', 'sync_result', $msg, $type );
     }
 
     /**

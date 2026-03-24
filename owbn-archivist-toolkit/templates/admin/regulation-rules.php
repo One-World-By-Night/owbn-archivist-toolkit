@@ -53,11 +53,22 @@
 
     <!-- CSV Import -->
     <div class="oat-csv-import-section">
-        <h2>CSV Import</h2>
+        <h2>CSV Import (append only)</h2>
         <form method="post" enctype="multipart/form-data">
             <?php wp_nonce_field( 'oat_import_csv' ); ?>
             <input type="file" name="csv_file" accept=".csv" required>
             <?php submit_button( 'Import CSV', 'secondary', 'oat_import_csv' ); ?>
+        </form>
+    </div>
+
+    <!-- CSV Sync -->
+    <div class="oat-csv-sync-section">
+        <h2>CSV Sync (smart upsert)</h2>
+        <p class="description">Matches by section_ref, then by content. Unchanged rules keep their IDs. Changed rules get immutable updates. Missing rules are deactivated.</p>
+        <form method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field( 'oat_sync_csv' ); ?>
+            <input type="file" name="csv_file" accept=".csv" required>
+            <?php submit_button( 'Sync CSV', 'secondary', 'oat_sync_csv' ); ?>
         </form>
     </div>
 
