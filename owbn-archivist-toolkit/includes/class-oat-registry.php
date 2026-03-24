@@ -202,9 +202,17 @@ class OAT_Registry {
             $characters = array_values( $characters );
         }
 
-        // Attach entry counts.
+        // Attach entry counts and coordinator grants (for sectioning).
         foreach ( $characters as $char ) {
             $char->entry_counts = self::get_entry_counts_by_domain( (int) $char->id );
+            $grants = OAT_Registry_Access::find_by_character( (int) $char->id );
+            $coord_grants = array();
+            foreach ( $grants as $g ) {
+                if ( $g->grant_type === 'coordinator' ) {
+                    $coord_grants[] = $g->grant_value;
+                }
+            }
+            $char->coordinator_grants = $coord_grants;
         }
 
         return $characters;
