@@ -56,6 +56,11 @@ class OAT_Action_Request_Changes {
             }
         }
 
+        // If sent back to submit step, assign the originator so it appears in their inbox.
+        if ( $prev_step === 'submit' && (int) $entry->originator_id > 0 ) {
+            OAT_Assignee::assign( (int) $entry->id, (int) $entry->originator_id, $prev_step );
+        }
+
         return true;
     }
 }
