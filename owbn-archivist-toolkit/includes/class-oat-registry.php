@@ -172,10 +172,11 @@ class OAT_Registry {
         $characters = array();
 
         if ( $top_role === 'archivist' ) {
-            $characters = self::get_all_characters();
+            $all = self::get_all_characters();
+            foreach ( $all as $c ) {
+                $characters[ $c->id ] = $c;
+            }
         } else {
-            // Merge all applicable scopes — a coordinator who is also staff
-            // should see both coord-genre characters and chronicle characters.
             if ( in_array( 'coordinator', $search_roles, true ) ) {
                 $genres = self::get_user_coordinator_genres();
                 foreach ( $genres as $genre ) {
@@ -194,25 +195,51 @@ class OAT_Registry {
                     }
                 }
             }
-            // Always include own characters.
-            $own = self::get_characters_for_player( $user_id );
-            foreach ( $own as $c ) {
-                $characters[ $c->id ] = $c;
+        }
+        // Always include own characters.
+        $own = self::get_characters_for_player( $user_id );
+        foreach ( $own as $c ) {
+            $characters[ $c->id ] = $c;
+        }
+        $characters = array_values( $characters );
+
+        // Bulk-fetch coordinator grants for all characters in one query.
+        $char_ids = array_map( function( $c ) { return (int) $c->id; }, $characters );
+        $grants_by_char = array();
+        if ( ! empty( $char_ids ) ) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'oat_registry_access';
+            $now   = time();
+            $id_list = implode( ',', $char_ids );
+            $rows = $wpdb->get_results(
+                "SELECT character_id, grant_value FROM {$table} WHERE character_id IN ({$id_list}) AND grant_type = 'coordinator' AND (starts_at IS NULL OR starts_at <= {$now}) AND (expires_at IS NULL OR expires_at >= {$now})"
+            );
+            foreach ( $rows as $row ) {
+                $cid = (int) $row->character_id;
+                if ( ! isset( $grants_by_char[ $cid ] ) ) {
+                    $grants_by_char[ $cid ] = array();
+                }
+                $grants_by_char[ $cid ][] = $row->grant_value;
             }
-            $characters = array_values( $characters );
         }
 
-        // Attach entry counts and coordinator grants (for sectioning).
-        foreach ( $characters as $char ) {
-            $char->entry_counts = self::get_entry_counts_by_domain( (int) $char->id );
-            $grants = OAT_Registry_Access::find_by_character( (int) $char->id );
-            $coord_grants = array();
-            foreach ( $grants as $g ) {
-                if ( $g->grant_type === 'coordinator' ) {
-                    $coord_grants[] = $g->grant_value;
-                }
+        // Bulk-fetch entry counts in one query.
+        $counts_by_char = array();
+        if ( ! empty( $char_ids ) ) {
+            $entries_table = $wpdb->prefix . 'oat_entries';
+            $id_list = implode( ',', $char_ids );
+            $count_rows = $wpdb->get_results(
+                "SELECT character_id, COUNT(*) as cnt FROM {$entries_table} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
+            );
+            foreach ( $count_rows as $row ) {
+                $counts_by_char[ (int) $row->character_id ] = (int) $row->cnt;
             }
-            $char->coordinator_grants = $coord_grants;
+        }
+
+        foreach ( $characters as $char ) {
+            $cid = (int) $char->id;
+            $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
+            $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
         }
 
         return $characters;
