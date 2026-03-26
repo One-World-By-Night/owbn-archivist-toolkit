@@ -68,8 +68,10 @@ class OAT_Action_Approve {
             'note'            => $data['note'],
         ) );
 
-        // Check if all assignees have approved.
-        if ( ! OAT_Assignee::all_approved( (int) $entry->id, $step ) ) {
+        // Check if step requires all assignees or just one.
+        $step_config = OAT_Workflow_Engine::get_step_config( $entry );
+        $multi = $step_config && ! empty( $step_config['multi_approve'] );
+        if ( $multi && ! OAT_Assignee::all_approved( (int) $entry->id, $step ) ) {
             return true; // Wait for others.
         }
 

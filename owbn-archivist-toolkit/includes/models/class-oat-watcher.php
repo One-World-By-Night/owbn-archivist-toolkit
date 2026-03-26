@@ -9,6 +9,10 @@ class OAT_Watcher {
         return $wpdb->prefix . 'oat_watchers';
     }
     public static function add( $entry_id, $user_id, $added_by ) {
+        // Prevent duplicates.
+        if ( self::is_watching( $entry_id, $user_id ) ) {
+            return 0;
+        }
         global $wpdb;
         $wpdb->insert( self::table(), array(
             'entry_id' => $entry_id,
@@ -52,7 +56,7 @@ class OAT_Watcher {
         $e = $wpdb->prefix . 'oat_entries';
 
         return $wpdb->get_results( $wpdb->prepare(
-            "SELECT w.*, e.domain, e.status AS entry_status, e.current_step
+            "SELECT w.*, e.domain, e.status, e.current_step, e.originator_id, e.updated_at
              FROM {$w} w
              JOIN {$e} e ON w.entry_id = e.id
              WHERE w.user_id = %d

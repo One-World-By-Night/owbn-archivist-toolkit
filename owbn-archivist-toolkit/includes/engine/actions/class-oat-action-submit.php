@@ -72,6 +72,31 @@ class OAT_Action_Submit {
         if ( $is_fast_track ) {
             // Fast-track: skip intermediate steps, go directly to archivist.
             OAT_Workflow_Engine::advance_to_step( $entry, 'archivist' );
+
+            // Auto-approve if user has self-approve privilege.
+            if ( function_exists( 'owc_oat_can_self_approve' ) && owc_oat_can_self_approve( $user_id ) ) {
+                OAT_Assignee::assign( (int) $entry->id, $user_id, 'archivist' );
+                $assignees = OAT_Assignee::for_entry_step( (int) $entry->id, 'archivist' );
+                foreach ( $assignees as $a ) {
+                    if ( (int) $a->user_id === $user_id && $a->status === 'pending' ) {
+                        OAT_Assignee::update_status( (int) $a->id, 'approved' );
+                        break;
+                    }
+                }
+
+                OAT_Timeline::append( array(
+                    'entry_id'        => (int) $entry->id,
+                    'action_type'     => OAT_Constants::ACTION_APPROVE,
+                    'actor_id'        => $user_id,
+                    'step'            => 'archivist',
+                    'visibility_tier' => OAT_Constants::TIER_ARCHIVIST,
+                    'note'            => 'Auto-approved (self-approve).',
+                ) );
+
+                // Terminal — mark approved.
+                OAT_Entry::update_status( (int) $entry->id, OAT_Constants::STATUS_APPROVED, 'archivist' );
+                do_action( 'oat_entry_approved', (int) $entry->id, $user_id, $data );
+            }
         } else {
             // Normal routing via workflow template.
             $next_step = OAT_Workflow_Engine::get_next_step( $entry, $entry->current_step, 'approve' );
