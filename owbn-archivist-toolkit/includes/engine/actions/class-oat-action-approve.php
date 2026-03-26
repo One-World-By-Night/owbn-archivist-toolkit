@@ -34,6 +34,20 @@ class OAT_Action_Approve {
             }
         }
 
+        // Self-approve: originator at archivist step with self-approve privilege (WP Admin or exec/archivist).
+        if ( ! $found && $step === 'archivist' && (int) $entry->originator_id === $user_id
+            && function_exists( 'owc_oat_can_self_approve' ) && owc_oat_can_self_approve( $user_id ) ) {
+            OAT_Assignee::assign( (int) $entry->id, $user_id, $step );
+            $new_assignees = OAT_Assignee::for_entry_step( (int) $entry->id, $step );
+            foreach ( $new_assignees as $a ) {
+                if ( (int) $a->user_id === $user_id && $a->status === 'pending' ) {
+                    OAT_Assignee::update_status( (int) $a->id, 'approved' );
+                    $found = true;
+                    break;
+                }
+            }
+        }
+
         if ( ! $found ) {
             return new WP_Error( 'not_assigned', 'User is not a pending assignee at this step.' );
         }

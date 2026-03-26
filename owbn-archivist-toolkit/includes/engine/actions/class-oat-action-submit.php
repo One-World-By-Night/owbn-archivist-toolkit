@@ -32,6 +32,15 @@ class OAT_Action_Submit {
             }
         }
 
+        // Check for super-user fast-track routing.
+        $is_fast_track = false;
+        if ( function_exists( 'owc_oat_is_super_user' ) && owc_oat_is_super_user( $user_id ) ) {
+            $archivist_config = OAT_Workflow_Engine::get_step_config( $entry, 'archivist' );
+            if ( $archivist_config ) {
+                $is_fast_track = true;
+            }
+        }
+
         // Get step config for timeline tier.
         $step_config = OAT_Workflow_Engine::get_step_config( $entry );
         $tier = $step_config && isset( $step_config['visibility_tier'] )
@@ -41,20 +50,34 @@ class OAT_Action_Submit {
         // Set entry status to pending.
         OAT_Entry::update_status( (int) $entry->id, OAT_Constants::STATUS_PENDING, $entry->current_step );
 
+        // Build timeline note.
+        $note = isset( $data['note'] ) ? $data['note'] : '';
+        if ( $is_fast_track ) {
+            $user_obj = get_userdata( $user_id );
+            $ft_label = 'Fast-tracked by ' . ( $user_obj ? $user_obj->display_name : "User #{$user_id}" );
+            $note     = $note ? $ft_label . '. ' . $note : $ft_label;
+        }
+
         // Log timeline event.
         OAT_Timeline::append( array(
             'entry_id'        => (int) $entry->id,
             'action_type'     => OAT_Constants::ACTION_SUBMIT,
             'actor_id'        => $user_id,
             'step'            => $entry->current_step,
-            'visibility_tier' => $tier,
-            'note'            => isset( $data['note'] ) ? $data['note'] : '',
+            'visibility_tier' => $is_fast_track ? OAT_Constants::TIER_ARCHIVIST : $tier,
+            'note'            => $note,
         ) );
 
-        // Determine next step and advance.
-        $next_step = OAT_Workflow_Engine::get_next_step( $entry, $entry->current_step, 'approve' );
-        if ( $next_step !== null ) {
-            OAT_Workflow_Engine::advance_to_step( $entry, $next_step );
+        // Route to next step.
+        if ( $is_fast_track ) {
+            // Fast-track: skip intermediate steps, go directly to archivist.
+            OAT_Workflow_Engine::advance_to_step( $entry, 'archivist' );
+        } else {
+            // Normal routing via workflow template.
+            $next_step = OAT_Workflow_Engine::get_next_step( $entry, $entry->current_step, 'approve' );
+            if ( $next_step !== null ) {
+                OAT_Workflow_Engine::advance_to_step( $entry, $next_step );
+            }
         }
 
         return true;
