@@ -10,11 +10,13 @@ class OAT_Report_Type_List_Table extends WP_List_Table {
 
 	private $status_filter;
 	private $pc_npc;
+	private $scope;
 	private $sect_data = array();
 
 	public function __construct( $args = array() ) {
 		$this->status_filter = $args['status_filter'] ?? '';
 		$this->pc_npc        = $args['pc_npc'] ?? 'pc';
+		$this->scope         = $args['scope'] ?? null;
 		parent::__construct( array(
 			'singular' => 'type',
 			'plural'   => 'types',
@@ -41,8 +43,8 @@ class OAT_Report_Type_List_Table extends WP_List_Table {
 	}
 
 	public function prepare_items() {
-		$this->items     = OAT_Report_Query::get_by_creature_type( $this->status_filter ?: null, $this->pc_npc );
-		$this->sect_data = OAT_Report_Query::get_by_sect( $this->status_filter ?: null, $this->pc_npc );
+		$this->items     = OAT_Report_Query::get_by_creature_type( $this->status_filter ?: null, $this->pc_npc, $this->scope );
+		$this->sect_data = OAT_Report_Query::get_by_sect( $this->status_filter ?: null, $this->pc_npc, $this->scope );
 
 		// Sort creature type table in PHP.
 		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( $_GET['orderby'] ) : 'ru';

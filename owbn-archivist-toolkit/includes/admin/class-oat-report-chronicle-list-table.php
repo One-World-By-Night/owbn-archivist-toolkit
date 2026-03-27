@@ -10,10 +10,12 @@ class OAT_Report_Chronicle_List_Table extends WP_List_Table {
 
 	private $status_filter;
 	private $pc_npc;
+	private $scope;
 
 	public function __construct( $args = array() ) {
 		$this->status_filter = $args['status_filter'] ?? '';
 		$this->pc_npc        = $args['pc_npc'] ?? 'pc';
+		$this->scope         = $args['scope'] ?? null;
 		parent::__construct( array(
 			'singular' => 'chronicle',
 			'plural'   => 'chronicles',
@@ -40,7 +42,7 @@ class OAT_Report_Chronicle_List_Table extends WP_List_Table {
 	}
 
 	public function prepare_items() {
-		$this->items = OAT_Report_Query::get_by_chronicle( $this->status_filter ?: null, $this->pc_npc );
+		$this->items = OAT_Report_Query::get_by_chronicle( $this->status_filter ?: null, $this->pc_npc, $this->scope );
 
 		// Sort in PHP.
 		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( $_GET['orderby'] ) : 'ru';

@@ -4,6 +4,130 @@ defined( 'ABSPATH' ) || exit;
 
 class OAT_Page_Reports {
 
+	// ─── Scope Computation ───────────────────────────────────────────
+
+	/**
+	 * Compute the current user's report scope based on ASC roles.
+	 *
+	 * @param array $selected_roles  Optional subset of roles to narrow scope (from UI checkboxes).
+	 * @return array|null  Scope array or null if no access.
+	 *   {
+	 *     'chronicles'    => string[],   Chronicle slugs the user can see.
+	 *     'character_ids' => int[],       Character IDs from coordinator registry grants.
+	 *     'is_global'     => bool,        True = see everything.
+	 *     'roles'         => string[],    All qualifying ASC role paths (for checkbox UI).
+	 *   }
+	 */
+	public static function get_user_scope( $selected_roles = array() ) {
+		// WP admin = global.  Other global roles (exec/archivist) detected via ASC loop below.
+		if ( current_user_can( 'manage_options' ) ) {
+			return array(
+				'chronicles'    => array(),
+				'character_ids' => array(),
+				'is_global'     => true,
+				'roles'         => array(),
+			);
+		}
+
+		$asc_roles   = OAT_Authorization::get_user_roles();
+		$chronicles  = array();
+		$coord_slugs = array();
+		$is_global   = false;
+		$all_roles   = array();
+
+		foreach ( $asc_roles as $role ) {
+			// Exec-level oversight = global.
+			if ( preg_match( '#^exec/(archivist|web|head-coordinator|ahc1|ahc2|admin)/coordinator$#i', $role ) ) {
+				$is_global = true;
+			}
+			// Chronicle staff.
+			if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff)$#i', $role, $m ) ) {
+				$all_roles[] = $role;
+				if ( empty( $selected_roles ) || in_array( $role, $selected_roles, true ) ) {
+					$chronicles[] = $m[1];
+				}
+			}
+			// Coordinator / sub-coordinator.
+			if ( preg_match( '#^coordinator/([^/]+)/(coordinator|sub-coordinator)$#i', $role, $m ) ) {
+				$all_roles[] = $role;
+				if ( empty( $selected_roles ) || in_array( $role, $selected_roles, true ) ) {
+					$coord_slugs[] = $m[1];
+				}
+			}
+		}
+
+		if ( $is_global ) {
+			return array(
+				'chronicles'    => array(),
+				'character_ids' => array(),
+				'is_global'     => true,
+				'roles'         => $all_roles,
+			);
+		}
+
+		// No qualifying roles at all = no access.
+		if ( empty( $all_roles ) ) {
+			return null;
+		}
+
+		// Resolve coordinator slugs → character IDs via registry grants.
+		$character_ids = array();
+		if ( ! empty( $coord_slugs ) ) {
+			$character_ids = self::resolve_coordinator_character_ids( array_unique( $coord_slugs ) );
+		}
+
+		return array(
+			'chronicles'    => array_unique( $chronicles ),
+			'character_ids' => $character_ids,
+			'is_global'     => false,
+			'roles'         => $all_roles,
+		);
+	}
+
+	/**
+	 * Query character IDs that have active coordinator registry grants
+	 * for any of the given coordinator slugs.
+	 *
+	 * @param array $coord_slugs  e.g. ['vampire', 'giovanni']
+	 * @return array  Integer character IDs.
+	 */
+	public static function resolve_coordinator_character_ids( $coord_slugs ) {
+		if ( empty( $coord_slugs ) ) {
+			return array();
+		}
+
+		global $wpdb;
+		$table  = $wpdb->prefix . 'oat_registry_access';
+		$now    = time();
+		$places = implode( ', ', array_fill( 0, count( $coord_slugs ), '%s' ) );
+
+		$values   = $coord_slugs;
+		$values[] = $now;
+		$values[] = $now;
+
+		return array_map( 'intval', $wpdb->get_col( $wpdb->prepare(
+			"SELECT DISTINCT character_id FROM {$table}
+			 WHERE grant_type = 'coordinator' AND grant_value IN ({$places})
+			   AND (starts_at IS NULL OR starts_at <= %d)
+			   AND (expires_at IS NULL OR expires_at >= %d)",
+			$values
+		) ) );
+	}
+
+	/**
+	 * Read selected scope_roles[] from the request.
+	 *
+	 * @return array  Sanitized role strings.
+	 */
+	private static function get_selected_roles() {
+		if ( empty( $_GET['scope_roles'] ) || ! is_array( $_GET['scope_roles'] ) ) {
+			return array();
+		}
+		return array_map( 'sanitize_text_field', $_GET['scope_roles'] );
+	}
+
+	// ─── CSV Export ──────────────────────────────────────────────────
+
 	/**
 	 * Handle CSV export before any output.
 	 * Hooked via admin_init so headers can be sent.
@@ -12,7 +136,9 @@ class OAT_Page_Reports {
 		if ( ! isset( $_GET['page'] ) || 'oat-reports' !== $_GET['page'] || empty( $_GET['export_csv'] ) ) {
 			return;
 		}
-		if ( ! OAT_Authorization::check( OAT_Constants::CAP_ARCHIVIST ) ) {
+
+		$scope = self::get_user_scope( self::get_selected_roles() );
+		if ( ! $scope ) {
 			return;
 		}
 
@@ -27,7 +153,7 @@ class OAT_Page_Reports {
 			case 'all-pcs':
 			case 'active':
 				$filter_status = 'active' === $tab ? 'active' : ( $status ?: null );
-				$rows          = OAT_Report_Query::get_pcs_for_export( $filter_status, $pc_npc );
+				$rows          = OAT_Report_Query::get_pcs_for_export( $filter_status, $pc_npc, $scope );
 				$filename      = 'oat-report-' . $tab . '-' . gmdate( 'Y-m-d' ) . '.csv';
 				$headers       = array( 'Player', 'Email', 'Character', 'Chronicle', 'Genre', 'Creature Type', 'Faction', 'Variant', 'Status', 'R&U' );
 
@@ -40,7 +166,7 @@ class OAT_Page_Reports {
 
 			case 'by-region':
 				$filter_status = $status ?: null;
-				$rows          = OAT_Report_Query::get_regional_breakdown( $filter_status, $pc_npc );
+				$rows          = OAT_Report_Query::get_regional_breakdown( $filter_status, $pc_npc, $scope );
 				$filename      = 'oat-report-regional-' . gmdate( 'Y-m-d' ) . '.csv';
 				$csv_headers   = array( 'Region', 'Total R&Us', 'Games', 'R&Us per Game', '# Characters', 'Avg R&U per Char' );
 
@@ -61,7 +187,7 @@ class OAT_Page_Reports {
 
 			case 'by-chronicle':
 				$filter_status = $status ?: null;
-				$rows          = OAT_Report_Query::get_by_chronicle( $filter_status, $pc_npc );
+				$rows          = OAT_Report_Query::get_by_chronicle( $filter_status, $pc_npc, $scope );
 				$filename      = 'oat-report-by-chronicle-' . gmdate( 'Y-m-d' ) . '.csv';
 
 				header( 'Content-Type: text/csv; charset=utf-8' );
@@ -83,6 +209,7 @@ class OAT_Page_Reports {
 				$rows          = OAT_Report_Query::get_by_player( array(
 					'status'   => $filter_status,
 					'pc_npc'   => $pc_npc,
+					'scope'    => $scope,
 					'per_page' => 999999,
 					'offset'   => 0,
 				) );
@@ -106,6 +233,7 @@ class OAT_Page_Reports {
 				$rows          = OAT_Report_Query::get_by_classification( array(
 					'status'   => $filter_status,
 					'pc_npc'   => $pc_npc,
+					'scope'    => $scope,
 					'per_page' => 999999,
 					'offset'   => 0,
 				) );
@@ -126,8 +254,8 @@ class OAT_Page_Reports {
 
 			case 'by-type':
 				$filter_status = $status ?: null;
-				$types         = OAT_Report_Query::get_by_creature_type( $filter_status, $pc_npc );
-				$sects         = OAT_Report_Query::get_by_sect( $filter_status, $pc_npc );
+				$types         = OAT_Report_Query::get_by_creature_type( $filter_status, $pc_npc, $scope );
+				$sects         = OAT_Report_Query::get_by_sect( $filter_status, $pc_npc, $scope );
 				$filename      = 'oat-report-by-type-' . gmdate( 'Y-m-d' ) . '.csv';
 
 				header( 'Content-Type: text/csv; charset=utf-8' );
@@ -152,11 +280,16 @@ class OAT_Page_Reports {
 		}
 	}
 
+	// ─── Render ──────────────────────────────────────────────────────
+
 	/**
 	 * Render the reports page.
 	 */
 	public static function render() {
-		if ( ! OAT_Authorization::check( OAT_Constants::CAP_ARCHIVIST ) ) {
+		$selected_roles = self::get_selected_roles();
+		$scope          = self::get_user_scope( $selected_roles );
+
+		if ( ! $scope ) {
 			wp_die( 'You do not have permission to view reports.' );
 		}
 
@@ -179,7 +312,7 @@ class OAT_Page_Reports {
 
 		// Build the appropriate list table.
 		$list_table = null;
-		$table_args = array( 'status_filter' => $status, 'pc_npc' => $pc_npc );
+		$table_args = array( 'status_filter' => $status, 'pc_npc' => $pc_npc, 'scope' => $scope );
 
 		switch ( $tab ) {
 			case 'all-pcs':
@@ -213,6 +346,8 @@ class OAT_Page_Reports {
 		include OAT_PLUGIN_DIR . 'templates/admin/reports.php';
 	}
 
+	// ─── Helpers ─────────────────────────────────────────────────────
+
 	/**
 	 * Send CSV response for simple row-based exports.
 	 */
@@ -233,5 +368,39 @@ class OAT_Page_Reports {
 		}
 		fclose( $out );
 		exit;
+	}
+
+	/**
+	 * Build a human-readable label for an ASC role path.
+	 *
+	 * @param string $role  e.g. 'chronicle/hartford/hst'
+	 * @return string       e.g. 'HST: Hartford'
+	 */
+	public static function role_label( $role ) {
+		if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff)$#i', $role, $m ) ) {
+			$slug  = $m[1];
+			$type  = strtoupper( $m[2] );
+			$title = $slug;
+			if ( function_exists( 'owc_entity_get_title' ) ) {
+				$resolved = owc_entity_get_title( 'chronicle', $slug );
+				if ( $resolved ) {
+					$title = $resolved;
+				}
+			}
+			return "{$type}: {$title}";
+		}
+		if ( preg_match( '#^coordinator/([^/]+)/(coordinator|sub-coordinator)$#i', $role, $m ) ) {
+			$slug = $m[1];
+			$type = ( 'sub-coordinator' === strtolower( $m[2] ) ) ? 'Sub-Coord' : 'Coordinator';
+			$title = ucfirst( $slug );
+			if ( function_exists( 'owc_entity_get_title' ) ) {
+				$resolved = owc_entity_get_title( 'coordinator', $slug );
+				if ( $resolved ) {
+					$title = $resolved;
+				}
+			}
+			return "{$type}: {$title}";
+		}
+		return $role;
 	}
 }

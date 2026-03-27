@@ -39,6 +39,38 @@ class OAT_Report_Query {
 	}
 
 	/**
+	 * Build scope WHERE clauses that restrict results to the user's visible characters.
+	 *
+	 * @param array|null $scope  Scope array from OAT_Page_Reports::get_user_scope().
+	 * @param string     $alias  Table alias for oat_characters (e.g. 'c').
+	 * @return array     WHERE clause fragments to AND into the query.
+	 */
+	private static function build_scope_where( $scope, $alias = 'c' ) {
+		if ( ! $scope || ! empty( $scope['is_global'] ) ) {
+			return array();
+		}
+
+		$prefix     = $alias ? "{$alias}." : '';
+		$conditions = array();
+
+		if ( ! empty( $scope['chronicles'] ) ) {
+			$slugs        = implode( "','", array_map( 'esc_sql', $scope['chronicles'] ) );
+			$conditions[] = "{$prefix}chronicle_slug IN ('{$slugs}')";
+		}
+
+		if ( ! empty( $scope['character_ids'] ) ) {
+			$ids          = implode( ',', array_map( 'intval', $scope['character_ids'] ) );
+			$conditions[] = "{$prefix}id IN ({$ids})";
+		}
+
+		if ( empty( $conditions ) ) {
+			return array( '1 = 0' );
+		}
+
+		return array( '(' . implode( ' OR ', $conditions ) . ')' );
+	}
+
+	/**
 	 * Get chronicle → region lookup from owbn-client.
 	 *
 	 * @return array slug => region
@@ -116,6 +148,7 @@ class OAT_Report_Query {
 	 *     @type string $order       ASC or DESC.
 	 *     @type int    $per_page
 	 *     @type int    $offset
+	 *     @type array  $scope       Role-based scope filter.
 	 * }
 	 * @return array
 	 */
@@ -125,6 +158,7 @@ class OAT_Report_Query {
 		$et = self::entries_table();
 
 		$where  = self::pc_npc_where( $args, 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, 'c' ) );
 		$values = array();
 
 		if ( ! empty( $args['status'] ) ) {
@@ -228,6 +262,7 @@ class OAT_Report_Query {
 		$ct = self::chars_table();
 
 		$where  = self::pc_npc_where( $args );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, '' ) );
 		$values = array();
 
 		if ( ! empty( $args['status'] ) ) {
@@ -300,14 +335,17 @@ class OAT_Report_Query {
 	 * Get R&U aggregates grouped by region.
 	 *
 	 * @param string|null $status Filter by character status.
+	 * @param string      $pc_npc
+	 * @param array|null  $scope  Role-based scope filter.
 	 * @return array [ region => { ru, chars, games } ]
 	 */
-	public static function get_regional_breakdown( $status = null, $pc_npc = 'pc' ) {
+	public static function get_regional_breakdown( $status = null, $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct = self::chars_table();
 		$et = self::entries_table();
 
 		$where  = self::pc_npc_where( array( 'pc_npc' => $pc_npc ), 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $scope, 'c' ) );
 		$values = array();
 
 		if ( $status ) {
@@ -369,14 +407,17 @@ class OAT_Report_Query {
 	 * Get R&U aggregates grouped by chronicle.
 	 *
 	 * @param string|null $status Filter by character status.
+	 * @param string      $pc_npc
+	 * @param array|null  $scope  Role-based scope filter.
 	 * @return array
 	 */
-	public static function get_by_chronicle( $status = null, $pc_npc = 'pc' ) {
+	public static function get_by_chronicle( $status = null, $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct = self::chars_table();
 		$et = self::entries_table();
 
 		$where  = self::pc_npc_where( array( 'pc_npc' => $pc_npc ), 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $scope, 'c' ) );
 		$values = array();
 
 		if ( $status ) {
@@ -413,6 +454,7 @@ class OAT_Report_Query {
 	 *     @type string $order
 	 *     @type int    $per_page
 	 *     @type int    $offset
+	 *     @type array  $scope    Role-based scope filter.
 	 * }
 	 * @return array
 	 */
@@ -422,6 +464,7 @@ class OAT_Report_Query {
 		$et = self::entries_table();
 
 		$where  = self::pc_npc_where( $args, 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, 'c' ) );
 		$values = array();
 
 		if ( ! empty( $args['status'] ) ) {
@@ -476,6 +519,7 @@ class OAT_Report_Query {
 		$ct = self::chars_table();
 
 		$where  = self::pc_npc_where( $args );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, '' ) );
 		$values = array();
 
 		if ( ! empty( $args['status'] ) ) {
@@ -506,14 +550,17 @@ class OAT_Report_Query {
 	 * Get R&U aggregates grouped by creature type.
 	 *
 	 * @param string|null $status Filter by character status.
+	 * @param string      $pc_npc
+	 * @param array|null  $scope  Role-based scope filter.
 	 * @return array
 	 */
-	public static function get_by_creature_type( $status = null, $pc_npc = 'pc' ) {
+	public static function get_by_creature_type( $status = null, $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct = self::chars_table();
 		$et = self::entries_table();
 
 		$where  = self::pc_npc_where( array( 'pc_npc' => $pc_npc ), 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $scope, 'c' ) );
 		$values = array();
 
 		if ( $status ) {
@@ -540,14 +587,17 @@ class OAT_Report_Query {
 	 * Get R&U aggregates grouped by sect (creature_sub_type).
 	 *
 	 * @param string|null $status Filter by character status.
+	 * @param string      $pc_npc
+	 * @param array|null  $scope  Role-based scope filter.
 	 * @return array
 	 */
-	public static function get_by_sect( $status = null, $pc_npc = 'pc' ) {
+	public static function get_by_sect( $status = null, $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct = self::chars_table();
 		$et = self::entries_table();
 
 		$where  = self::pc_npc_where( array( 'pc_npc' => $pc_npc ), 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $scope, 'c' ) );
 		$values = array();
 
 		if ( $status ) {
@@ -584,6 +634,7 @@ class OAT_Report_Query {
 	 *     @type string $order
 	 *     @type int    $per_page
 	 *     @type int    $offset
+	 *     @type array  $scope     Role-based scope filter.
 	 * }
 	 * @return array
 	 */
@@ -594,6 +645,7 @@ class OAT_Report_Query {
 		$mt = $wpdb->prefix . 'oat_entry_meta';
 
 		$where  = self::pc_npc_where( $args, 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, 'c' ) );
 		$values = array();
 
 		$where[] = "e.domain = 'character_lifecycle'";
@@ -651,6 +703,7 @@ class OAT_Report_Query {
 		$mt = $wpdb->prefix . 'oat_entry_meta';
 
 		$where  = self::pc_npc_where( $args, 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, 'c' ) );
 		$values = array();
 
 		$where[] = "e.domain = 'character_lifecycle'";
@@ -698,6 +751,7 @@ class OAT_Report_Query {
 		$mt = $wpdb->prefix . 'oat_entry_meta';
 
 		$where  = self::pc_npc_where( $args, 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, 'c' ) );
 		$values = array( $classification );
 
 		$where[] = "e.domain = 'character_lifecycle'";
@@ -739,6 +793,7 @@ class OAT_Report_Query {
 		$mt = $wpdb->prefix . 'oat_entry_meta';
 
 		$where  = self::pc_npc_where( $args, 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, 'c' ) );
 		$values = array( $classification );
 
 		$where[] = "e.domain = 'character_lifecycle'";
@@ -767,60 +822,52 @@ class OAT_Report_Query {
 	/**
 	 * Get distinct statuses for filter dropdown.
 	 */
-	public static function get_statuses( $pc_npc = 'pc' ) {
+	public static function get_statuses( $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct    = self::chars_table();
 		$where = self::pc_npc_where( array( 'pc_npc' => $pc_npc ) );
+		$where = array_merge( $where, self::build_scope_where( $scope, '' ) );
 		$where[] = "status != ''";
 		$where_sql = implode( ' AND ', $where );
-		if ( ! $where_sql ) {
-			$where_sql = "status != ''";
-		}
 		return $wpdb->get_col( "SELECT DISTINCT status FROM {$ct} WHERE {$where_sql} ORDER BY status" );
 	}
 
 	/**
 	 * Get distinct creature types for filter dropdown.
 	 */
-	public static function get_creature_types( $pc_npc = 'pc' ) {
+	public static function get_creature_types( $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct    = self::chars_table();
 		$where = self::pc_npc_where( array( 'pc_npc' => $pc_npc ) );
+		$where = array_merge( $where, self::build_scope_where( $scope, '' ) );
 		$where[] = "creature_type != ''";
 		$where_sql = implode( ' AND ', $where );
-		if ( ! $where_sql ) {
-			$where_sql = "creature_type != ''";
-		}
 		return $wpdb->get_col( "SELECT DISTINCT creature_type FROM {$ct} WHERE {$where_sql} ORDER BY creature_type" );
 	}
 
 	/**
 	 * Get distinct creature genres for filter dropdown.
 	 */
-	public static function get_creature_genres( $pc_npc = 'pc' ) {
+	public static function get_creature_genres( $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct    = self::chars_table();
 		$where = self::pc_npc_where( array( 'pc_npc' => $pc_npc ) );
+		$where = array_merge( $where, self::build_scope_where( $scope, '' ) );
 		$where[] = "creature_genre != ''";
 		$where_sql = implode( ' AND ', $where );
-		if ( ! $where_sql ) {
-			$where_sql = "creature_genre != ''";
-		}
 		return $wpdb->get_col( "SELECT DISTINCT creature_genre FROM {$ct} WHERE {$where_sql} ORDER BY creature_genre" );
 	}
 
 	/**
 	 * Get distinct chronicle slugs for filter dropdown.
 	 */
-	public static function get_chronicle_slugs( $pc_npc = 'pc' ) {
+	public static function get_chronicle_slugs( $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct    = self::chars_table();
 		$where = self::pc_npc_where( array( 'pc_npc' => $pc_npc ) );
+		$where = array_merge( $where, self::build_scope_where( $scope, '' ) );
 		$where[] = "chronicle_slug != ''";
 		$where_sql = implode( ' AND ', $where );
-		if ( ! $where_sql ) {
-			$where_sql = "chronicle_slug != ''";
-		}
 		return $wpdb->get_col( "SELECT DISTINCT chronicle_slug FROM {$ct} WHERE {$where_sql} ORDER BY chronicle_slug" );
 	}
 
@@ -830,14 +877,17 @@ class OAT_Report_Query {
 	 * Get all PCs with R&U for CSV export (no pagination).
 	 *
 	 * @param string|null $status
+	 * @param string      $pc_npc
+	 * @param array|null  $scope  Role-based scope filter.
 	 * @return array
 	 */
-	public static function get_pcs_for_export( $status = null, $pc_npc = 'pc' ) {
+	public static function get_pcs_for_export( $status = null, $pc_npc = 'pc', $scope = null ) {
 		global $wpdb;
 		$ct = self::chars_table();
 		$et = self::entries_table();
 
 		$where  = self::pc_npc_where( array( 'pc_npc' => $pc_npc ), 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $scope, 'c' ) );
 		$values = array();
 
 		if ( $status ) {

@@ -81,7 +81,7 @@ class OAT_Admin {
             'oat-entries',
             'Details',
             'Details',
-            OAT_Constants::CAP_ARCHIVIST,
+            'read',
             'oat-reports',
             array( 'OAT_Page_Reports', 'render' )
         );

@@ -10,10 +10,12 @@ class OAT_Report_PCs_List_Table extends WP_List_Table {
 
 	private $status_filter;
 	private $pc_npc;
+	private $scope;
 
 	public function __construct( $args = array() ) {
 		$this->status_filter = $args['status_filter'] ?? '';
 		$this->pc_npc        = $args['pc_npc'] ?? 'pc';
+		$this->scope         = $args['scope'] ?? null;
 		parent::__construct( array(
 			'singular' => 'character',
 			'plural'   => 'characters',
@@ -57,6 +59,7 @@ class OAT_Report_PCs_List_Table extends WP_List_Table {
 		$args = array(
 			'per_page' => $per_page,
 			'offset'   => $offset,
+			'scope'    => $this->scope,
 		);
 
 		$args['pc_npc'] = $this->pc_npc;
@@ -162,7 +165,7 @@ class OAT_Report_PCs_List_Table extends WP_List_Table {
 		echo '<div class="alignleft actions">';
 
 		// Genre filter.
-		$genres = OAT_Report_Query::get_creature_genres( $this->pc_npc );
+		$genres = OAT_Report_Query::get_creature_genres( $this->pc_npc, $this->scope );
 		echo '<select name="creature_genre">';
 		echo '<option value="">All Genres</option>';
 		foreach ( $genres as $g ) {
@@ -172,7 +175,7 @@ class OAT_Report_PCs_List_Table extends WP_List_Table {
 		echo '</select>';
 
 		// Chronicle filter — show title, submit slug.
-		$slugs  = OAT_Report_Query::get_chronicle_slugs( $this->pc_npc );
+		$slugs  = OAT_Report_Query::get_chronicle_slugs( $this->pc_npc, $this->scope );
 		$titles = OAT_Report_Query::get_chronicle_titles();
 
 		usort( $slugs, function( $a, $b ) use ( $titles ) {
@@ -189,7 +192,7 @@ class OAT_Report_PCs_List_Table extends WP_List_Table {
 		echo '</select>';
 
 		// Creature type filter.
-		$types = OAT_Report_Query::get_creature_types( $this->pc_npc );
+		$types = OAT_Report_Query::get_creature_types( $this->pc_npc, $this->scope );
 		echo '<select name="creature_type">';
 		echo '<option value="">All Creature Types</option>';
 		foreach ( $types as $t ) {
