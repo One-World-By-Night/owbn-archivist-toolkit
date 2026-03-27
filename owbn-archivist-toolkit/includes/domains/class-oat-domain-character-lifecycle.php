@@ -332,11 +332,13 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
 			self::regulation_fields(),
 			array(
 				array(
-					'context'    => 'submit',
-					'field_key'  => 'teacher_name',
-					'field_type' => 'text',
-					'label'      => 'Teacher Name',
-					'sort_order' => 70,
+					'context'         => 'submit',
+					'field_key'       => 'teacher_name',
+					'field_type'      => 'character_picker',
+					'label'           => 'Teacher Name',
+					'sort_order'      => 70,
+					'required'        => 1,
+					'attributes_json' => wp_json_encode( array( 'help_text' => 'Select the character who taught this content.' ) ),
 				),
 				array(
 					'context'         => 'submit',

@@ -152,7 +152,7 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
 			),
 			'reporter_name' => array(
 				'label'    => 'Person reporting / filing DA',
-				'type'     => 'text',
+				'type'     => 'auto_prop',
 				'required' => true,
 			),
 			'da_details' => array(
@@ -206,7 +206,7 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
 			),
 			'st_removal_chronicle' => array(
 				'label'    => 'ST Removal: Chronicle',
-				'type'     => 'text',
+				'type'     => 'chronicle_picker',
 				'required' => false,
 			),
 			'st_removal_timeframe' => array(
@@ -392,12 +392,13 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
 	private static function shared_detail_fields() {
 		return array(
 			array(
-				'context'    => 'submit',
-				'field_key'  => 'reporter_name',
-				'field_type' => 'text',
-				'label'      => 'Person reporting / filing DA',
-				'required'   => 1,
-				'sort_order' => 40,
+				'context'         => 'submit',
+				'field_key'       => 'reporter_name',
+				'field_type'      => 'auto_prop',
+				'label'           => 'Person reporting / filing DA',
+				'required'        => 1,
+				'sort_order'      => 40,
+				'attributes_json' => wp_json_encode( array( 'source' => 'user_name' ) ),
 			),
 			array(
 				'context'    => 'submit',
@@ -432,7 +433,7 @@ class OAT_Domain_Disciplinary_Actions implements OAT_Domain_Interface {
 			array(
 				'context'        => 'submit',
 				'field_key'      => 'st_removal_chronicle',
-				'field_type'     => 'text',
+				'field_type'     => 'chronicle_picker',
 				'label'          => 'ST Removal: Chronicle',
 				'sort_order'     => 68,
 				'condition_json' => wp_json_encode( array(
