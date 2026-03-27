@@ -8,6 +8,7 @@ class OAT_Ajax {
         add_action( 'wp_ajax_oat_character_search', array( __CLASS__, 'character_search' ) );
         add_action( 'wp_ajax_oat_save_domain_order', array( __CLASS__, 'save_domain_order' ) );
         add_action( 'wp_ajax_oat_get_domain_forms', array( __CLASS__, 'get_domain_forms' ) );
+        add_action( 'wp_ajax_oat_creature_taxonomy_picker', array( __CLASS__, 'creature_taxonomy_picker' ) );
     }
 
     public static function character_search() {
@@ -64,6 +65,15 @@ class OAT_Ajax {
         }
 
         wp_send_json_success( $out );
+    }
+
+    /**
+     * Return the full creature taxonomy for the cascading picker.
+     * Single AJAX call — picker JS handles the cascading locally.
+     */
+    public static function creature_taxonomy_picker() {
+        check_ajax_referer( 'oat_creature_picker', '_ajax_nonce' );
+        wp_send_json_success( OAT_Creature_Taxonomy::get_picker_data() );
     }
 
     public static function save_domain_order() {

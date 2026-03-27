@@ -72,6 +72,13 @@
         </form>
     </div>
 
+    <!-- CSV Export -->
+    <div class="oat-csv-export-section" style="margin-bottom:20px;">
+        <h2>CSV Export</h2>
+        <p class="description">Download all active regulation rules as CSV.</p>
+        <a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-rules&export_csv=1' ) ); ?>" class="button button-secondary">Download CSV</a>
+    </div>
+
     <!-- Rules List -->
     <h2>Rules</h2>
     <form method="get">

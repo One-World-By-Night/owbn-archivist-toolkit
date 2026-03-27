@@ -301,7 +301,9 @@ class OAT_Schema {
             pc_npc varchar(3) NOT NULL DEFAULT 'pc',
             creature_type varchar(100) DEFAULT NULL,
             creature_sub_type varchar(100) DEFAULT NULL,
+            creature_variant varchar(100) NOT NULL DEFAULT '',
             status varchar(50) NOT NULL DEFAULT 'active',
+            creature_genre varchar(50) NOT NULL DEFAULT '',
             npc_coordinator varchar(100) DEFAULT NULL,
             npc_type varchar(50) DEFAULT NULL,
             fame_json longtext DEFAULT NULL,
@@ -311,7 +313,8 @@ class OAT_Schema {
             PRIMARY KEY  (id),
             UNIQUE KEY idx_uuid (uuid),
             UNIQUE KEY idx_external_uuid (external_uuid),
-            KEY idx_wp_user_id (wp_user_id)
+            KEY idx_wp_user_id (wp_user_id),
+            KEY idx_creature_genre (creature_genre)
         ) {$charset};\n\n";
 
         return $sql;

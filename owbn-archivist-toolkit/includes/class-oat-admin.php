@@ -67,6 +67,76 @@ class OAT_Admin {
             'oat-form-fields',
             array( 'OAT_Page_Form_Fields', 'render' )
         );
+
+        add_submenu_page(
+            'oat-entries',
+            'Creature Taxonomy',
+            'Creature Taxonomy',
+            OAT_Constants::CAP_ARCHIVIST,
+            'oat-taxonomy',
+            array( 'OAT_Page_Taxonomy', 'render' )
+        );
+
+        add_submenu_page(
+            'oat-entries',
+            'Details',
+            'Details',
+            OAT_Constants::CAP_ARCHIVIST,
+            'oat-reports',
+            array( 'OAT_Page_Reports', 'render' )
+        );
+    }
+
+    /**
+     * Reorder the OAT submenu so user-facing items come first.
+     * Runs at priority 999 to ensure all plugins have registered.
+     */
+    public static function reorder_submenu() {
+        global $submenu;
+
+        if ( ! isset( $submenu['oat-entries'] ) ) {
+            return;
+        }
+
+        $items = $submenu['oat-entries'];
+
+        // Define the desired order by slug.
+        $order = array(
+            'owc-oat-inbox',
+            'owc-oat-submit',
+            'owc-oat-registry',
+            'oat-entries',
+            'oat-rules',
+            'oat-domains',
+            'oat-forms',
+            'oat-workflow-steps',
+            'oat-form-fields',
+            'oat-taxonomy',
+            'owc-oat-reports',
+            'oat-reports', // Details — last.
+        );
+
+        $sorted   = array();
+        $leftover = array();
+
+        // Place known items in order.
+        foreach ( $order as $slug ) {
+            foreach ( $items as $item ) {
+                if ( $item[2] === $slug ) {
+                    $sorted[] = $item;
+                    break;
+                }
+            }
+        }
+
+        // Append anything not in the order list.
+        foreach ( $items as $item ) {
+            if ( ! in_array( $item[2], $order, true ) ) {
+                $leftover[] = $item;
+            }
+        }
+
+        $submenu['oat-entries'] = array_merge( $sorted, $leftover );
     }
 
     public static function enqueue_assets( $hook ) {
@@ -96,6 +166,18 @@ class OAT_Admin {
             'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
             'nonce'        => wp_create_nonce( 'oat_character_search' ),
             'allowedRoles' => OAT_Authorization::get_character_search_roles(),
+        ) );
+
+        wp_enqueue_script(
+            'oat-creature-picker',
+            OAT_PLUGIN_URL . 'assets/js/oat-creature-picker.js',
+            array( 'jquery' ),
+            OAT_VERSION,
+            true
+        );
+
+        wp_localize_script( 'oat-creature-picker', 'oatCreaturePicker', array(
+            'nonce' => wp_create_nonce( 'oat_creature_picker' ),
         ) );
 
         // Domain drag-and-drop reordering (domains list page only).

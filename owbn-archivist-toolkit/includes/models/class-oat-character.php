@@ -106,7 +106,7 @@ class OAT_Character {
             $insert['pc_npc'] = $data['pc_npc'];
             $format[] = '%s';
         }
-        foreach ( array( 'creature_type', 'creature_sub_type', 'status', 'npc_coordinator', 'npc_type' ) as $col ) {
+        foreach ( array( 'creature_type', 'creature_sub_type', 'creature_variant', 'creature_genre', 'status', 'npc_coordinator', 'npc_type' ) as $col ) {
             if ( isset( $data[ $col ] ) && $data[ $col ] !== '' ) {
                 $insert[ $col ] = $data[ $col ];
                 $format[] = '%s';
@@ -131,7 +131,7 @@ class OAT_Character {
     public static function update( $id, $data ) {
         global $wpdb;
 
-        $allowed = array( 'external_uuid', 'character_name', 'wp_user_id', 'player_email', 'player_name', 'chronicle_slug', 'pc_npc', 'creature_type', 'creature_sub_type', 'status', 'npc_coordinator', 'npc_type', 'fame_json', 'connections_json' );
+        $allowed = array( 'external_uuid', 'character_name', 'wp_user_id', 'player_email', 'player_name', 'chronicle_slug', 'pc_npc', 'creature_type', 'creature_sub_type', 'creature_variant', 'creature_genre', 'status', 'npc_coordinator', 'npc_type', 'fame_json', 'connections_json' );
 
         $update = array();
         $format = array();

@@ -50,6 +50,11 @@ class OAT_Registry_Hooks {
         if ( $entry->domain === 'character_lifecycle' ) {
             self::process_character_lifecycle( $entry, $entry_id );
         }
+
+        // Custom content created — assign to character on approval.
+        if ( $entry->domain === 'custom_content' ) {
+            self::assign_custom_content( $entry, $entry_id );
+        }
     }
 
     /**
@@ -108,6 +113,52 @@ class OAT_Registry_Hooks {
                 }
                 break;
         }
+    }
+
+    /**
+     * Assign custom content to a character on entry approval.
+     *
+     * @param object $entry    Entry row.
+     * @param int    $entry_id Entry ID.
+     */
+    private static function assign_custom_content( $entry, $entry_id ) {
+        $character_id = (int) $entry->character_id;
+        if ( ! $character_id ) {
+            // Try resolving from meta.
+            foreach ( array( 'character', 'character_name' ) as $ck ) {
+                $uuid = OAT_Entry_Meta::get( $entry_id, $ck );
+                if ( $uuid ) {
+                    $char = OAT_Character::find_by_uuid( $uuid );
+                    if ( $char ) {
+                        $character_id = (int) $char->id;
+                        break;
+                    }
+                }
+            }
+        }
+        if ( ! $character_id ) {
+            return;
+        }
+
+        // Don't duplicate if already assigned from this entry.
+        if ( class_exists( 'OAT_Character_Content' ) && OAT_Character_Content::find_by_entry( $entry_id ) ) {
+            return;
+        }
+
+        $content_name = OAT_Entry_Meta::get( $entry_id, 'content_name' );
+        $content_type = OAT_Entry_Meta::get( $entry_id, 'content_type' );
+
+        if ( ! $content_name ) {
+            return;
+        }
+
+        OAT_Character_Content::create( array(
+            'character_id'      => $character_id,
+            'entry_id'          => $entry_id,
+            'content_type'      => $content_type ?: '',
+            'content_name'      => $content_name,
+            'coordinator_genre' => $entry->coordinator_genre ?: null,
+        ) );
     }
 
     /**

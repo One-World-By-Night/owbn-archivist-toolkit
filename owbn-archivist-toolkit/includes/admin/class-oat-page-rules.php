@@ -9,6 +9,49 @@ class OAT_Page_Rules {
      *
      * @return void
      */
+    /**
+     * Handle CSV export before any output.
+     * Hooked early via admin_init so headers can be sent.
+     */
+    public static function maybe_export_csv() {
+        if ( ! isset( $_GET['page'] ) || 'oat-rules' !== $_GET['page'] || empty( $_GET['export_csv'] ) ) {
+            return;
+        }
+        if ( ! OAT_Authorization::check( OAT_Constants::CAP_MANAGE_RULES ) ) {
+            return;
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'oat_regulation_rules';
+        $rows  = $wpdb->get_results( "SELECT * FROM {$table} WHERE active = 1 ORDER BY genre, category, subcategory, condition_name", ARRAY_A );
+
+        $filename = 'oat-regulation-rules-' . gmdate( 'Y-m-d' ) . '.csv';
+        header( 'Content-Type: text/csv; charset=utf-8' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Pragma: no-cache' );
+        header( 'Expires: 0' );
+
+        $out = fopen( 'php://output', 'w' );
+        // Header row.
+        fputcsv( $out, array( 'id', 'genre', 'category', 'subcategory', 'condition_name', 'pc_level', 'npc_level', 'controlling_coordinator', 'elevation', 'section_ref' ) );
+        foreach ( $rows as $row ) {
+            fputcsv( $out, array(
+                $row['id'],
+                $row['genre'],
+                $row['category'],
+                $row['subcategory'],
+                $row['condition_name'],
+                $row['pc_level'],
+                $row['npc_level'],
+                $row['controlling_coordinator'],
+                $row['elevation'],
+                $row['section_ref'],
+            ) );
+        }
+        fclose( $out );
+        exit;
+    }
+
     public static function render() {
         // Permission check.
         if ( ! OAT_Authorization::check( OAT_Constants::CAP_MANAGE_RULES ) ) {
