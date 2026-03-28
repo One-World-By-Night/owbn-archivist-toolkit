@@ -23,6 +23,7 @@ class OAT_Admin {
             'oat-entries'
         );
 
+        // Regulation Rules: visible submenu.
         add_submenu_page(
             'oat-entries',
             'Regulation Rules',
@@ -32,42 +33,7 @@ class OAT_Admin {
             array( 'OAT_Page_Rules', 'render' )
         );
 
-        add_submenu_page(
-            'oat-entries',
-            'Domains',
-            'Domains',
-            OAT_Constants::CAP_ADMIN,
-            'oat-domains',
-            array( 'OAT_Page_Domains', 'render' )
-        );
-
-        add_submenu_page(
-            'oat-entries',
-            'Forms',
-            'Forms',
-            OAT_Constants::CAP_ADMIN,
-            'oat-forms',
-            array( 'OAT_Page_Forms', 'render' )
-        );
-
-        add_submenu_page(
-            'oat-entries',
-            'Workflow Steps',
-            'Workflow Steps',
-            OAT_Constants::CAP_ADMIN,
-            'oat-workflow-steps',
-            array( 'OAT_Page_Workflow_Steps', 'render' )
-        );
-
-        add_submenu_page(
-            'oat-entries',
-            'Form Fields',
-            'Form Fields',
-            OAT_Constants::CAP_ADMIN,
-            'oat-form-fields',
-            array( 'OAT_Page_Form_Fields', 'render' )
-        );
-
+        // Creature Taxonomy: visible submenu.
         add_submenu_page(
             'oat-entries',
             'Creature Taxonomy',
@@ -76,6 +42,32 @@ class OAT_Admin {
             'oat-taxonomy',
             array( 'OAT_Page_Taxonomy', 'render' )
         );
+
+        // Settings: General config (character creation roles, etc.).
+        add_submenu_page(
+            'oat-entries',
+            'Settings',
+            'Settings',
+            OAT_Constants::CAP_ARCHIVIST,
+            'oat-settings',
+            array( 'OAT_Page_Settings', 'render' )
+        );
+
+        // Toolbox: Domains, Forms, Workflow Steps, Form Fields — consolidated as tabs.
+        add_submenu_page(
+            'oat-entries',
+            'Toolbox',
+            'Toolbox',
+            OAT_Constants::CAP_ADMIN,
+            'oat-toolbox',
+            array( 'OAT_Page_Toolbox', 'render' )
+        );
+
+        // Hidden pages for direct access (edit screens link here).
+        add_submenu_page( null, 'Domains', 'Domains', OAT_Constants::CAP_ADMIN, 'oat-domains', array( 'OAT_Page_Domains', 'render' ) );
+        add_submenu_page( null, 'Forms', 'Forms', OAT_Constants::CAP_ADMIN, 'oat-forms', array( 'OAT_Page_Forms', 'render' ) );
+        add_submenu_page( null, 'Workflow Steps', 'Workflow Steps', OAT_Constants::CAP_ADMIN, 'oat-workflow-steps', array( 'OAT_Page_Workflow_Steps', 'render' ) );
+        add_submenu_page( null, 'Form Fields', 'Form Fields', OAT_Constants::CAP_ADMIN, 'oat-form-fields', array( 'OAT_Page_Form_Fields', 'render' ) );
 
         add_submenu_page(
             'oat-entries',
@@ -107,13 +99,11 @@ class OAT_Admin {
             'owc-oat-registry',
             'oat-entries',
             'oat-rules',
-            'oat-domains',
-            'oat-forms',
-            'oat-workflow-steps',
-            'oat-form-fields',
             'oat-taxonomy',
             'owc-oat-reports',
-            'oat-reports', // Details — last.
+            'oat-reports',
+            'oat-settings',
+            'oat-toolbox',
         );
 
         $sorted   = array();
