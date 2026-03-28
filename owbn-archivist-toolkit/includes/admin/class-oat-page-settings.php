@@ -25,14 +25,7 @@ class OAT_Page_Settings {
 			<h1>OAT Settings</h1>
 			<nav class="nav-tab-wrapper">
 				<?php foreach ( $tabs as $slug => $label ) :
-					// Rules and Taxonomy link to their own pages.
-					if ( 'rules' === $slug ) {
-						$url = admin_url( 'admin.php?page=oat-rules' );
-					} elseif ( 'taxonomy' === $slug ) {
-						$url = admin_url( 'admin.php?page=oat-taxonomy' );
-					} else {
-						$url = admin_url( 'admin.php?page=oat-settings&tab=' . $slug );
-					}
+					$url    = admin_url( 'admin.php?page=oat-settings&tab=' . $slug );
 					$active = ( $tab === $slug ) ? ' nav-tab-active' : '';
 				?>
 					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab<?php echo $active; ?>">
@@ -45,6 +38,12 @@ class OAT_Page_Settings {
 				switch ( $tab ) {
 					case 'general':
 						self::render_general();
+						break;
+					case 'rules':
+						OAT_Page_Rules::render( true );
+						break;
+					case 'taxonomy':
+						OAT_Page_Taxonomy::render( true );
 						break;
 				}
 				?>

@@ -1,6 +1,7 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
-<div class="wrap">
+<?php if ( empty( $embedded ) ) : ?><div class="wrap">
 	<h1>Creature Type Taxonomy</h1>
+<?php endif; ?>
 
 	<?php if ( ! empty( $_GET['imported'] ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p>Taxonomy imported successfully.</p></div>

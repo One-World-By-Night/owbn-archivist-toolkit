@@ -23,25 +23,11 @@ class OAT_Admin {
             'oat-entries'
         );
 
-        // Regulation Rules: visible submenu.
-        add_submenu_page(
-            'oat-entries',
-            'Regulation Rules',
-            'Regulation Rules',
-            OAT_Constants::CAP_MANAGE_RULES,
-            'oat-rules',
-            array( 'OAT_Page_Rules', 'render' )
-        );
+        // Regulation Rules: hidden page (accessed via Settings > Regulation Rules tab).
+        add_submenu_page( null, 'Regulation Rules', 'Regulation Rules', OAT_Constants::CAP_MANAGE_RULES, 'oat-rules', array( 'OAT_Page_Rules', 'render' ) );
 
-        // Creature Taxonomy: visible submenu.
-        add_submenu_page(
-            'oat-entries',
-            'Creature Taxonomy',
-            'Creature Taxonomy',
-            OAT_Constants::CAP_ARCHIVIST,
-            'oat-taxonomy',
-            array( 'OAT_Page_Taxonomy', 'render' )
-        );
+        // Creature Taxonomy: hidden page (accessed via Settings > Creature Taxonomy tab).
+        add_submenu_page( null, 'Creature Taxonomy', 'Creature Taxonomy', OAT_Constants::CAP_ARCHIVIST, 'oat-taxonomy', array( 'OAT_Page_Taxonomy', 'render' ) );
 
         // Settings: General config (character creation roles, etc.).
         add_submenu_page(
@@ -98,8 +84,6 @@ class OAT_Admin {
             'owc-oat-submit',
             'owc-oat-registry',
             'oat-entries',
-            'oat-rules',
-            'oat-taxonomy',
             'owc-oat-reports',
             'oat-reports',
             'oat-settings',

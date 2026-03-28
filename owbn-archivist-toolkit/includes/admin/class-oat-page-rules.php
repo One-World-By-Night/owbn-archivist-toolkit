@@ -52,7 +52,7 @@ class OAT_Page_Rules {
         exit;
     }
 
-    public static function render() {
+    public static function render( $embedded = false ) {
         // Permission check.
         if ( ! OAT_Authorization::check( OAT_Constants::CAP_MANAGE_RULES ) ) {
             wp_die( 'You do not have permission to manage regulation rules.' );

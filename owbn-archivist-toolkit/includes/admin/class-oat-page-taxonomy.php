@@ -76,7 +76,7 @@ class OAT_Page_Taxonomy {
 	/**
 	 * Render the taxonomy editor page.
 	 */
-	public static function render() {
+	public static function render( $embedded = false ) {
 		if ( ! OAT_Authorization::check( OAT_Constants::CAP_ARCHIVIST ) ) {
 			wp_die( 'You do not have permission to manage the creature taxonomy.' );
 		}

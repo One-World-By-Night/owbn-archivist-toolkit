@@ -1,6 +1,7 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
-<div class="wrap">
+<?php if ( empty( $embedded ) ) : ?><div class="wrap">
     <h1>Regulation Rules</h1>
+<?php endif; ?>
 
     <?php settings_errors( 'oat_rules' ); ?>
 
@@ -86,4 +87,4 @@
         <?php $list_table->search_box( 'Search', 'oat-rules-search' ); ?>
         <?php $list_table->display(); ?>
     </form>
-</div>
+<?php if ( empty( $embedded ) ) : ?></div><?php endif; ?>
