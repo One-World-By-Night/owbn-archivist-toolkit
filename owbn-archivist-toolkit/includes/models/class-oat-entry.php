@@ -182,29 +182,22 @@ class OAT_Entry {
     }
 
     /**
-     * Check whether an entry can be deleted (D-030, 7.9b).
+     * Check whether an entry can be deleted.
      *
-     * Requires: current user is WP administrator AND entry has never
-     * reached coordinator or archivist tier (checked via timeline).
+     * WP admin or archivist (super user) can delete any entry.
      *
      * @param object $entry
      * @return bool
      */
     public static function can_delete( $entry ) {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return false;
+        if ( current_user_can( 'manage_options' ) ) {
+            return true;
         }
-
-        global $wpdb;
-        $table = $wpdb->prefix . 'oat_timeline';
-        $reached = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table} WHERE entry_id = %d AND visibility_tier IN (%s, %s)",
-            (int) $entry->id,
-            OAT_Constants::TIER_COORDINATOR,
-            OAT_Constants::TIER_ARCHIVIST
-        ) );
-
-        return 0 === $reached;
+        if ( function_exists( 'owc_oat_is_super_user' ) ) {
+            $user = wp_get_current_user();
+            return $user && $user->ID && owc_oat_is_super_user( $user->ID );
+        }
+        return false;
     }
 
     /**

@@ -94,13 +94,12 @@ class OAT_Entry_List_Table extends WP_List_Table {
                 $url = admin_url( 'admin.php?page=owc-oat-entry&entry_id=' . $item->id );
                 $out = '<a href="' . esc_url( $url ) . '"><strong>#' . esc_html( $item->id ) . '</strong></a>';
 
-                // Delete action (D-030, 7.9b): WP admin only, entry never reached coord/archivist.
                 if ( OAT_Entry::can_delete( $item ) ) {
                     $delete_url = wp_nonce_url(
                         admin_url( 'admin.php?page=oat-entries&action=delete&entry_id=' . $item->id ),
                         'oat_delete_entry_' . $item->id
                     );
-                    $out .= '<div class="row-actions"><span class="delete"><a href="' . esc_url( $delete_url ) . '" onclick="return confirm(\'Delete this entry and all related data? This cannot be undone.\');">Delete</a></span></div>';
+                    $out .= '<div class="row-actions"><span class="delete"><a href="' . esc_url( $delete_url ) . '" onclick="var v=prompt(\'Type DELETE to permanently remove this entry and all related data.\');if(v!==\'DELETE\'){event.preventDefault();return false;}">Delete</a></span></div>';
                 }
 
                 return $out;
