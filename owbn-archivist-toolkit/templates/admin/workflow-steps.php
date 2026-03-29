@@ -1,6 +1,7 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
-<div class="wrap">
+<?php if ( empty( $embedded ) ) : ?><div class="wrap">
 	<h1>Workflow Steps</h1>
+<?php endif; ?>
 
 	<?php settings_errors( 'oat_workflow_steps' ); ?>
 
@@ -44,4 +45,4 @@
 	<?php if ( '' !== $current_domain && $list_table ) : ?>
 		<?php $list_table->display(); ?>
 	<?php endif; ?>
-</div>
+<?php if ( empty( $embedded ) ) : ?></div><?php endif; ?>

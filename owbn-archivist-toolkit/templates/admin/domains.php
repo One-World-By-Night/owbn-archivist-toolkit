@@ -1,6 +1,7 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
-<div class="wrap">
+<?php if ( empty( $embedded ) ) : ?><div class="wrap">
 	<h1>Domains</h1>
+<?php endif; ?>
 
 	<?php settings_errors( 'oat_domains' ); ?>
 
@@ -25,4 +26,4 @@
 	</div>
 
 	<?php $list_table->display(); ?>
-</div>
+<?php if ( empty( $embedded ) ) : ?></div><?php endif; ?>

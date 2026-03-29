@@ -5,46 +5,53 @@ defined( 'ABSPATH' ) || exit;
 class OAT_Page_Toolbox {
 
 	/**
-	 * Render the Toolbox landing page — links to Domains, Forms, Workflow Steps, Form Fields.
+	 * Render the Toolbox page — Domains, Forms, Workflow Steps, Form Fields as inline tabs.
 	 */
 	public static function render() {
 		if ( ! OAT_Authorization::check( OAT_Constants::CAP_ADMIN ) ) {
 			wp_die( 'You do not have permission to access the toolbox.' );
 		}
 
-		$tabs = array(
-			'oat-domains'        => 'Domains',
-			'oat-forms'          => 'Forms',
-			'oat-workflow-steps' => 'Workflow Steps',
-			'oat-form-fields'    => 'Form Fields',
-		);
+		$tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'domains';
 
-		// If a tab param is passed, redirect to the corresponding page.
-		if ( ! empty( $_GET['tab'] ) ) {
-			$target = sanitize_text_field( $_GET['tab'] );
-			$map    = array(
-				'domains' => 'oat-domains',
-				'forms'   => 'oat-forms',
-				'steps'   => 'oat-workflow-steps',
-				'fields'  => 'oat-form-fields',
-			);
-			if ( isset( $map[ $target ] ) ) {
-				wp_redirect( admin_url( 'admin.php?page=' . $map[ $target ] ) );
-				exit;
-			}
-		}
+		$tabs = array(
+			'domains' => 'Domains',
+			'forms'   => 'Forms',
+			'steps'   => 'Workflow Steps',
+			'fields'  => 'Form Fields',
+		);
 
 		?>
 		<div class="wrap">
 			<h1>OAT Toolbox</h1>
-			<p>Manage the underlying OAT schema — domains, forms, workflow steps, and form fields.</p>
 			<nav class="nav-tab-wrapper">
-				<?php foreach ( $tabs as $slug => $label ) : ?>
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . $slug ) ); ?>" class="nav-tab">
+				<?php foreach ( $tabs as $slug => $label ) :
+					$url    = admin_url( 'admin.php?page=oat-toolbox&tab=' . $slug );
+					$active = ( $tab === $slug ) ? ' nav-tab-active' : '';
+				?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab<?php echo $active; ?>">
 						<?php echo esc_html( $label ); ?>
 					</a>
 				<?php endforeach; ?>
 			</nav>
+			<div style="margin-top:15px;">
+				<?php
+				switch ( $tab ) {
+					case 'domains':
+						OAT_Page_Domains::render( true );
+						break;
+					case 'forms':
+						OAT_Page_Forms::render( true );
+						break;
+					case 'steps':
+						OAT_Page_Workflow_Steps::render( true );
+						break;
+					case 'fields':
+						OAT_Page_Form_Fields::render( true );
+						break;
+				}
+				?>
+			</div>
 		</div>
 		<?php
 	}

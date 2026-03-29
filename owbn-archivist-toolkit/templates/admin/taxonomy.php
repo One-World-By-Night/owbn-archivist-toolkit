@@ -8,7 +8,12 @@
 	<?php endif; ?>
 
 	<div style="margin-bottom:15px;">
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-taxonomy&export_json=1' ) ); ?>" class="button">Export JSON</a>
+		<?php
+		$export_url = ! empty( $embedded )
+			? admin_url( 'admin.php?page=oat-settings&tab=taxonomy&export_json=1' )
+			: admin_url( 'admin.php?page=oat-taxonomy&export_json=1' );
+		?>
+		<a href="<?php echo esc_url( $export_url ); ?>" class="button">Export JSON</a>
 		<button type="button" class="button" id="oat-tax-import-btn">Import JSON</button>
 		<button type="button" class="button button-primary" id="oat-tax-save-btn" disabled>Save Changes</button>
 		<span id="oat-tax-status" style="margin-left:10px;"></span>

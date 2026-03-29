@@ -1,6 +1,7 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
-<div class="wrap">
+<?php if ( empty( $embedded ) ) : ?><div class="wrap">
 	<h1>Form Fields</h1>
+<?php endif; ?>
 
 	<?php settings_errors( 'oat_form_fields' ); ?>
 
@@ -71,4 +72,4 @@
 			<?php $list_table->display(); ?>
 		</form>
 	<?php endif; ?>
-</div>
+<?php if ( empty( $embedded ) ) : ?></div><?php endif; ?>

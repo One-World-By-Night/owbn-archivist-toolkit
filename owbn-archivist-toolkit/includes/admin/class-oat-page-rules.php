@@ -72,6 +72,16 @@ class OAT_Page_Rules {
     }
 
     /**
+     * Get the base redirect URL — returns Settings tab URL when embedded, standalone URL otherwise.
+     */
+    private static function base_url( $extra = '' ) {
+        if ( isset( $_GET['page'] ) && 'oat-settings' === $_GET['page'] ) {
+            return admin_url( 'admin.php?page=oat-settings&tab=rules' . ( $extra ? '&' . $extra : '' ) );
+        }
+        return admin_url( 'admin.php?page=oat-rules' . ( $extra ? '&' . $extra : '' ) );
+    }
+
+    /**
      * Handle POST actions (add, edit, deactivate, CSV import).
      *
      * @return void
@@ -111,7 +121,7 @@ class OAT_Page_Rules {
 
         $id = OAT_Regulation_Rule::create( $data );
         if ( $id > 0 ) {
-            wp_redirect( admin_url( 'admin.php?page=oat-rules&message=added' ) );
+            wp_redirect( self::base_url( 'message=added' ) );
             exit;
         }
 
@@ -170,7 +180,7 @@ class OAT_Page_Rules {
         $rule_id = absint( $_POST['rule_id'] );
         if ( $rule_id > 0 ) {
             OAT_Regulation_Rule::deactivate( $rule_id );
-            wp_redirect( admin_url( 'admin.php?page=oat-rules&message=deactivated' ) );
+            wp_redirect( self::base_url( 'message=deactivated' ) );
             exit;
         }
     }

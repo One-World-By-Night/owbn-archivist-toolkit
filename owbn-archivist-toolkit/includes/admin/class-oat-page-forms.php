@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 class OAT_Page_Forms {
 
-	public static function render() {
+	public static function render( $embedded = false ) {
 		if ( ! OAT_Authorization::check( OAT_Constants::CAP_ADMIN ) ) {
 			wp_die( 'You do not have permission to manage forms.' );
 		}

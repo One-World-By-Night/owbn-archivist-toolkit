@@ -83,7 +83,12 @@
     <!-- Rules List -->
     <h2>Rules</h2>
     <form method="get">
-        <input type="hidden" name="page" value="oat-rules">
+        <?php if ( ! empty( $embedded ) ) : ?>
+            <input type="hidden" name="page" value="oat-settings">
+            <input type="hidden" name="tab" value="rules">
+        <?php else : ?>
+            <input type="hidden" name="page" value="oat-rules">
+        <?php endif; ?>
         <?php $list_table->search_box( 'Search', 'oat-rules-search' ); ?>
         <?php $list_table->display(); ?>
     </form>

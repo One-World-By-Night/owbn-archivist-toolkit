@@ -8,12 +8,19 @@ class OAT_Page_Taxonomy {
 	 * Handle import/export before any output.
 	 */
 	public static function maybe_handle_actions() {
-		if ( ! isset( $_GET['page'] ) || 'oat-taxonomy' !== $_GET['page'] ) {
+		$page = isset( $_GET['page'] ) ? $_GET['page'] : '';
+		$tab  = isset( $_GET['tab'] ) ? $_GET['tab'] : '';
+		$is_taxonomy = ( 'oat-taxonomy' === $page ) || ( 'oat-settings' === $page && 'taxonomy' === $tab );
+		if ( ! $is_taxonomy ) {
 			return;
 		}
 		if ( ! OAT_Authorization::check( OAT_Constants::CAP_ARCHIVIST ) ) {
 			return;
 		}
+
+		$base = ( 'oat-settings' === $page )
+			? admin_url( 'admin.php?page=oat-settings&tab=taxonomy' )
+			: admin_url( 'admin.php?page=oat-taxonomy' );
 
 		// Export JSON.
 		if ( ! empty( $_GET['export_json'] ) ) {
@@ -29,7 +36,7 @@ class OAT_Page_Taxonomy {
 		if ( ! empty( $_POST['import_json'] ) && check_admin_referer( 'oat_taxonomy_import' ) ) {
 			$json = wp_unslash( $_POST['import_json'] );
 			if ( OAT_Creature_Taxonomy::import( $json ) ) {
-				wp_redirect( admin_url( 'admin.php?page=oat-taxonomy&imported=1' ) );
+				wp_redirect( $base . '&imported=1' );
 				exit;
 			}
 		}
