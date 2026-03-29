@@ -245,6 +245,184 @@ class OAT_Registry {
         return $characters;
     }
 
+    // ── Lazy-Load Registry API ────────────────────────────────────────
+
+    /**
+     * Get section headers with counts for a given scope.
+     *
+     * Returns lightweight array of sections — no character data, just labels + counts.
+     * Scope values: 'mine', 'chronicles', 'coordinators', 'decommissioned'.
+     *
+     * @param int    $user_id
+     * @param string $scope
+     * @return array [ [ 'key' => 'chronicle-hartford', 'label' => 'Hartford', 'count' => 45 ], ... ]
+     */
+    public static function get_registry_sections( $user_id, $scope ) {
+        global $wpdb;
+        $ct = $wpdb->prefix . 'oat_characters';
+        $ra = $wpdb->prefix . 'oat_registry_access';
+        $now = time();
+        $sections = array();
+
+        $search_roles = OAT_Authorization::get_character_search_roles();
+        $top_role     = $search_roles[0];
+
+        if ( 'mine' === $scope ) {
+            $count = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$ct} WHERE wp_user_id = %d AND pc_npc = 'pc'",
+                $user_id
+            ) );
+            $sections[] = array( 'key' => 'mine', 'label' => 'My Characters', 'count' => $count );
+
+        } elseif ( 'chronicles' === $scope ) {
+            if ( $top_role === 'archivist' ) {
+                $rows = $wpdb->get_results(
+                    "SELECT chronicle_slug, COUNT(*) as cnt FROM {$ct} WHERE chronicle_slug != '' AND status = 'active' GROUP BY chronicle_slug ORDER BY chronicle_slug"
+                );
+            } else {
+                $slugs = self::get_user_chronicle_slugs();
+                if ( empty( $slugs ) ) {
+                    return $sections;
+                }
+                $placeholders = implode( ',', array_fill( 0, count( $slugs ), '%s' ) );
+                $rows = $wpdb->get_results( $wpdb->prepare(
+                    "SELECT chronicle_slug, COUNT(*) as cnt FROM {$ct} WHERE chronicle_slug IN ({$placeholders}) GROUP BY chronicle_slug ORDER BY chronicle_slug",
+                    $slugs
+                ) );
+            }
+            $titles = array();
+            if ( function_exists( 'owc_get_chronicles' ) ) {
+                foreach ( owc_get_chronicles() as $ch ) {
+                    $ch = (array) $ch;
+                    if ( ! empty( $ch['slug'] ) ) {
+                        $titles[ $ch['slug'] ] = $ch['title'] ?? $ch['slug'];
+                    }
+                }
+            }
+            foreach ( $rows as $row ) {
+                $slug  = $row->chronicle_slug;
+                $label = $titles[ $slug ] ?? strtoupper( $slug );
+                $sections[] = array( 'key' => 'chronicle-' . $slug, 'label' => $label, 'count' => (int) $row->cnt );
+            }
+
+        } elseif ( 'coordinators' === $scope ) {
+            if ( $top_role === 'archivist' ) {
+                $rows = $wpdb->get_results(
+                    "SELECT grant_value, COUNT(DISTINCT character_id) as cnt FROM {$ra} WHERE grant_type = 'coordinator' AND (starts_at IS NULL OR starts_at <= {$now}) AND (expires_at IS NULL OR expires_at >= {$now}) GROUP BY grant_value ORDER BY grant_value"
+                );
+            } else {
+                $genres = self::get_user_coordinator_genres();
+                if ( empty( $genres ) ) {
+                    return $sections;
+                }
+                $placeholders = implode( ',', array_fill( 0, count( $genres ), '%s' ) );
+                $rows = $wpdb->get_results( $wpdb->prepare(
+                    "SELECT grant_value, COUNT(DISTINCT character_id) as cnt FROM {$ra} WHERE grant_type = 'coordinator' AND grant_value IN ({$placeholders}) AND (starts_at IS NULL OR starts_at <= {$now}) AND (expires_at IS NULL OR expires_at >= {$now}) GROUP BY grant_value ORDER BY grant_value",
+                    $genres
+                ) );
+            }
+            $coord_titles = array();
+            if ( function_exists( 'owc_get_coordinators' ) ) {
+                foreach ( owc_get_coordinators() as $co ) {
+                    $co = (array) $co;
+                    if ( ! empty( $co['slug'] ) ) {
+                        $coord_titles[ $co['slug'] ] = $co['title'] ?? ucfirst( $co['slug'] );
+                    }
+                }
+            }
+            foreach ( $rows as $row ) {
+                $genre = $row->grant_value;
+                $label = $coord_titles[ $genre ] ?? ucfirst( $genre );
+                $sections[] = array( 'key' => 'coordinator-' . $genre, 'label' => $label, 'count' => (int) $row->cnt );
+            }
+
+        } elseif ( 'decommissioned' === $scope ) {
+            $rows = $wpdb->get_results(
+                "SELECT status, COUNT(*) as cnt FROM {$ct} WHERE status IN ('inactive', 'dead', 'retired') GROUP BY status ORDER BY status"
+            );
+            foreach ( $rows as $row ) {
+                $sections[] = array( 'key' => 'decommissioned-' . $row->status, 'label' => ucfirst( $row->status ), 'count' => (int) $row->cnt );
+            }
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Get characters for a single registry section.
+     *
+     * @param int    $user_id
+     * @param string $section_key  e.g. 'mine', 'chronicle-hartford', 'coordinator-vampire', 'decommissioned-dead'
+     * @return array Character objects with entry_counts and coordinator_grants.
+     */
+    public static function get_section_characters( $user_id, $section_key ) {
+        global $wpdb;
+        $ct = $wpdb->prefix . 'oat_characters';
+        $ra = $wpdb->prefix . 'oat_registry_access';
+        $now = time();
+
+        $characters = array();
+
+        if ( 'mine' === $section_key ) {
+            $characters = self::get_characters_for_player( $user_id );
+
+        } elseif ( strpos( $section_key, 'chronicle-' ) === 0 ) {
+            $slug = substr( $section_key, 10 );
+            $characters = self::get_characters_for_chronicle( $slug );
+
+        } elseif ( strpos( $section_key, 'coordinator-' ) === 0 ) {
+            $genre = substr( $section_key, 12 );
+            $characters = self::get_characters_for_coordinator( $genre );
+
+        } elseif ( strpos( $section_key, 'decommissioned-' ) === 0 ) {
+            $status = substr( $section_key, 16 );
+            $valid  = array( 'inactive', 'dead', 'retired' );
+            if ( in_array( $status, $valid, true ) ) {
+                $characters = $wpdb->get_results( $wpdb->prepare(
+                    "SELECT * FROM {$ct} WHERE status = %s ORDER BY character_name ASC",
+                    $status
+                ) );
+            }
+        }
+
+        if ( empty( $characters ) ) {
+            return array();
+        }
+
+        // Bulk-fetch coordinator grants.
+        $char_ids = array_map( function( $c ) { return (int) $c->id; }, $characters );
+        $id_list  = implode( ',', $char_ids );
+        $grants_by_char = array();
+        $rows = $wpdb->get_results(
+            "SELECT character_id, grant_value FROM {$ra} WHERE character_id IN ({$id_list}) AND grant_type = 'coordinator' AND (starts_at IS NULL OR starts_at <= {$now}) AND (expires_at IS NULL OR expires_at >= {$now})"
+        );
+        foreach ( $rows as $row ) {
+            $cid = (int) $row->character_id;
+            if ( ! isset( $grants_by_char[ $cid ] ) ) {
+                $grants_by_char[ $cid ] = array();
+            }
+            $grants_by_char[ $cid ][] = $row->grant_value;
+        }
+
+        // Bulk-fetch entry counts.
+        $et = $wpdb->prefix . 'oat_entries';
+        $counts_by_char = array();
+        $count_rows = $wpdb->get_results(
+            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
+        );
+        foreach ( $count_rows as $row ) {
+            $counts_by_char[ (int) $row->character_id ] = (int) $row->cnt;
+        }
+
+        foreach ( $characters as $char ) {
+            $cid = (int) $char->id;
+            $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
+            $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
+        }
+
+        return $characters;
+    }
+
     /**
      * Filter timeline events for a registry viewer.
      *
