@@ -267,6 +267,20 @@ class OAT_Registry {
         $search_roles = OAT_Authorization::get_character_search_roles();
         $top_role     = $search_roles[0];
 
+        // Build chronicle lookup: slug → { title, status }.
+        $chronicle_info = array();
+        if ( function_exists( 'owc_get_chronicles' ) ) {
+            foreach ( owc_get_chronicles() as $ch ) {
+                $ch = (array) $ch;
+                if ( ! empty( $ch['slug'] ) ) {
+                    $chronicle_info[ $ch['slug'] ] = array(
+                        'title'  => $ch['title'] ?? $ch['slug'],
+                        'status' => $ch['status'] ?? 'publish',
+                    );
+                }
+            }
+        }
+
         if ( 'mine' === $scope ) {
             $count = (int) $wpdb->get_var( $wpdb->prepare(
                 "SELECT COUNT(*) FROM {$ct} WHERE wp_user_id = %d AND pc_npc = 'pc'",
@@ -274,34 +288,35 @@ class OAT_Registry {
             ) );
             $sections[] = array( 'key' => 'mine', 'label' => 'My Characters', 'count' => $count );
 
-        } elseif ( 'chronicles' === $scope ) {
-            if ( $top_role === 'archivist' ) {
-                $rows = $wpdb->get_results(
-                    "SELECT chronicle_slug, COUNT(*) as cnt FROM {$ct} WHERE chronicle_slug != '' AND status = 'active' GROUP BY chronicle_slug ORDER BY chronicle_slug"
-                );
-            } else {
-                $slugs = self::get_user_chronicle_slugs();
-                if ( empty( $slugs ) ) {
-                    return $sections;
-                }
-                $placeholders = implode( ',', array_fill( 0, count( $slugs ), '%s' ) );
-                $rows = $wpdb->get_results( $wpdb->prepare(
-                    "SELECT chronicle_slug, COUNT(*) as cnt FROM {$ct} WHERE chronicle_slug IN ({$placeholders}) GROUP BY chronicle_slug ORDER BY chronicle_slug",
-                    $slugs
-                ) );
-            }
-            $titles = array();
-            if ( function_exists( 'owc_get_chronicles' ) ) {
-                foreach ( owc_get_chronicles() as $ch ) {
-                    $ch = (array) $ch;
-                    if ( ! empty( $ch['slug'] ) ) {
-                        $titles[ $ch['slug'] ] = $ch['title'] ?? $ch['slug'];
-                    }
+        } elseif ( 'chronicles' === $scope || 'decommissioned' === $scope ) {
+            // Filter chronicle slugs by chronicle post status.
+            $target_status = ( 'decommissioned' === $scope ) ? 'decommissioned' : 'publish';
+            $allowed_slugs = array();
+            foreach ( $chronicle_info as $slug => $info ) {
+                if ( $info['status'] === $target_status ) {
+                    $allowed_slugs[] = $slug;
                 }
             }
+
+            if ( $top_role !== 'archivist' ) {
+                // Non-archivist: intersect with user's chronicle roles.
+                $user_slugs = self::get_user_chronicle_slugs();
+                $allowed_slugs = array_intersect( $allowed_slugs, $user_slugs );
+            }
+
+            if ( empty( $allowed_slugs ) ) {
+                return $sections;
+            }
+
+            $placeholders = implode( ',', array_fill( 0, count( $allowed_slugs ), '%s' ) );
+            $rows = $wpdb->get_results( $wpdb->prepare(
+                "SELECT chronicle_slug, COUNT(*) as cnt FROM {$ct} WHERE chronicle_slug IN ({$placeholders}) GROUP BY chronicle_slug ORDER BY chronicle_slug",
+                $allowed_slugs
+            ) );
+
             foreach ( $rows as $row ) {
                 $slug  = $row->chronicle_slug;
-                $label = $titles[ $slug ] ?? strtoupper( $slug );
+                $label = isset( $chronicle_info[ $slug ] ) ? $chronicle_info[ $slug ]['title'] : strtoupper( $slug );
                 $sections[] = array( 'key' => 'chronicle-' . $slug, 'label' => $label, 'count' => (int) $row->cnt );
             }
 
@@ -336,13 +351,6 @@ class OAT_Registry {
                 $sections[] = array( 'key' => 'coordinator-' . $genre, 'label' => $label, 'count' => (int) $row->cnt );
             }
 
-        } elseif ( 'decommissioned' === $scope ) {
-            $rows = $wpdb->get_results(
-                "SELECT status, COUNT(*) as cnt FROM {$ct} WHERE status IN ('inactive', 'dead', 'retired') GROUP BY status ORDER BY status"
-            );
-            foreach ( $rows as $row ) {
-                $sections[] = array( 'key' => 'decommissioned-' . $row->status, 'label' => ucfirst( $row->status ), 'count' => (int) $row->cnt );
-            }
         }
 
         return $sections;
@@ -374,15 +382,6 @@ class OAT_Registry {
             $genre = substr( $section_key, 12 );
             $characters = self::get_characters_for_coordinator( $genre );
 
-        } elseif ( strpos( $section_key, 'decommissioned-' ) === 0 ) {
-            $status = substr( $section_key, 16 );
-            $valid  = array( 'inactive', 'dead', 'retired' );
-            if ( in_array( $status, $valid, true ) ) {
-                $characters = $wpdb->get_results( $wpdb->prepare(
-                    "SELECT * FROM {$ct} WHERE status = %s ORDER BY character_name ASC",
-                    $status
-                ) );
-            }
         }
 
         if ( empty( $characters ) ) {
