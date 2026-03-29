@@ -45,7 +45,44 @@
                         </select>
                     </td>
                 </tr>
-                <tr><th><label for="controlling_coordinator">Controlling Coordinator</label></th><td><input type="text" name="controlling_coordinator" id="controlling_coordinator" class="regular-text" required></td></tr>
+                <tr>
+                    <th><label for="controlling_coordinator">Controlling Coordinator</label></th>
+                    <td>
+                        <?php
+                        $coord_options = array();
+                        if ( function_exists( 'owc_get_coordinators' ) ) {
+                            foreach ( owc_get_coordinators() as $co ) {
+                                $co = (array) $co;
+                                if ( ! empty( $co['slug'] ) ) {
+                                    $coord_options[] = array(
+                                        'id'   => ucfirst( $co['slug'] ),
+                                        'text' => $co['title'] ?? ucfirst( $co['slug'] ),
+                                    );
+                                }
+                            }
+                        }
+                        ?>
+                        <select name="controlling_coordinator" id="controlling_coordinator" class="regular-text oat-coord-select2" style="width:100%;" required>
+                            <option value=""></option>
+                        </select>
+                        <script>
+                        jQuery(function($) {
+                            var coordData = <?php echo wp_json_encode( $coord_options ); ?>;
+                            $('#controlling_coordinator').select2({
+                                tags: true,
+                                placeholder: 'Select or type a coordinator...',
+                                allowClear: true,
+                                data: coordData,
+                                createTag: function(params) {
+                                    var term = $.trim(params.term);
+                                    if (term === '') return null;
+                                    return { id: term, text: term };
+                                }
+                            });
+                        });
+                        </script>
+                    </td>
+                </tr>
                 <tr><th><label for="elevation">Elevation</label></th><td><label><input type="checkbox" name="elevation" id="elevation" value="1"> Elevated (blocks BBP auto-approve)</label></td></tr>
             </table>
             <?php submit_button( 'Add Rule', 'primary', 'oat_add_rule' ); ?>
