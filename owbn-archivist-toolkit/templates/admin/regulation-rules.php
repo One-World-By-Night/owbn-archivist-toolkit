@@ -64,15 +64,16 @@
                         ?>
                         <select name="controlling_coordinator" id="controlling_coordinator" class="regular-text oat-coord-select2" style="width:100%;" required>
                             <option value=""></option>
+                            <?php foreach ( $coord_options as $opt ) : ?>
+                                <option value="<?php echo esc_attr( $opt['id'] ); ?>"><?php echo esc_html( $opt['text'] ); ?></option>
+                            <?php endforeach; ?>
                         </select>
                         <script>
                         jQuery(function($) {
-                            var coordData = <?php echo wp_json_encode( $coord_options ); ?>;
                             $('#controlling_coordinator').select2({
                                 tags: true,
                                 placeholder: 'Select or type a coordinator...',
                                 allowClear: true,
-                                data: coordData,
                                 createTag: function(params) {
                                     var term = $.trim(params.term);
                                     if (term === '') return null;
