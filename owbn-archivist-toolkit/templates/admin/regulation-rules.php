@@ -55,7 +55,7 @@
                                 $co = (array) $co;
                                 if ( ! empty( $co['slug'] ) ) {
                                     $coord_list[] = array(
-                                        'value' => ucfirst( $co['slug'] ),
+                                        'value' => $co['slug'],
                                         'label' => $co['title'] ?? ucfirst( $co['slug'] ),
                                     );
                                 }
@@ -70,26 +70,37 @@
                         <script>
                         jQuery(function($) {
                             var coordData = <?php echo wp_json_encode( $coord_list ); ?>;
-                            var selected = [];
+                            var selected = []; // Array of { slug, label }
+
+                            // Build slug → label lookup.
+                            var labelMap = {};
+                            for (var i = 0; i < coordData.length; i++) {
+                                labelMap[coordData[i].value] = coordData[i].label;
+                            }
 
                             function renderTags() {
                                 var html = '';
+                                var slugs = [];
                                 for (var i = 0; i < selected.length; i++) {
+                                    var label = selected[i].label || selected[i].slug;
+                                    slugs.push(selected[i].slug);
                                     html += '<span class="oat-rule-tag" style="display:inline-block;margin:2px 4px 2px 0;padding:4px 8px;background:#f0f0f1;border:1px solid #c3c4c7;border-radius:3px;">'
-                                        + '<span>' + $('<span>').text(selected[i]).html() + '</span>'
+                                        + '<span>' + $('<span>').text(label).html() + '</span>'
                                         + ' <span class="oat-remove-coord" data-idx="' + i + '" style="cursor:pointer;color:#d63638;font-weight:bold;margin-left:4px;">&times;</span>'
                                         + '</span>';
                                 }
                                 $('#coord_selected').html(html);
-                                $('#controlling_coordinator').val(selected.join(', '));
+                                $('#controlling_coordinator').val(slugs.join(', '));
                             }
 
-                            function addTag(val) {
-                                val = $.trim(val);
-                                if (val && selected.indexOf(val) === -1) {
-                                    selected.push(val);
-                                    renderTags();
+                            function addTag(slug) {
+                                slug = $.trim(slug);
+                                if (!slug) return;
+                                for (var i = 0; i < selected.length; i++) {
+                                    if (selected[i].slug === slug) return; // Already added.
                                 }
+                                selected.push({ slug: slug, label: labelMap[slug] || slug });
+                                renderTags();
                             }
 
                             $('#coord_search').autocomplete({
@@ -111,12 +122,19 @@
                                 }
                             });
 
-                            // Enter key adds free text.
+                            // Enter key — only add if it matches a coordinator from the list.
                             $('#coord_search').on('keydown', function(e) {
                                 if (e.key === 'Enter') {
                                     e.preventDefault();
-                                    addTag($(this).val());
-                                    $(this).val('');
+                                    var val = $.trim($(this).val()).toLowerCase();
+                                    for (var i = 0; i < coordData.length; i++) {
+                                        if (coordData[i].value.toLowerCase() === val || coordData[i].label.toLowerCase() === val) {
+                                            addTag(coordData[i].value);
+                                            $(this).val('');
+                                            return;
+                                        }
+                                    }
+                                    // No match — don't add.
                                 }
                             });
 
