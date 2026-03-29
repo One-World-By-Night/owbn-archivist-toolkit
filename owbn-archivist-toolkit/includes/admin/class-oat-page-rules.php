@@ -115,9 +115,7 @@ class OAT_Page_Rules {
             'condition_name'          => sanitize_text_field( $_POST['condition_name'] ),
             'pc_level'                => sanitize_text_field( $_POST['pc_level'] ),
             'npc_level'               => sanitize_text_field( $_POST['npc_level'] ),
-            'controlling_coordinator' => is_array( $_POST['controlling_coordinator'] )
-                ? sanitize_text_field( implode( ', ', $_POST['controlling_coordinator'] ) )
-                : sanitize_text_field( $_POST['controlling_coordinator'] ),
+            'controlling_coordinator' => sanitize_text_field( $_POST['controlling_coordinator'] ),
             'elevation'               => ! empty( $_POST['elevation'] ) ? 1 : 0,
         );
 

@@ -49,36 +49,81 @@
                     <th><label for="controlling_coordinator">Controlling Coordinator</label></th>
                     <td>
                         <?php
-                        $coord_options = array();
+                        $coord_list = array();
                         if ( function_exists( 'owc_get_coordinators' ) ) {
                             foreach ( owc_get_coordinators() as $co ) {
                                 $co = (array) $co;
                                 if ( ! empty( $co['slug'] ) ) {
-                                    $coord_options[] = array(
-                                        'id'   => ucfirst( $co['slug'] ),
-                                        'text' => $co['title'] ?? ucfirst( $co['slug'] ),
+                                    $coord_list[] = array(
+                                        'value' => ucfirst( $co['slug'] ),
+                                        'label' => $co['title'] ?? ucfirst( $co['slug'] ),
                                     );
                                 }
                             }
                         }
                         ?>
-                        <select name="controlling_coordinator[]" id="controlling_coordinator" class="regular-text oat-coord-select2" style="width:100%;" multiple required>
-                            <option value=""></option>
-                            <?php foreach ( $coord_options as $opt ) : ?>
-                                <option value="<?php echo esc_attr( $opt['id'] ); ?>"><?php echo esc_html( $opt['text'] ); ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div class="oat-coord-picker-wrap">
+                            <input type="text" id="coord_search" class="regular-text" placeholder="Search coordinators or type free text, then press Enter..." autocomplete="off" />
+                            <div id="coord_selected" style="margin-top:6px;"></div>
+                            <input type="hidden" name="controlling_coordinator" id="controlling_coordinator" value="" required />
+                        </div>
                         <script>
                         jQuery(function($) {
-                            $('#controlling_coordinator').select2({
-                                tags: true,
-                                placeholder: 'Select or type a coordinator...',
-                                allowClear: true,
-                                createTag: function(params) {
-                                    var term = $.trim(params.term);
-                                    if (term === '') return null;
-                                    return { id: term, text: term };
+                            var coordData = <?php echo wp_json_encode( $coord_list ); ?>;
+                            var selected = [];
+
+                            function renderTags() {
+                                var html = '';
+                                for (var i = 0; i < selected.length; i++) {
+                                    html += '<span class="oat-rule-tag" style="display:inline-block;margin:2px 4px 2px 0;padding:4px 8px;background:#f0f0f1;border:1px solid #c3c4c7;border-radius:3px;">'
+                                        + '<span>' + $('<span>').text(selected[i]).html() + '</span>'
+                                        + ' <span class="oat-remove-coord" data-idx="' + i + '" style="cursor:pointer;color:#d63638;font-weight:bold;margin-left:4px;">&times;</span>'
+                                        + '</span>';
                                 }
+                                $('#coord_selected').html(html);
+                                $('#controlling_coordinator').val(selected.join(', '));
+                            }
+
+                            function addTag(val) {
+                                val = $.trim(val);
+                                if (val && selected.indexOf(val) === -1) {
+                                    selected.push(val);
+                                    renderTags();
+                                }
+                            }
+
+                            $('#coord_search').autocomplete({
+                                source: function(request, response) {
+                                    var term = request.term.toLowerCase();
+                                    var matches = [];
+                                    for (var i = 0; i < coordData.length; i++) {
+                                        if (coordData[i].label.toLowerCase().indexOf(term) !== -1 || coordData[i].value.toLowerCase().indexOf(term) !== -1) {
+                                            matches.push({ label: coordData[i].label, value: coordData[i].value });
+                                        }
+                                    }
+                                    response(matches);
+                                },
+                                minLength: 1,
+                                select: function(event, ui) {
+                                    event.preventDefault();
+                                    $(this).val('');
+                                    addTag(ui.item.value);
+                                }
+                            });
+
+                            // Enter key adds free text.
+                            $('#coord_search').on('keydown', function(e) {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addTag($(this).val());
+                                    $(this).val('');
+                                }
+                            });
+
+                            // Remove tag.
+                            $(document).on('click', '.oat-remove-coord', function() {
+                                selected.splice(parseInt($(this).data('idx')), 1);
+                                renderTags();
                             });
                         });
                         </script>
