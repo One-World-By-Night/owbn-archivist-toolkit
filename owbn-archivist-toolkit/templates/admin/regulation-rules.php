@@ -62,7 +62,7 @@
                             }
                         }
                         ?>
-                        <select name="controlling_coordinator" id="controlling_coordinator" class="regular-text oat-coord-select2" style="width:100%;" required>
+                        <select name="controlling_coordinator[]" id="controlling_coordinator" class="regular-text oat-coord-select2" style="width:100%;" multiple required>
                             <option value=""></option>
                             <?php foreach ( $coord_options as $opt ) : ?>
                                 <option value="<?php echo esc_attr( $opt['id'] ); ?>"><?php echo esc_html( $opt['text'] ); ?></option>
