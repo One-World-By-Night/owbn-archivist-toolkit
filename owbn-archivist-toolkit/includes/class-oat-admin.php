@@ -127,6 +127,7 @@ class OAT_Admin {
 
         wp_enqueue_script( 'select2' );
         wp_enqueue_style( 'select2' );
+        wp_enqueue_script( 'jquery-ui-autocomplete' );
 
         wp_enqueue_script(
             'oat-character-picker',
