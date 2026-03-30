@@ -423,6 +423,95 @@ class OAT_Registry {
     }
 
     /**
+     * Search characters by name or chronicle, scoped to user's access.
+     *
+     * @param int    $user_id
+     * @param string $q Search term.
+     * @return array Character objects with entry_counts and coordinator_grants.
+     */
+    public static function search_characters( $user_id, $q ) {
+        global $wpdb;
+        $ct  = $wpdb->prefix . 'oat_characters';
+        $ra  = $wpdb->prefix . 'oat_registry_access';
+        $et  = $wpdb->prefix . 'oat_entries';
+        $now = time();
+
+        $search_roles = OAT_Authorization::get_character_search_roles();
+        $top_role     = $search_roles[0];
+
+        $like = '%' . $wpdb->esc_like( $q ) . '%';
+
+        // Build base WHERE for search term.
+        $search_where = $wpdb->prepare(
+            "(c.character_name LIKE %s OR c.chronicle_slug LIKE %s OR c.player_name LIKE %s)",
+            $like, $like, $like
+        );
+
+        if ( $top_role === 'archivist' ) {
+            // Global: search all characters.
+            $characters = $wpdb->get_results(
+                "SELECT c.* FROM {$ct} c WHERE {$search_where} ORDER BY c.character_name LIMIT 50"
+            );
+        } else {
+            // Scoped: own + chronicle staff + coordinator grants.
+            $scope_parts = array();
+            $scope_parts[] = $wpdb->prepare( "c.wp_user_id = %d", $user_id );
+
+            $chronicle_slugs = self::get_user_chronicle_slugs();
+            if ( ! empty( $chronicle_slugs ) ) {
+                $placeholders = implode( ',', array_fill( 0, count( $chronicle_slugs ), '%s' ) );
+                $scope_parts[] = $wpdb->prepare( "c.chronicle_slug IN ({$placeholders})", $chronicle_slugs );
+            }
+
+            $coord_genres = self::get_user_coordinator_genres();
+            if ( ! empty( $coord_genres ) ) {
+                $genre_ph = implode( ',', array_fill( 0, count( $coord_genres ), '%s' ) );
+                $scope_parts[] = $wpdb->prepare(
+                    "c.id IN (SELECT character_id FROM {$ra} WHERE grant_type = 'coordinator' AND grant_value IN ({$genre_ph}) AND (starts_at IS NULL OR starts_at <= %d) AND (expires_at IS NULL OR expires_at >= %d))",
+                    array_merge( $coord_genres, array( $now, $now ) )
+                );
+            }
+
+            $scope_where = '(' . implode( ' OR ', $scope_parts ) . ')';
+            $characters = $wpdb->get_results(
+                "SELECT c.* FROM {$ct} c WHERE {$search_where} AND {$scope_where} ORDER BY c.character_name LIMIT 50"
+            );
+        }
+
+        if ( empty( $characters ) ) {
+            return array();
+        }
+
+        // Bulk-fetch grants + entry counts.
+        $char_ids = array_map( function( $c ) { return (int) $c->id; }, $characters );
+        $id_list  = implode( ',', $char_ids );
+
+        $grants_by_char = array();
+        $rows = $wpdb->get_results(
+            "SELECT character_id, grant_value FROM {$ra} WHERE character_id IN ({$id_list}) AND grant_type = 'coordinator' AND (starts_at IS NULL OR starts_at <= {$now}) AND (expires_at IS NULL OR expires_at >= {$now})"
+        );
+        foreach ( $rows as $row ) {
+            $grants_by_char[ (int) $row->character_id ][] = $row->grant_value;
+        }
+
+        $counts_by_char = array();
+        $count_rows = $wpdb->get_results(
+            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
+        );
+        foreach ( $count_rows as $row ) {
+            $counts_by_char[ (int) $row->character_id ] = (int) $row->cnt;
+        }
+
+        foreach ( $characters as $char ) {
+            $cid = (int) $char->id;
+            $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
+            $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
+        }
+
+        return $characters;
+    }
+
+    /**
      * Filter timeline events for a registry viewer.
      *
      * @param array  $timeline_events Timeline rows.
