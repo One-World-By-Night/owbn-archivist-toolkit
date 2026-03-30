@@ -80,9 +80,7 @@ class OAT_Admin {
 
         // Define the desired order by slug.
         $order = array(
-            'owc-oat-inbox',
-            'owc-oat-submit',
-            'owc-oat-registry',
+            'owc-oat-workspace',
             'oat-entries',
             'owc-oat-reports',
             'oat-reports',
