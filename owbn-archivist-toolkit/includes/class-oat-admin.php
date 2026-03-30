@@ -6,8 +6,8 @@ class OAT_Admin {
 
     public static function register_menus() {
         add_menu_page(
-            'OAT',
-            'OAT',
+            'Archivist Dashboard',
+            'Archivist',
             OAT_Constants::CAP_ARCHIVIST,
             'oat-entries',
             array( 'OAT_Page_Entries', 'render' ),

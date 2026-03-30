@@ -22,7 +22,7 @@ class OAT_Page_Settings {
 
 		?>
 		<div class="wrap">
-			<h1>OAT Settings</h1>
+			<h1>Archivist Settings</h1>
 			<nav class="nav-tab-wrapper">
 				<?php foreach ( $tabs as $slug => $label ) :
 					$url    = admin_url( 'admin.php?page=oat-settings&tab=' . $slug );

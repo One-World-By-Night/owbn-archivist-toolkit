@@ -23,7 +23,7 @@ class OAT_Page_Toolbox {
 
 		?>
 		<div class="wrap">
-			<h1>OAT Toolbox</h1>
+			<h1>Archivist Toolbox</h1>
 			<nav class="nav-tab-wrapper">
 				<?php foreach ( $tabs as $slug => $label ) :
 					$url    = admin_url( 'admin.php?page=oat-toolbox&tab=' . $slug );
