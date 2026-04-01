@@ -223,16 +223,18 @@ class OAT_Registry {
             }
         }
 
-        // Bulk-fetch entry counts in one query.
+        // Bulk-fetch entry counts + last activity in one query.
         $counts_by_char = array();
+        $last_activity  = array();
         if ( ! empty( $char_ids ) ) {
             $entries_table = $wpdb->prefix . 'oat_entries';
             $id_list = implode( ',', $char_ids );
             $count_rows = $wpdb->get_results(
-                "SELECT character_id, COUNT(*) as cnt FROM {$entries_table} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
+                "SELECT character_id, COUNT(*) as cnt, MAX(created_at) as last_at FROM {$entries_table} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
             );
             foreach ( $count_rows as $row ) {
                 $counts_by_char[ (int) $row->character_id ] = (int) $row->cnt;
+                $last_activity[ (int) $row->character_id ]  = $row->last_at;
             }
         }
 
@@ -240,6 +242,7 @@ class OAT_Registry {
             $cid = (int) $char->id;
             $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
             $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
+            $char->last_activity = $last_activity[ $cid ] ?? null;
         }
 
         return $characters;
@@ -403,20 +406,23 @@ class OAT_Registry {
             $grants_by_char[ $cid ][] = $row->grant_value;
         }
 
-        // Bulk-fetch entry counts.
+        // Bulk-fetch entry counts + last activity.
         $et = $wpdb->prefix . 'oat_entries';
         $counts_by_char = array();
+        $last_activity  = array();
         $count_rows = $wpdb->get_results(
-            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
+            "SELECT character_id, COUNT(*) as cnt, MAX(created_at) as last_at FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
         );
         foreach ( $count_rows as $row ) {
             $counts_by_char[ (int) $row->character_id ] = (int) $row->cnt;
+            $last_activity[ (int) $row->character_id ]  = $row->last_at;
         }
 
         foreach ( $characters as $char ) {
             $cid = (int) $char->id;
             $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
             $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
+            $char->last_activity = $last_activity[ $cid ] ?? null;
         }
 
         return $characters;
@@ -495,17 +501,20 @@ class OAT_Registry {
         }
 
         $counts_by_char = array();
+        $last_activity  = array();
         $count_rows = $wpdb->get_results(
-            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
+            "SELECT character_id, COUNT(*) as cnt, MAX(created_at) as last_at FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' GROUP BY character_id"
         );
         foreach ( $count_rows as $row ) {
             $counts_by_char[ (int) $row->character_id ] = (int) $row->cnt;
+            $last_activity[ (int) $row->character_id ]  = $row->last_at;
         }
 
         foreach ( $characters as $char ) {
             $cid = (int) $char->id;
             $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
             $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
+            $char->last_activity = $last_activity[ $cid ] ?? null;
         }
 
         return $characters;
