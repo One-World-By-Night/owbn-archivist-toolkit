@@ -14,7 +14,7 @@
 
 		<table class="form-table">
 			<tr>
-				<th><label for="slug">Slug</label></th>
+				<th><label for="slug"><?php esc_html_e( 'Slug', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<?php if ( $is_edit ) : ?>
 						<input type="text" id="slug" value="<?php echo esc_attr( $form['slug'] ); ?>" class="regular-text" readonly disabled>
@@ -28,14 +28,14 @@
 			</tr>
 
 			<tr>
-				<th><label for="label">Label</label></th>
+				<th><label for="label"><?php esc_html_e( 'Label', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<input type="text" name="label" id="label" value="<?php echo esc_attr( $form['label'] ); ?>" class="regular-text" required>
 				</td>
 			</tr>
 
 			<tr>
-				<th><label for="description">Description</label></th>
+				<th><label for="description"><?php esc_html_e( 'Description', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<textarea name="description" id="description" rows="3" class="large-text"><?php echo esc_textarea( $form['description'] ?? '' ); ?></textarea>
 					<p class="description">Optional help text shown to submitters when selecting this form.</p>
@@ -43,14 +43,14 @@
 			</tr>
 
 			<tr>
-				<th><label for="sort_order">Sort Order</label></th>
+				<th><label for="sort_order"><?php esc_html_e( 'Sort Order', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<input type="number" name="sort_order" id="sort_order" value="<?php echo (int) ( $form['sort_order'] ?? 0 ); ?>" class="small-text" min="0" step="1">
 				</td>
 			</tr>
 
 			<tr>
-				<th>Active</th>
+				<th><?php esc_html_e( 'Active', 'owbn-archivist-toolkit' ); ?></th>
 				<td>
 					<label>
 						<input type="checkbox" name="active" value="1"<?php checked( $form['active'] ); ?>>
@@ -60,7 +60,7 @@
 			</tr>
 
 			<tr>
-				<th>Assigned Domains</th>
+				<th><?php esc_html_e( 'Assigned Domains', 'owbn-archivist-toolkit' ); ?></th>
 				<td>
 					<?php if ( ! empty( $all_domains ) ) : ?>
 						<fieldset>
@@ -81,12 +81,12 @@
 			</tr>
 		</table>
 
-		<?php submit_button( $is_edit ? 'Update Form' : 'Add Form', 'primary', 'oat_save_form' ); ?>
+		<?php submit_button( $is_edit ? __( 'Update Form', 'owbn-archivist-toolkit' ) : __( 'Add Form', 'owbn-archivist-toolkit' ), 'primary', 'oat_save_form' ); ?>
 	</form>
 
 	<?php if ( $is_edit ) : ?>
 		<hr>
-		<h2>Quick Links</h2>
+		<h2><?php esc_html_e( 'Quick Links', 'owbn-archivist-toolkit' ); ?></h2>
 		<ul>
 			<li><a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-form-fields&form_slug=' . urlencode( $form['slug'] ) ) ); ?>">Manage Form Fields</a></li>
 		</ul>

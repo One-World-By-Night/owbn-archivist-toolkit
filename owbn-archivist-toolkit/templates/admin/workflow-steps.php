@@ -1,6 +1,6 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
 <?php if ( empty( $embedded ) ) : ?><div class="wrap">
-	<h1>Workflow Steps</h1>
+	<h1><?php esc_html_e( 'Workflow Steps', 'owbn-archivist-toolkit' ); ?></h1>
 <?php endif; ?>
 
 	<?php settings_errors( 'oat_workflow_steps' ); ?>

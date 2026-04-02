@@ -23,7 +23,7 @@
         var $hidden  = $el.closest('.oat-character-picker-wrap').find('input[type="hidden"]');
 
         $el.select2({
-            placeholder: 'Type to search characters…',
+            placeholder: (window.oatCharacterPicker && oatCharacterPicker.i18n && oatCharacterPicker.i18n.searchPlaceholder) || 'Type to search characters...',
             minimumInputLength: 2,
             allowClear: true,
             width: '100%',

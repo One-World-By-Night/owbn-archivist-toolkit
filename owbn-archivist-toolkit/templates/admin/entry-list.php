@@ -1,6 +1,6 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
 <div class="wrap">
-    <h1>All Entries</h1>
+    <h1><?php esc_html_e( 'All Entries', 'owbn-archivist-toolkit' ); ?></h1>
 
     <form method="get">
         <input type="hidden" name="page" value="oat-entries">

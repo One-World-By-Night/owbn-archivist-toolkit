@@ -15,7 +15,7 @@
 		<table class="form-table">
 			<!-- Slug -->
 			<tr>
-				<th><label for="slug">Slug</label></th>
+				<th><label for="slug"><?php esc_html_e( 'Slug', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<?php if ( $is_edit ) : ?>
 						<input type="text" id="slug" value="<?php echo esc_attr( $domain['slug'] ); ?>" class="regular-text" readonly disabled>
@@ -30,7 +30,7 @@
 
 			<!-- Label -->
 			<tr>
-				<th><label for="label">Label</label></th>
+				<th><label for="label"><?php esc_html_e( 'Label', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<input type="text" name="label" id="label" value="<?php echo esc_attr( $domain['label'] ); ?>" class="regular-text" required>
 					<p class="description">Display name shown in the UI.</p>
@@ -39,7 +39,7 @@
 
 			<!-- Archivist Mode -->
 			<tr>
-				<th><label for="archivist_mode">Archivist Mode</label></th>
+				<th><label for="archivist_mode"><?php esc_html_e( 'Archivist Mode', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<select name="archivist_mode" id="archivist_mode">
 						<option value="manual"<?php selected( $domain['archivist_mode'], 'manual' ); ?>>Manual</option>
@@ -51,7 +51,7 @@
 
 			<!-- Sort Order -->
 			<tr>
-				<th><label for="sort_order">Sort Order</label></th>
+				<th><label for="sort_order"><?php esc_html_e( 'Sort Order', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<input type="number" name="sort_order" id="sort_order" value="<?php echo (int) ( $domain['sort_order'] ?? 0 ); ?>" class="small-text" min="0" step="1">
 					<p class="description">Lower numbers appear first in dropdowns. Domains with the same sort order are sorted alphabetically.</p>
@@ -60,7 +60,7 @@
 
 			<!-- Active -->
 			<tr>
-				<th>Active</th>
+				<th><?php esc_html_e( 'Active', 'owbn-archivist-toolkit' ); ?></th>
 				<td>
 					<label>
 						<input type="checkbox" name="active" value="1"<?php checked( $domain['active'] ); ?>>
@@ -70,12 +70,12 @@
 			</tr>
 		</table>
 
-		<?php submit_button( $is_edit ? 'Update Domain' : 'Add Domain', 'primary', 'oat_save_domain' ); ?>
+		<?php submit_button( $is_edit ? __( 'Update Domain', 'owbn-archivist-toolkit' ) : __( 'Add Domain', 'owbn-archivist-toolkit' ), 'primary', 'oat_save_domain' ); ?>
 	</form>
 
 	<?php if ( $is_edit ) : ?>
 		<hr>
-		<h2>Assigned Forms</h2>
+		<h2><?php esc_html_e( 'Assigned Forms', 'owbn-archivist-toolkit' ); ?></h2>
 		<?php
 		$assigned_forms = OAT_Domain_Form::get_forms_for_domain( (int) $domain['id'] );
 		if ( $assigned_forms ) : ?>
@@ -95,7 +95,7 @@
 			<p>No forms assigned. <a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-forms&action=add' ) ); ?>">Create a form</a> and assign it to this domain.</p>
 		<?php endif; ?>
 
-		<h2>Quick Links</h2>
+		<h2><?php esc_html_e( 'Quick Links', 'owbn-archivist-toolkit' ); ?></h2>
 		<ul>
 			<li><a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-workflow-steps&domain=' . urlencode( $domain['slug'] ) ) ); ?>">Manage Workflow Steps</a></li>
 		</ul>

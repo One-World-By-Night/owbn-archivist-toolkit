@@ -1,6 +1,6 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
 <?php if ( empty( $embedded ) ) : ?><div class="wrap">
-	<h1>Creature Type Taxonomy</h1>
+	<h1><?php esc_html_e( 'Creature Type Taxonomy', 'owbn-archivist-toolkit' ); ?></h1>
 <?php endif; ?>
 
 	<?php if ( ! empty( $_GET['imported'] ) ) : ?>

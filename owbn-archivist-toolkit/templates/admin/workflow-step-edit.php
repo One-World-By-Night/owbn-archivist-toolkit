@@ -16,7 +16,7 @@
 		<table class="form-table">
 			<!-- Domain (read-only) -->
 			<tr>
-				<th>Domain</th>
+				<th><?php esc_html_e( 'Domain', 'owbn-archivist-toolkit' ); ?></th>
 				<td>
 					<code><?php echo esc_html( $step['domain_slug'] ); ?></code>
 				</td>
@@ -24,7 +24,7 @@
 
 			<!-- Step ID -->
 			<tr>
-				<th><label for="step_id">Step ID</label></th>
+				<th><label for="step_id"><?php esc_html_e( 'Step ID', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<?php if ( $is_edit ) : ?>
 						<input type="text" id="step_id" value="<?php echo esc_attr( $step['step_id'] ); ?>" class="regular-text" readonly disabled>
@@ -39,7 +39,7 @@
 
 			<!-- Label -->
 			<tr>
-				<th><label for="label">Label</label></th>
+				<th><label for="label"><?php esc_html_e( 'Label', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<input type="text" name="label" id="label" value="<?php echo esc_attr( $step['label'] ); ?>" class="regular-text" required>
 				</td>
@@ -47,7 +47,7 @@
 
 			<!-- Sort Order -->
 			<tr>
-				<th><label for="sort_order">Sort Order</label></th>
+				<th><label for="sort_order"><?php esc_html_e( 'Sort Order', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<input type="number" name="sort_order" id="sort_order" value="<?php echo (int) $step['sort_order']; ?>" min="0" step="10" class="small-text">
 					<p class="description">Steps execute in ascending order.</p>
@@ -56,7 +56,7 @@
 
 			<!-- Assignee Role -->
 			<tr>
-				<th><label for="assignee_role">Assignee Role</label></th>
+				<th><label for="assignee_role"><?php esc_html_e( 'Assignee Role', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<input type="text" name="assignee_role" id="assignee_role" value="<?php echo esc_attr( $step['assignee_role'] ); ?>" class="regular-text">
 					<p class="description">accessSchema role path pattern. Use <code>{chronicle_slug}</code> and <code>{coordinator_genre}</code> as placeholders.<br>Example: <code>Chronicle/{chronicle_slug}/HST</code></p>
@@ -65,7 +65,7 @@
 
 			<!-- Visibility Tier -->
 			<tr>
-				<th><label for="visibility_tier">Visibility Tier</label></th>
+				<th><label for="visibility_tier"><?php esc_html_e( 'Visibility Tier', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<select name="visibility_tier" id="visibility_tier">
 						<?php foreach ( $tiers as $tier ) : ?>
@@ -80,7 +80,7 @@
 
 			<!-- Routing: On Approve -->
 			<tr>
-				<th><label for="on_approve">On Approve</label></th>
+				<th><label for="on_approve"><?php esc_html_e( 'On Approve', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<select name="on_approve" id="on_approve">
 						<option value="">-- Terminal (end workflow) --</option>
@@ -96,7 +96,7 @@
 
 			<!-- Routing: On Deny -->
 			<tr>
-				<th><label for="on_deny">On Deny</label></th>
+				<th><label for="on_deny"><?php esc_html_e( 'On Deny', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<select name="on_deny" id="on_deny">
 						<option value="">-- Terminal (deny entry) --</option>
@@ -111,7 +111,7 @@
 
 			<!-- Routing: On Request Changes -->
 			<tr>
-				<th><label for="on_request_changes">On Request Changes</label></th>
+				<th><label for="on_request_changes"><?php esc_html_e( 'On Request Changes', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<select name="on_request_changes" id="on_request_changes">
 						<option value="">-- None --</option>
@@ -127,7 +127,7 @@
 
 			<!-- Multi-Approve -->
 			<tr>
-				<th>Multi-Approve</th>
+				<th><?php esc_html_e( 'Multi-Approve', 'owbn-archivist-toolkit' ); ?></th>
 				<td>
 					<label>
 						<input type="checkbox" name="multi_approve" value="1"<?php checked( $step['multi_approve'] ); ?>>
@@ -138,7 +138,7 @@
 
 			<!-- Active -->
 			<tr>
-				<th>Active</th>
+				<th><?php esc_html_e( 'Active', 'owbn-archivist-toolkit' ); ?></th>
 				<td>
 					<label>
 						<input type="checkbox" name="active" value="1"<?php checked( $step['active'] ); ?>>
@@ -149,7 +149,7 @@
 
 			<!-- Timer JSON -->
 			<tr>
-				<th><label for="timer_json">Timer Config (JSON)</label></th>
+				<th><label for="timer_json"><?php esc_html_e( 'Timer Config (JSON)', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<textarea name="timer_json" id="timer_json" rows="4" class="large-text code"><?php echo esc_textarea( $step['timer_json'] ); ?></textarea>
 					<p class="description">Timer config. Example: <code>{"duration": 1209600, "auto_action": "auto_approve", "bump_required": 2}</code><br>
@@ -159,7 +159,7 @@
 
 			<!-- Condition JSON -->
 			<tr>
-				<th><label for="condition_json">Condition (JSON)</label></th>
+				<th><label for="condition_json"><?php esc_html_e( 'Condition (JSON)', 'owbn-archivist-toolkit' ); ?></label></th>
 				<td>
 					<textarea name="condition_json" id="condition_json" rows="3" class="large-text code"><?php echo esc_textarea( $step['condition_json'] ); ?></textarea>
 					<p class="description">Conditional routing — step is skipped (auto-advances to on_approve target) if condition evaluates to false.<br>
@@ -169,6 +169,6 @@
 			</tr>
 		</table>
 
-		<?php submit_button( $is_edit ? 'Update Step' : 'Add Step', 'primary', 'oat_save_step' ); ?>
+		<?php submit_button( $is_edit ? __( 'Update Step', 'owbn-archivist-toolkit' ) : __( 'Add Step', 'owbn-archivist-toolkit' ), 'primary', 'oat_save_step' ); ?>
 	</form>
 </div>

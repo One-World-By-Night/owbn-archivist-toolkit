@@ -1,6 +1,6 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
 <?php if ( empty( $embedded ) ) : ?><div class="wrap">
-    <h1>Regulation Rules</h1>
+    <h1><?php esc_html_e( 'Regulation Rules', 'owbn-archivist-toolkit' ); ?></h1>
 <?php endif; ?>
 
     <?php settings_errors( 'oat_rules' ); ?>
@@ -13,16 +13,16 @@
 
     <!-- Add New Rule -->
     <div class="oat-add-rule-section">
-        <h2>Add New Rule</h2>
+        <h2><?php esc_html_e( 'Add New Rule', 'owbn-archivist-toolkit' ); ?></h2>
         <form method="post">
             <?php wp_nonce_field( 'oat_add_rule' ); ?>
             <table class="form-table">
-                <tr><th><label for="genre">Genre</label></th><td><input type="text" name="genre" id="genre" class="regular-text" required></td></tr>
-                <tr><th><label for="category">Category</label></th><td><input type="text" name="category" id="category" class="regular-text" required></td></tr>
-                <tr><th><label for="subcategory">Subcategory</label></th><td><input type="text" name="subcategory" id="subcategory" class="regular-text"></td></tr>
-                <tr><th><label for="condition_name">Condition Name</label></th><td><input type="text" name="condition_name" id="condition_name" class="regular-text"></td></tr>
+                <tr><th><label for="genre"><?php esc_html_e( 'Genre', 'owbn-archivist-toolkit' ); ?></label></th><td><input type="text" name="genre" id="genre" class="regular-text" required></td></tr>
+                <tr><th><label for="category"><?php esc_html_e( 'Category', 'owbn-archivist-toolkit' ); ?></label></th><td><input type="text" name="category" id="category" class="regular-text" required></td></tr>
+                <tr><th><label for="subcategory"><?php esc_html_e( 'Subcategory', 'owbn-archivist-toolkit' ); ?></label></th><td><input type="text" name="subcategory" id="subcategory" class="regular-text"></td></tr>
+                <tr><th><label for="condition_name"><?php esc_html_e( 'Condition Name', 'owbn-archivist-toolkit' ); ?></label></th><td><input type="text" name="condition_name" id="condition_name" class="regular-text"></td></tr>
                 <tr>
-                    <th><label for="pc_level">PC Level</label></th>
+                    <th><label for="pc_level"><?php esc_html_e( 'PC Level', 'owbn-archivist-toolkit' ); ?></label></th>
                     <td>
                         <select name="pc_level" id="pc_level">
                             <option value="">Unregulated</option>
@@ -34,7 +34,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="npc_level">NPC Level</label></th>
+                    <th><label for="npc_level"><?php esc_html_e( 'NPC Level', 'owbn-archivist-toolkit' ); ?></label></th>
                     <td>
                         <select name="npc_level" id="npc_level">
                             <option value="">Unregulated</option>
@@ -46,7 +46,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="controlling_coordinator">Controlling Coordinator</label></th>
+                    <th><label for="controlling_coordinator"><?php esc_html_e( 'Controlling Coordinator', 'owbn-archivist-toolkit' ); ?></label></th>
                     <td>
                         <?php
                         $coord_list = array();
@@ -147,42 +147,42 @@
                         </script>
                     </td>
                 </tr>
-                <tr><th><label for="elevation">Elevation</label></th><td><label><input type="checkbox" name="elevation" id="elevation" value="1"> Elevated (blocks BBP auto-approve)</label></td></tr>
+                <tr><th><label for="elevation"><?php esc_html_e( 'Elevation', 'owbn-archivist-toolkit' ); ?></label></th><td><label><input type="checkbox" name="elevation" id="elevation" value="1"> Elevated (blocks BBP auto-approve)</label></td></tr>
             </table>
-            <?php submit_button( 'Add Rule', 'primary', 'oat_add_rule' ); ?>
+            <?php submit_button( __( 'Add Rule', 'owbn-archivist-toolkit' ), 'primary', 'oat_add_rule' ); ?>
         </form>
     </div>
 
     <!-- CSV Import -->
     <div class="oat-csv-import-section">
-        <h2>CSV Import (append only)</h2>
+        <h2><?php esc_html_e( 'CSV Import (append only)', 'owbn-archivist-toolkit' ); ?></h2>
         <form method="post" enctype="multipart/form-data">
             <?php wp_nonce_field( 'oat_import_csv' ); ?>
             <input type="file" name="csv_file" accept=".csv" required>
-            <?php submit_button( 'Import CSV', 'secondary', 'oat_import_csv' ); ?>
+            <?php submit_button( __( 'Import CSV', 'owbn-archivist-toolkit' ), 'secondary', 'oat_import_csv' ); ?>
         </form>
     </div>
 
     <!-- CSV Sync -->
     <div class="oat-csv-sync-section">
-        <h2>CSV Sync (smart upsert)</h2>
+        <h2><?php esc_html_e( 'CSV Sync (smart upsert)', 'owbn-archivist-toolkit' ); ?></h2>
         <p class="description">Matches by section_ref, then by content. Unchanged rules keep their IDs. Changed rules get immutable updates. Missing rules are deactivated.</p>
         <form method="post" enctype="multipart/form-data">
             <?php wp_nonce_field( 'oat_sync_csv' ); ?>
             <input type="file" name="csv_file" accept=".csv" required>
-            <?php submit_button( 'Sync CSV', 'secondary', 'oat_sync_csv' ); ?>
+            <?php submit_button( __( 'Sync CSV', 'owbn-archivist-toolkit' ), 'secondary', 'oat_sync_csv' ); ?>
         </form>
     </div>
 
     <!-- CSV Export -->
     <div class="oat-csv-export-section" style="margin-bottom:20px;">
-        <h2>CSV Export</h2>
+        <h2><?php esc_html_e( 'CSV Export', 'owbn-archivist-toolkit' ); ?></h2>
         <p class="description">Download all active regulation rules as CSV.</p>
         <a href="<?php echo esc_url( admin_url( 'admin.php?page=oat-rules&export_csv=1' ) ); ?>" class="button button-secondary">Download CSV</a>
     </div>
 
     <!-- Rules List -->
-    <h2>Rules</h2>
+    <h2><?php esc_html_e( 'Rules', 'owbn-archivist-toolkit' ); ?></h2>
     <form method="get">
         <?php if ( ! empty( $embedded ) ) : ?>
             <input type="hidden" name="page" value="oat-settings">
@@ -190,7 +190,7 @@
         <?php else : ?>
             <input type="hidden" name="page" value="oat-rules">
         <?php endif; ?>
-        <?php $list_table->search_box( 'Search', 'oat-rules-search' ); ?>
+        <?php $list_table->search_box( __( 'Search', 'owbn-archivist-toolkit' ), 'oat-rules-search' ); ?>
         <?php $list_table->display(); ?>
     </form>
 <?php if ( empty( $embedded ) ) : ?></div><?php endif; ?>

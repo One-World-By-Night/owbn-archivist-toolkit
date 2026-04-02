@@ -139,6 +139,9 @@ class OAT_Admin {
             'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
             'nonce'        => wp_create_nonce( 'oat_character_search' ),
             'allowedRoles' => OAT_Authorization::get_character_search_roles(),
+            'i18n'         => array(
+                'searchPlaceholder' => __( 'Type to search characters...', 'owbn-archivist-toolkit' ),
+            ),
         ) );
 
         wp_enqueue_script(

@@ -1,6 +1,6 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
 <?php if ( empty( $embedded ) ) : ?><div class="wrap">
-	<h1>Forms</h1>
+	<h1><?php esc_html_e( 'Forms', 'owbn-archivist-toolkit' ); ?></h1>
 <?php endif; ?>
 
 	<?php settings_errors( 'oat_forms' ); ?>

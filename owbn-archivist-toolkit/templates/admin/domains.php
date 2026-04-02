@@ -1,6 +1,6 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
 <?php if ( empty( $embedded ) ) : ?><div class="wrap">
-	<h1>Domains</h1>
+	<h1><?php esc_html_e( 'Domains', 'owbn-archivist-toolkit' ); ?></h1>
 <?php endif; ?>
 
 	<?php settings_errors( 'oat_domains' ); ?>

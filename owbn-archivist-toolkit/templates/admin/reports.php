@@ -1,6 +1,6 @@
 <?php defined( 'ABSPATH' ) || exit; ?>
 <div class="wrap">
-	<h1>R&U Distribution Details</h1>
+	<h1><?php esc_html_e( 'R&U Distribution Details', 'owbn-archivist-toolkit' ); ?></h1>
 
 	<?php
 	// Build scope_roles query string fragment for preserving across links.
@@ -32,7 +32,7 @@
 						<?php echo esc_html( $label ); ?>
 					</label>
 				<?php endforeach; ?>
-				<?php submit_button( 'Apply', 'secondary', 'apply_scope', false, array( 'style' => 'margin:0;' ) ); ?>
+				<?php submit_button( __( 'Apply', 'owbn-archivist-toolkit' ), 'secondary', 'apply_scope', false, array( 'style' => 'margin:0;' ) ); ?>
 			</form>
 		</div>
 	<?php endif; ?>
@@ -95,7 +95,7 @@
 							</option>
 						<?php endforeach; ?>
 					</select>
-					<?php submit_button( 'Filter', '', 'filter_action', false ); ?>
+					<?php submit_button( __( 'Filter', 'owbn-archivist-toolkit' ), '', 'filter_action', false ); ?>
 					<?php if ( $status ) :
 						$clear_url = admin_url( 'admin.php?page=oat-reports&tab=' . $tab . '&pc_npc=' . $pc_npc . $scope_qs );
 					?>
