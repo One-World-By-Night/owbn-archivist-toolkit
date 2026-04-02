@@ -1,0 +1,319 @@
+# Copyright (C) 2026 OWbN Web Team
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: OWbN Archivist Toolkit 1.8.5\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/owbn-archivist-toolkit\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-04-02T23:48:26+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: owbn-archivist-toolkit\n"
+
+#. Plugin Name of the plugin
+#: owbn-archivist-toolkit.php
+msgid "OWbN Archivist Toolkit"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: owbn-archivist-toolkit.php
+msgid "https://github.com/One-World-By-Night/owbn-archivist-toolkit"
+msgstr ""
+
+#. Description of the plugin
+#: owbn-archivist-toolkit.php
+msgid "Workflow engine for organizational requests and approvals."
+msgstr ""
+
+#. Author of the plugin
+#: owbn-archivist-toolkit.php
+msgid "OWbN Web Team"
+msgstr ""
+
+#: includes/class-oat-admin.php:143
+msgid "Type to search characters..."
+msgstr ""
+
+#: templates/admin/domain-edit.php:18
+#: templates/admin/form-edit.php:17
+msgid "Slug"
+msgstr ""
+
+#: templates/admin/domain-edit.php:33
+#: templates/admin/form-edit.php:31
+#: templates/admin/form-field-edit.php:79
+#: templates/admin/workflow-step-edit.php:42
+msgid "Label"
+msgstr ""
+
+#: templates/admin/domain-edit.php:42
+msgid "Archivist Mode"
+msgstr ""
+
+#: templates/admin/domain-edit.php:54
+#: templates/admin/form-edit.php:46
+#: templates/admin/form-field-edit.php:87
+#: templates/admin/workflow-step-edit.php:50
+msgid "Sort Order"
+msgstr ""
+
+#: templates/admin/domain-edit.php:63
+#: templates/admin/form-edit.php:53
+#: templates/admin/form-field-edit.php:107
+#: templates/admin/workflow-step-edit.php:141
+msgid "Active"
+msgstr ""
+
+#: templates/admin/domain-edit.php:73
+msgid "Update Domain"
+msgstr ""
+
+#: templates/admin/domain-edit.php:73
+msgid "Add Domain"
+msgstr ""
+
+#: templates/admin/domain-edit.php:78
+msgid "Assigned Forms"
+msgstr ""
+
+#: templates/admin/domain-edit.php:98
+#: templates/admin/form-edit.php:89
+msgid "Quick Links"
+msgstr ""
+
+#: templates/admin/domains.php:3
+msgid "Domains"
+msgstr ""
+
+#: templates/admin/entry-list.php:3
+msgid "All Entries"
+msgstr ""
+
+#: templates/admin/form-edit.php:38
+msgid "Description"
+msgstr ""
+
+#: templates/admin/form-edit.php:63
+msgid "Assigned Domains"
+msgstr ""
+
+#: templates/admin/form-edit.php:84
+msgid "Update Form"
+msgstr ""
+
+#: templates/admin/form-edit.php:84
+msgid "Add Form"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:18
+#: templates/admin/workflow-step-edit.php:19
+msgid "Domain"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:37
+msgid "Context"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:52
+msgid "Field Key"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:65
+msgid "Type"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:96
+msgid "Required"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:118
+msgid "Public Registry"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:129
+msgid "Placeholder"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:137
+msgid "Help Text"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:146
+msgid "Default Value"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:154
+msgid "Options JSON"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:163
+msgid "Import Options CSV"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:179
+msgid "Condition JSON"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:188
+msgid "Attributes JSON"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:197
+msgid "Validation JSON"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:205
+msgid "Update Field"
+msgstr ""
+
+#: templates/admin/form-field-edit.php:205
+msgid "Add Field"
+msgstr ""
+
+#: templates/admin/form-fields.php:3
+msgid "Form Fields"
+msgstr ""
+
+#: templates/admin/forms.php:3
+msgid "Forms"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:3
+msgid "Regulation Rules"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:16
+msgid "Add New Rule"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:20
+msgid "Genre"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:21
+msgid "Category"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:22
+msgid "Subcategory"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:23
+msgid "Condition Name"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:25
+msgid "PC Level"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:37
+msgid "NPC Level"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:49
+msgid "Controlling Coordinator"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:150
+msgid "Elevation"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:152
+msgid "Add Rule"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:158
+msgid "CSV Import (append only)"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:162
+msgid "Import CSV"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:168
+msgid "CSV Sync (smart upsert)"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:173
+msgid "Sync CSV"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:179
+msgid "CSV Export"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:185
+msgid "Rules"
+msgstr ""
+
+#: templates/admin/regulation-rules.php:193
+msgid "Search"
+msgstr ""
+
+#: templates/admin/reports.php:3
+msgid "R&U Distribution Details"
+msgstr ""
+
+#: templates/admin/reports.php:35
+msgid "Apply"
+msgstr ""
+
+#: templates/admin/reports.php:98
+msgid "Filter"
+msgstr ""
+
+#: templates/admin/taxonomy.php:3
+msgid "Creature Type Taxonomy"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:27
+msgid "Step ID"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:59
+msgid "Assignee Role"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:68
+msgid "Visibility Tier"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:83
+msgid "On Approve"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:99
+msgid "On Deny"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:114
+msgid "On Request Changes"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:130
+msgid "Multi-Approve"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:152
+msgid "Timer Config (JSON)"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:162
+msgid "Condition (JSON)"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:172
+msgid "Update Step"
+msgstr ""
+
+#: templates/admin/workflow-step-edit.php:172
+msgid "Add Step"
+msgstr ""
+
+#: templates/admin/workflow-steps.php:3
+msgid "Workflow Steps"
+msgstr ""
