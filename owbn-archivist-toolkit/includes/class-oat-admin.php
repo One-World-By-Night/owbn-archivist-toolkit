@@ -26,6 +26,9 @@ class OAT_Admin {
         // Regulation Rules: hidden page (accessed via Settings > Regulation Rules tab).
         add_submenu_page( null, 'Regulation Rules', 'Regulation Rules', OAT_Constants::CAP_MANAGE_RULES, 'oat-rules', array( 'OAT_Page_Rules', 'render' ) );
 
+        // Submission Rules: visible submenu.
+        add_submenu_page( 'oat-entries', __( 'Rules', 'owbn-archivist-toolkit' ), __( 'Rules', 'owbn-archivist-toolkit' ), OAT_Constants::CAP_MANAGE_RULES, 'oat-submission-rules', array( 'OAT_Page_Submission_Rules', 'render' ) );
+
         // Creature Taxonomy: hidden page (accessed via Settings > Creature Taxonomy tab).
         add_submenu_page( null, 'Creature Taxonomy', 'Creature Taxonomy', OAT_Constants::CAP_ARCHIVIST, 'oat-taxonomy', array( 'OAT_Page_Taxonomy', 'render' ) );
 

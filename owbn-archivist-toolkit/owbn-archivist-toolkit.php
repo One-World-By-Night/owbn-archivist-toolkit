@@ -3,7 +3,7 @@
  * Plugin Name: OWbN Archivist Toolkit
  * Plugin URI: https://github.com/One-World-By-Night/owbn-archivist-toolkit
  * Description: Workflow engine for organizational requests and approvals.
- * Version:     1.8.8
+ * Version:     1.9.0
  * Author:      OWbN Web Team
  * License:     GPL-2.0-or-later
  * Text Domain: owbn-archivist-toolkit
@@ -12,11 +12,11 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OAT_VERSION', '1.8.8' );
+define( 'OAT_VERSION', '1.9.0' );
 define( 'OAT_PLUGIN_FILE', __FILE__ );
 define( 'OAT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'OAT_DB_VERSION', '1.7.0' );
+define( 'OAT_DB_VERSION', '1.8.0' );
 
 // Autoloader.
 require_once OAT_PLUGIN_DIR . 'includes/class-oat-loader.php';

@@ -28,7 +28,62 @@ class OAT_Seeder {
 			}
 		}
 
+		self::seed_default_rules();
+
 		return $counts;
+	}
+
+	/**
+	 * Seed default submission rules if none exist.
+	 */
+	private static function seed_default_rules() {
+		if ( OAT_Rule::count( array( 'rule_type' => 'submission_check' ) ) > 0 ) {
+			return;
+		}
+
+		$defaults = array(
+			array(
+				'label'        => 'Block transfers from probationary chronicles',
+				'domain'       => 'character_lifecycle',
+				'form_slug'    => 'transfer',
+				'check_source' => 'chronicle',
+				'check_field'  => 'chronicle_probationary',
+				'operator'     => 'equals',
+				'check_value'  => '1',
+				'action'       => 'block',
+				'message'      => 'Transfers from probationary chronicles are not allowed. The originating chronicle must be in good standing before characters can transfer out.',
+				'priority'     => 10,
+			),
+			array(
+				'label'        => 'Block transfers from decommissioned chronicles',
+				'domain'       => 'character_lifecycle',
+				'form_slug'    => 'transfer',
+				'check_source' => 'chronicle',
+				'check_field'  => 'chronicle_status',
+				'operator'     => 'in',
+				'check_value'  => 'decommissioned,dissolved',
+				'action'       => 'block',
+				'message'      => 'This chronicle is no longer active. Transfers from decommissioned or dissolved chronicles are not permitted.',
+				'priority'     => 10,
+			),
+			array(
+				'label'        => 'Block new characters in decommissioned chronicles',
+				'domain'       => 'character_lifecycle',
+				'form_slug'    => 'new_character',
+				'check_source' => 'chronicle',
+				'check_field'  => 'chronicle_status',
+				'operator'     => 'in',
+				'check_value'  => 'decommissioned,dissolved',
+				'action'       => 'block',
+				'message'      => 'New characters cannot be registered to decommissioned or dissolved chronicles.',
+				'priority'     => 10,
+			),
+		);
+
+		foreach ( $defaults as $rule ) {
+			$rule['rule_type'] = 'submission_check';
+			OAT_Rule::create( $rule );
+		}
 	}
 
 	private static function seed_forms_for_domain( $domain ) {

@@ -25,6 +25,15 @@ class OAT_Action_Submit {
             }
         }
 
+        // Generic rules engine — evaluate submission_check rules.
+        if ( class_exists( 'OAT_Rule' ) ) {
+            $meta_arr = isset( $data['meta'] ) && is_array( $data['meta'] ) ? $data['meta'] : $meta;
+            $rule_result = OAT_Rule::evaluate_submission( $entry, $meta_arr );
+            if ( is_wp_error( $rule_result ) ) {
+                return $rule_result;
+            }
+        }
+
         // Save meta values.
         if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) ) {
             foreach ( $data['meta'] as $key => $value ) {

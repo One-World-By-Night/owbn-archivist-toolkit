@@ -317,6 +317,28 @@ class OAT_Schema {
             KEY idx_creature_genre (creature_genre)
         ) {$charset};\n\n";
 
+        // ── Rules Engine ────────────────────────────────────────────
+        $sql .= "CREATE TABLE {$prefix}oat_rules (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            rule_type varchar(50) NOT NULL DEFAULT 'submission_check',
+            label varchar(255) NOT NULL,
+            domain varchar(100) NOT NULL DEFAULT '',
+            form_slug varchar(100) NOT NULL DEFAULT '',
+            check_source varchar(50) NOT NULL DEFAULT 'entry',
+            check_field varchar(100) NOT NULL,
+            operator varchar(20) NOT NULL DEFAULT 'equals',
+            check_value text NOT NULL,
+            action varchar(20) NOT NULL DEFAULT 'block',
+            message text NOT NULL,
+            active tinyint(1) NOT NULL DEFAULT 1,
+            priority int NOT NULL DEFAULT 10,
+            created_at bigint(20) unsigned NOT NULL,
+            PRIMARY KEY  (id),
+            KEY idx_rule_type (rule_type),
+            KEY idx_domain (domain),
+            KEY idx_active (active)
+        ) {$charset};\n\n";
+
         return $sql;
     }
 }
