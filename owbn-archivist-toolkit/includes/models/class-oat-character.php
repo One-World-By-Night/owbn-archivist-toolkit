@@ -267,10 +267,20 @@ class OAT_Character {
      * @param string   $new_email      Optional new email to replace old_email.
      * @return int Number of characters updated.
      */
-    public static function reassociate( $old_email, $new_wp_user_id, $new_email = '' ) {
+    public static function reassociate( $old_email, $new_wp_user_id, $new_email = '', $force = false ) {
         global $wpdb;
         $table = self::table();
         $now   = time();
+
+        // Safety: only reassociate unlinked characters or those already linked to this user.
+        // Pass $force = true to override and claim characters linked to another user.
+        $safety = '';
+        if ( ! $force ) {
+            $safety = $wpdb->prepare(
+                ' AND (wp_user_id IS NULL OR wp_user_id = 0 OR wp_user_id = %d)',
+                $new_wp_user_id
+            );
+        }
 
         if ( $new_email && $new_email !== $old_email ) {
             return (int) $wpdb->query( $wpdb->prepare(
@@ -279,7 +289,7 @@ class OAT_Character {
                 $new_email,
                 $now,
                 $old_email
-            ) );
+            ) . $safety );
         }
 
         return (int) $wpdb->query( $wpdb->prepare(
@@ -287,7 +297,7 @@ class OAT_Character {
             $new_wp_user_id,
             $now,
             $old_email
-        ) );
+        ) . $safety );
     }
 
     /**
