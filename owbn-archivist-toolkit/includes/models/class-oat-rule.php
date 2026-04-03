@@ -281,13 +281,17 @@ class OAT_Rule {
         if ( post_type_exists( 'owbn_chronicle' ) ) {
             $posts = get_posts( array(
                 'post_type'      => 'owbn_chronicle',
-                'post_status'    => 'publish',
+                'post_status'    => array( 'publish', 'decommissioned', 'draft' ),
                 'posts_per_page' => 1,
                 'meta_query'     => array(
                     array( 'key' => 'chronicle_slug', 'value' => $slug ),
                 ),
             ) );
             if ( ! empty( $posts ) ) {
+                // post_status is a WP post column, not meta.
+                if ( $field === 'post_status' || $field === 'chronicle_status' ) {
+                    return $posts[0]->post_status;
+                }
                 return get_post_meta( $posts[0]->ID, $field, true );
             }
         }
