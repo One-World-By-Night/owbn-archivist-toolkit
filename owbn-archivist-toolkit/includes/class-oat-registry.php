@@ -568,29 +568,23 @@ class OAT_Registry {
     }
 
     /**
-     * Bulk-fetch "my entry counts" — entries routed through the user's offices.
+     * Bulk-fetch "my entry counts" — entries originated by this user.
      *
      * @param array $char_ids Character IDs.
-     * @param int   $user_id  User to resolve entity slugs for.
+     * @param int   $user_id  The user whose entries to count.
      * @return array character_id => count
      */
     public static function get_my_entry_counts( $char_ids, $user_id ) {
-        if ( empty( $char_ids ) ) return array();
-
-        $slugs = self::get_user_entity_slugs( $user_id );
-        $coord_slugs = $slugs['coordinators'];
-
-        if ( empty( $coord_slugs ) ) return array();
+        if ( empty( $char_ids ) || ! $user_id ) return array();
 
         global $wpdb;
         $et      = $wpdb->prefix . 'oat_entries';
         $id_list = implode( ',', array_map( 'intval', $char_ids ) );
 
-        $ph = implode( ',', array_fill( 0, count( $coord_slugs ), '%s' ) );
-        $where_clause = $wpdb->prepare( "coordinator_genre IN ({$ph})", $coord_slugs );
-        $rows = $wpdb->get_results(
-            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' AND {$where_clause} GROUP BY character_id"
-        );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' AND originator_id = %d GROUP BY character_id",
+            $user_id
+        ) );
 
         $counts = array();
         foreach ( $rows as $row ) {
