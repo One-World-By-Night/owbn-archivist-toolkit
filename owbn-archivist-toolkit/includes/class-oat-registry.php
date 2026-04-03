@@ -568,23 +568,43 @@ class OAT_Registry {
     }
 
     /**
-     * Bulk-fetch "my entry counts" — entries originated by this user.
+     * Bulk-fetch "my entry counts" — entries routed through this user's coordinator office.
+     *
+     * Counts entries where coordinator_genre or chronicle_slug matches
+     * the user's coordinator genres or chronicle slugs from their ASC roles.
+     * Returns empty for users with no staff or coordinator roles.
      *
      * @param array $char_ids Character IDs.
-     * @param int   $user_id  The user whose entries to count.
+     * @param int   $user_id  User to resolve roles for.
      * @return array character_id => count
      */
     public static function get_my_entry_counts( $char_ids, $user_id ) {
         if ( empty( $char_ids ) || ! $user_id ) return array();
 
+        $slugs = self::get_user_entity_slugs( $user_id );
+        $coord_slugs = $slugs['coordinators'];
+        $chron_slugs = $slugs['chronicles'];
+
+        if ( empty( $coord_slugs ) && empty( $chron_slugs ) ) return array();
+
         global $wpdb;
         $et      = $wpdb->prefix . 'oat_entries';
         $id_list = implode( ',', array_map( 'intval', $char_ids ) );
+        $wheres  = array();
 
-        $rows = $wpdb->get_results( $wpdb->prepare(
-            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' AND originator_id = %d GROUP BY character_id",
-            $user_id
-        ) );
+        if ( ! empty( $coord_slugs ) ) {
+            $ph = implode( ',', array_fill( 0, count( $coord_slugs ), '%s' ) );
+            $wheres[] = $wpdb->prepare( "coordinator_genre IN ({$ph})", $coord_slugs );
+        }
+        if ( ! empty( $chron_slugs ) ) {
+            $ph = implode( ',', array_fill( 0, count( $chron_slugs ), '%s' ) );
+            $wheres[] = $wpdb->prepare( "chronicle_slug IN ({$ph})", $chron_slugs );
+        }
+
+        $where_clause = '(' . implode( ' OR ', $wheres ) . ')';
+        $rows = $wpdb->get_results(
+            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' AND {$where_clause} GROUP BY character_id"
+        );
 
         $counts = array();
         foreach ( $rows as $row ) {
