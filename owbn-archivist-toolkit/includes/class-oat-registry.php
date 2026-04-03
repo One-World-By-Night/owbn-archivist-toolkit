@@ -238,11 +238,14 @@ class OAT_Registry {
             }
         }
 
+        $my_counts = self::get_my_entry_counts( $char_ids, $user_id );
+
         foreach ( $characters as $char ) {
             $cid = (int) $char->id;
             $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
             $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
             $char->last_activity = $last_activity[ $cid ] ?? null;
+            $char->my_entry_counts = $my_counts[ $cid ] ?? 0;
         }
 
         return $characters;
@@ -418,11 +421,15 @@ class OAT_Registry {
             $last_activity[ (int) $row->character_id ]  = $row->last_at;
         }
 
+        // Bulk-fetch "my entries" (coordinator only).
+        $my_counts = self::get_my_entry_counts( $char_ids, $user_id );
+
         foreach ( $characters as $char ) {
             $cid = (int) $char->id;
             $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
             $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
             $char->last_activity = $last_activity[ $cid ] ?? null;
+            $char->my_entry_counts = $my_counts[ $cid ] ?? 0;
         }
 
         return $characters;
@@ -510,14 +517,86 @@ class OAT_Registry {
             $last_activity[ (int) $row->character_id ]  = $row->last_at;
         }
 
+        $my_counts = self::get_my_entry_counts( $char_ids, $user_id );
+
         foreach ( $characters as $char ) {
             $cid = (int) $char->id;
             $char->entry_counts = $counts_by_char[ $cid ] ?? 0;
             $char->coordinator_grants = $grants_by_char[ $cid ] ?? array();
             $char->last_activity = $last_activity[ $cid ] ?? null;
+            $char->my_entry_counts = $my_counts[ $cid ] ?? 0;
         }
 
         return $characters;
+    }
+
+    /**
+     * Get the user's chronicle slugs and coordinator genres for "my entries" counting.
+     *
+     * @param int $user_id
+     * @return array [ 'chronicles' => [...], 'coordinators' => [...] ]
+     */
+    public static function get_user_entity_slugs( $user_id ) {
+        static $cache = array();
+        if ( isset( $cache[ $user_id ] ) ) return $cache[ $user_id ];
+
+        $result = array( 'chronicles' => array(), 'coordinators' => array() );
+        // OAT_Authorization::get_user_roles() uses current user. For arbitrary user, use ASC cache.
+        if ( $user_id === get_current_user_id() ) {
+            $roles = OAT_Authorization::get_user_roles();
+        } elseif ( defined( 'OWC_ASC_CACHE_KEY' ) ) {
+            $cached = get_user_meta( $user_id, OWC_ASC_CACHE_KEY, true );
+            $roles = is_array( $cached ) ? array_map( 'strtolower', $cached ) : array();
+        } else {
+            $roles = array();
+        }
+        foreach ( $roles as $role ) {
+            if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff|ast)#i', $role, $m ) ) {
+                $result['chronicles'][] = strtolower( $m[1] );
+            }
+            if ( preg_match( '#^coordinator/([^/]+)/(coordinator|sub-coordinator)$#i', $role, $m ) ) {
+                $result['coordinators'][] = strtolower( $m[1] );
+            }
+            if ( preg_match( '#^exec/([^/]+)/(coordinator|staff)$#i', $role, $m ) ) {
+                $result['coordinators'][] = strtolower( $m[1] );
+            }
+        }
+        $result['chronicles']   = array_unique( $result['chronicles'] );
+        $result['coordinators'] = array_unique( $result['coordinators'] );
+        $cache[ $user_id ] = $result;
+        return $result;
+    }
+
+    /**
+     * Bulk-fetch "my entry counts" — entries routed through the user's offices.
+     *
+     * @param array $char_ids Character IDs.
+     * @param int   $user_id  User to resolve entity slugs for.
+     * @return array character_id => count
+     */
+    public static function get_my_entry_counts( $char_ids, $user_id ) {
+        if ( empty( $char_ids ) ) return array();
+
+        $slugs = self::get_user_entity_slugs( $user_id );
+        $coord_slugs = $slugs['coordinators'];
+
+        if ( empty( $coord_slugs ) ) return array();
+
+        global $wpdb;
+        $et      = $wpdb->prefix . 'oat_entries';
+        $id_list = implode( ',', array_map( 'intval', $char_ids ) );
+
+        $ph = implode( ',', array_fill( 0, count( $coord_slugs ), '%s' ) );
+        $where_clause = $wpdb->prepare( "coordinator_genre IN ({$ph})", $coord_slugs );
+        $rows = $wpdb->get_results(
+            "SELECT character_id, COUNT(*) as cnt FROM {$et} WHERE character_id IN ({$id_list}) AND status = 'approved' AND {$where_clause} GROUP BY character_id"
+        );
+
+        $counts = array();
+        foreach ( $rows as $row ) {
+            $counts[ (int) $row->character_id ] = (int) $row->cnt;
+        }
+        return $counts;
     }
 
     /**
