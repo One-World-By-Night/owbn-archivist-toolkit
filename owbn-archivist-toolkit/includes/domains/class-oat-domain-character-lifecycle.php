@@ -19,6 +19,7 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
 			array( 'slug' => 'cl_registration',         'label' => 'Registration' ),
 			array( 'slug' => 'cl_ru_request',           'label' => 'R&U Request' ),
 			array( 'slug' => 'cl_learn_custom_content',  'label' => 'Learn Custom Content' ),
+			array( 'slug' => 'cl_fame_registry',          'label' => 'Fame Registry' ),
 		);
 	}
 
@@ -165,6 +166,7 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
 					'registration'         => 'Registration',
 					'ru_request'           => 'R&U Request',
 					'learn_custom_content' => 'Learn Custom Content',
+					'fame_registry'        => 'Fame Registry',
 				),
 			),
 			'transfer_to_chronicle' => array(
@@ -199,6 +201,54 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
 			'teaching_lineage' => array(
 				'label'    => 'Teaching Lineage',
 				'type'     => 'textarea',
+				'required' => false,
+			),
+			'fame_level' => array(
+				'label'    => 'Fame Level',
+				'type'     => 'select',
+				'required' => false,
+				'options'  => array(
+					'3' => 'Fame 3',
+					'4' => 'Fame 4',
+					'5' => 'Fame 5',
+					'6' => 'Fame 6',
+				),
+			),
+			'fame_influence_areas' => array(
+				'label'    => 'Influence Areas',
+				'type'     => 'select',
+				'required' => false,
+				'options'  => array(
+					'bureaucracy'  => 'Bureaucracy',
+					'church'       => 'Church',
+					'finance'      => 'Finance',
+					'health'       => 'Health',
+					'high_society' => 'High Society',
+					'industry'     => 'Industry',
+					'legal'        => 'Legal',
+					'media'        => 'Media',
+					'occult'       => 'Occult',
+					'police'       => 'Police',
+					'political'    => 'Political',
+					'street'       => 'Street',
+					'transportation' => 'Transportation',
+					'underworld'   => 'Underworld',
+					'university'   => 'University',
+				),
+			),
+			'fame_description' => array(
+				'label'    => 'Public Description',
+				'type'     => 'textarea',
+				'required' => false,
+			),
+			'fame_scope' => array(
+				'label'    => 'Scope',
+				'type'     => 'textarea',
+				'required' => false,
+			),
+			'fame_public_id' => array(
+				'label'    => 'Public Identity',
+				'type'     => 'text',
 				'required' => false,
 			),
 		);
@@ -355,6 +405,98 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
 			$resolve
 		) );
 
+		// Fame Registry: chronicle + character + fame fields + regulation rules.
+		$count += OAT_Form_Field::seed( 'cl_fame_registry', array_merge(
+			$shared_submit,
+			array(
+				array(
+					'context'         => 'submit',
+					'field_key'       => 'action_type',
+					'field_type'      => 'hidden',
+					'label'           => 'Action Type',
+					'sort_order'      => 50,
+					'attributes_json' => wp_json_encode( array( 'default' => 'fame_registry' ) ),
+				),
+				array(
+					'context'      => 'submit',
+					'field_key'    => 'fame_level',
+					'field_type'   => 'select',
+					'label'        => 'Fame Level',
+					'required'     => 1,
+					'sort_order'   => 52,
+					'help_text'    => 'The character\'s Fame background level.',
+					'options_json' => wp_json_encode( array(
+						'3' => 'Fame 3',
+						'4' => 'Fame 4',
+						'5' => 'Fame 5',
+						'6' => 'Fame 6',
+					) ),
+				),
+				array(
+					'context'         => 'submit',
+					'field_key'       => 'fame_influence_areas',
+					'field_type'      => 'select',
+					'label'           => 'Influence Areas',
+					'required'        => 1,
+					'sort_order'      => 54,
+					'help_text'       => 'Select all influence areas where this character is publicly known.',
+					'options_json'    => wp_json_encode( array(
+						'bureaucracy'    => 'Bureaucracy',
+						'church'         => 'Church',
+						'finance'        => 'Finance',
+						'health'         => 'Health',
+						'high_society'   => 'High Society',
+						'industry'       => 'Industry',
+						'legal'          => 'Legal',
+						'media'          => 'Media',
+						'occult'         => 'Occult',
+						'police'         => 'Police',
+						'political'      => 'Political',
+						'street'         => 'Street',
+						'transportation' => 'Transportation',
+						'underworld'     => 'Underworld',
+						'university'     => 'University',
+					) ),
+					'attributes_json' => wp_json_encode( array( 'multiple' => true ) ),
+				),
+				array(
+					'context'         => 'submit',
+					'field_key'       => 'fame_public_id',
+					'field_type'      => 'text',
+					'label'           => 'Public Identity',
+					'required'        => 1,
+					'sort_order'      => 56,
+					'help_text'       => 'The mortal name or identity this character is publicly known as.',
+				),
+				array(
+					'context'         => 'submit',
+					'field_key'       => 'fame_description',
+					'field_type'      => 'textarea',
+					'label'           => 'Public Description',
+					'required'        => 1,
+					'sort_order'      => 58,
+					'help_text'       => 'What is this character publicly known for?',
+					'attributes_json' => wp_json_encode( array( 'rows' => 4 ) ),
+					'public_registry' => 1,
+				),
+				array(
+					'context'         => 'submit',
+					'field_key'       => 'fame_scope',
+					'field_type'      => 'textarea',
+					'label'           => 'Scope',
+					'sort_order'      => 59,
+					'help_text'       => 'Who would know this character? (e.g. medical community, tabloid readers)',
+					'attributes_json' => wp_json_encode( array( 'rows' => 3 ) ),
+					'public_registry' => 1,
+				),
+			),
+			self::regulation_fields(),
+			self::system_fields(),
+			$review,
+			$escalate,
+			$resolve
+		) );
+
 		return $count;
 	}
 
@@ -363,9 +505,21 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
 			return new WP_Error( 'missing_character_name', 'Character name is required.' );
 		}
 
-		$valid_types = array( 'transfer', 'death', 'registration', 'ru_request', 'learn_custom_content' );
+		$valid_types = array( 'transfer', 'death', 'registration', 'ru_request', 'learn_custom_content', 'fame_registry' );
 		if ( empty( $meta['action_type'] ) || ! in_array( $meta['action_type'], $valid_types, true ) ) {
 			return new WP_Error( 'invalid_action_type', 'Invalid action type.' );
+		}
+
+		if ( 'fame_registry' === $meta['action_type'] ) {
+			if ( empty( $meta['fame_level'] ) || ! in_array( $meta['fame_level'], array( '3', '4', '5', '6' ), true ) ) {
+				return new WP_Error( 'invalid_fame_level', 'Fame level must be 3, 4, 5, or 6.' );
+			}
+			if ( empty( $meta['fame_public_id'] ) ) {
+				return new WP_Error( 'missing_fame_public_id', 'Public identity is required for fame registry.' );
+			}
+			if ( empty( $meta['fame_description'] ) ) {
+				return new WP_Error( 'missing_fame_description', 'Public description is required for fame registry.' );
+			}
 		}
 
 		if ( ! empty( $meta['ru_sub_status'] ) ) {
