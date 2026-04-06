@@ -48,6 +48,7 @@ class OAT_Entry_Meta {
 
         $key = sanitize_text_field( $key );
         if ( is_string( $value ) ) {
+            $value = wp_unslash( $value );
             $value = wp_kses_post( $value );
         }
 
@@ -79,6 +80,7 @@ class OAT_Entry_Meta {
     public static function update( $id, $value ) {
         global $wpdb;
         if ( is_string( $value ) ) {
+            $value = wp_unslash( $value );
             $value = wp_kses_post( $value );
         }
         return (bool) $wpdb->update(
