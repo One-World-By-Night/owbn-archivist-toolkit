@@ -185,9 +185,7 @@ class OAT_Install {
                 "SELECT id FROM {$ff_table} WHERE form_slug = 'cl_fame_registry' AND field_key = %s AND context = %s",
                 $f['field_key'], $ctx
             ) );
-            if ( $exists ) continue;
-
-            $wpdb->insert( $ff_table, [
+            $row = [
                 'domain_slug'   => 'character_lifecycle',
                 'form_slug'     => 'cl_fame_registry',
                 'context'       => $ctx,
@@ -200,9 +198,15 @@ class OAT_Install {
                 'default_value' => $f['default_value'] ?? null,
                 'active'        => 1,
                 'public_registry' => 0,
-                'created_at'    => $now,
                 'updated_at'    => $now,
-            ] );
+            ];
+
+            if ( $exists ) {
+                $wpdb->update( $ff_table, $row, [ 'id' => $exists ] );
+            } else {
+                $row['created_at'] = $now;
+                $wpdb->insert( $ff_table, $row );
+            }
         }
     }
 
