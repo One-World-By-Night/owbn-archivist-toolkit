@@ -202,7 +202,7 @@ class OAT_Install {
             ];
 
             if ( $exists ) {
-                $wpdb->update( $ff_table, $row, [ 'id' => $exists ] );
+                $wpdb->update( $ff_table, $row, [ 'id' => (int) $exists ] );
             } else {
                 $row['created_at'] = $now;
                 $wpdb->insert( $ff_table, $row );
