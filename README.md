@@ -1,42 +1,38 @@
-# OWbN Archivist Toolkit
+# OWbN Archivist Toolkit (OAT)
 
-WordPress plugin providing a workflow engine for OWbN organizational requests and approvals. Replaces email-based processes with structured routing, audit trails, and a permanent registry.
+The workflow engine for One World by Night. Handles organizational requests, approvals, and the permanent character registry.
 
-**Version**: 0.4.0
-**Requires PHP**: 7.4
-**License**: GPL-2.0-or-later
+**Version:** 1.10.1 (DB v1.8.3)
+**Deployed to:** archivist.owbn.net
 
-## Installation
+## What It Does
 
-1. Copy `owbn-archivist-toolkit/` into `/wp-content/plugins/`
-2. Activate in WordPress admin
-3. Run the seeder to populate default domains and workflow steps
+OAT replaces OWBN's email-based request processes with structured, auditable workflows. Players submit requests (character transfers, custom content, disciplinary actions, etc.), which route through chronicle staff, coordinators, and the Archivist office for approval. Every action is logged in a permanent timeline.
+
+The plugin also maintains the organization's character registry — the authoritative record of all active characters across all chronicles.
+
+## How It Works
+
+- **Domains** define request types — character lifecycle, custom content, chronicle reporting, disciplinary actions, and more. Domains are database-driven and admin-configurable without code changes.
+- **Workflow steps** chain together into approval routes. Each step can require sign-off from staff, coordinators, or the archivist office. Steps support conditional routing, multi-approval, delegation, and hold/resume.
+- **15 action types** (approve, deny, bump, delegate, hold, request changes, etc.) compose into domain-specific behaviors.
+- **Timer engine** handles deadlines via WP-Cron — auto-deny on expiration, bump-bump-pass escalation.
+- **Notifications** go out via email and dashboard inbox with per-user preferences.
+- **Creature taxonomy** — 4-level hierarchy (genre, faction, type, variant) with admin editor and cascading pickers.
+- **Role scoping** via [accessSchema](https://github.com/One-World-By-Night/accessSchema) — users see only what their chronicle/coordinator/exec role grants them.
 
 ## Architecture
 
-- **Domains** define request types (character lifecycle, custom content, chronicle reporting, etc.)
-- **Workflow engine** routes entries through step-based approval chains
-- **Models** map to custom DB tables (`oat_entries`, `oat_timeline`, `oat_assignees`, etc.)
-- **Actions** handle state transitions (approve, deny, bump, delegate, hold, etc.)
-- **Timer engine** processes expiration via WP-Cron
-- **Notifications** dispatch via email, dashboard, and API channels
+- Archivist.owbn.net runs the full plugin with admin UI and direct DB access.
+- All other OWBN sites interact via REST API through [owbn-client](https://github.com/One-World-By-Night/owbn-client).
+- Elementor widgets provide the front-end experience (dashboard, inbox, entry detail, submit forms).
 
-Uses AccessSchema for role-based permissions.
+## Requirements
 
-## Changelog
+- WordPress 5.0+, PHP 7.4+
+- accessSchema for permissions
+- owbn-client on remote sites
 
-### 0.4.0
+## License
 
-- Stripped trivial CRUD PHPDoc and step-numbered comments
-
-### 0.3.0
-
-- Player Actions domain, on-approve hooks, record snapshots
-
-### 0.2.0
-
-- Core workflow engine, domain registry, timer processing
-
-## Contributing
-
-[github.com/One-World-By-Night/owbn-archivist-toolkit](https://github.com/One-World-By-Night/owbn-archivist-toolkit)
+GPL-2.0-or-later
