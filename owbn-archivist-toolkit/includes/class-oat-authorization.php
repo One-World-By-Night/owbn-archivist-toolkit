@@ -116,7 +116,10 @@ class OAT_Authorization {
             if ( preg_match( '#^coordinator/[^/]+/(coordinator|sub-coordinator)$#i', $role ) ) {
                 $has_coord = true;
             }
-            if ( preg_match( '#^exec/(archivist|web|head-coordinator|ahc1|ahc2|admin)/coordinator$#i', $role ) ) {
+            // Coordinator-tier: any exec office's coordinator grants archivist scope.
+            // Staff-tier: only exec/archivist/staff (the dedicated archivist staff role).
+            if ( preg_match( '#^exec/(archivist|web|head-coordinator|ahc1|ahc2|admin)/coordinator$#i', $role )
+                || preg_match( '#^exec/archivist/staff$#i', $role ) ) {
                 if ( ! in_array( 'archivist', $roles, true ) ) {
                     $roles[] = 'archivist';
                 }
