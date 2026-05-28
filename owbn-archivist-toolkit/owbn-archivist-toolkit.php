@@ -3,7 +3,7 @@
  * Plugin Name: OWbN Archivist Toolkit
  * Plugin URI: https://github.com/One-World-By-Night/owbn-archivist-toolkit
  * Description: Workflow engine for organizational requests and approvals.
- * Version:     1.10.2
+ * Version:     1.10.3
  * Author:      OWbN Web Team
  * License:     GPL-2.0-or-later
  * Text Domain: owbn-archivist-toolkit
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OAT_VERSION', '1.10.2' );
+define( 'OAT_VERSION', '1.10.3' );
 define( 'OAT_PLUGIN_FILE', __FILE__ );
 define( 'OAT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -49,6 +49,19 @@ add_action( 'init', function() {
         owc_asc_register_client( 'oat', 'OWbN Archivist Toolkit' );
     }
 } );
+
+// exec/archivist/sub-coordinator inherits the same rights as exec/archivist/coordinator.
+add_filter( 'owc_asc_cache_roles', function( $roles, $user_id ) {
+    if ( ! is_array( $roles ) ) {
+        return $roles;
+    }
+    $lower = array_map( 'strtolower', $roles );
+    if ( in_array( 'exec/archivist/sub-coordinator', $lower, true )
+        && ! in_array( 'exec/archivist/coordinator', $lower, true ) ) {
+        $roles[] = 'exec/archivist/coordinator';
+    }
+    return $roles;
+}, 10, 2 );
 
 // Domain registration.
 add_filter( 'oat_register_domains', function( $domains ) {
