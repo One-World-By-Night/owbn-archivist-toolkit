@@ -232,12 +232,14 @@ class OAT_Page_Reports {
 
 			case 'by-classification':
 				$filter_status = $status ?: null;
+				$coordinator   = isset( $_GET['coordinator'] ) ? sanitize_text_field( wp_unslash( $_GET['coordinator'] ) ) : '';
 				$rows          = OAT_Report_Query::get_by_classification( array(
-					'status'   => $filter_status,
-					'pc_npc'   => $pc_npc,
-					'scope'    => $scope,
-					'per_page' => 999999,
-					'offset'   => 0,
+					'status'      => $filter_status,
+					'pc_npc'      => $pc_npc,
+					'scope'       => $scope,
+					'coordinator' => $coordinator,
+					'per_page'    => 999999,
+					'offset'      => 0,
 				) );
 				$filename      = 'oat-report-by-classification-' . gmdate( 'Y-m-d' ) . '.csv';
 
@@ -247,9 +249,19 @@ class OAT_Page_Reports {
 				header( 'Expires: 0' );
 
 				$out = fopen( 'php://output', 'w' );
-				fputcsv( $out, array( 'R&U Classification', 'Total', 'PCs', 'NPCs' ) );
+				fputcsv( $out, array( 'R&U Classification', 'Coordinator', 'Total', 'PCs', 'NPCs' ) );
 				foreach ( $rows as $row ) {
-					fputcsv( $out, array( $row->classification, $row->total, $row->pc_count, $row->npc_count ) );
+					$coord_label = '';
+					if ( ! empty( $row->coordinators ) ) {
+						$titles = array();
+						foreach ( array_filter( array_map( 'trim', explode( ',', $row->coordinators ) ) ) as $slug ) {
+							$titles[] = function_exists( 'owc_entity_get_title' )
+								? ( owc_entity_get_title( 'coordinator', $slug ) ?: ucfirst( $slug ) )
+								: ucfirst( $slug );
+						}
+						$coord_label = implode( '; ', $titles );
+					}
+					fputcsv( $out, array( $row->classification, $coord_label, $row->total, $row->pc_count, $row->npc_count ) );
 				}
 				fclose( $out );
 				exit;

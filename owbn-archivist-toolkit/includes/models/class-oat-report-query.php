@@ -221,7 +221,7 @@ class OAT_Report_Query {
 			$values[] = $args['classification'];
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		// Sorting whitelist.
 		$allowed_orderby = array(
@@ -320,7 +320,7 @@ class OAT_Report_Query {
 			$values[] = $args['classification'];
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 		$sql       = "SELECT COUNT(DISTINCT {$ct}.id) FROM {$ct} {$classification_join} WHERE {$where_sql}";
 
 		if ( $values ) {
@@ -353,7 +353,7 @@ class OAT_Report_Query {
 			$values[] = $status;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$sql = "SELECT c.chronicle_slug, COUNT(DISTINCT c.id) AS chars, COUNT(e.id) AS ru
 		        FROM {$ct} c
@@ -425,7 +425,7 @@ class OAT_Report_Query {
 			$values[] = $status;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$sql = "SELECT c.chronicle_slug, COUNT(DISTINCT c.id) AS chars, COUNT(e.id) AS ru
 		        FROM {$ct} c
@@ -479,7 +479,7 @@ class OAT_Report_Query {
 			$values[] = $like;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		// Group by email (primary key), fall back to name for empties.
 		$group_key = "IF(c.player_email != '', c.player_email, c.player_name)";
@@ -533,7 +533,7 @@ class OAT_Report_Query {
 			$values[] = $like;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 		$group_key = "IF(player_email != '', player_email, player_name)";
 
 		$sql = "SELECT COUNT(DISTINCT {$group_key}) FROM {$ct} WHERE {$where_sql}";
@@ -568,7 +568,7 @@ class OAT_Report_Query {
 			$values[] = $status;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$sql = "SELECT c.creature_type, COUNT(DISTINCT c.id) AS chars, COUNT(e.id) AS ru
 		        FROM {$ct} c
@@ -605,7 +605,7 @@ class OAT_Report_Query {
 			$values[] = $status;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$sql = "SELECT COALESCE(NULLIF(c.creature_sub_type, ''), '(none)') AS sect,
 		               COUNT(DISTINCT c.id) AS chars, COUNT(e.id) AS ru
@@ -664,7 +664,13 @@ class OAT_Report_Query {
 			$values[] = $like;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		// Limit to a single controlling coordinator (genre).
+		if ( ! empty( $args['coordinator'] ) ) {
+			$where[]  = 'e.coordinator_genre = %s';
+			$values[] = $args['coordinator'];
+		}
+
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$allowed_orderby = array( 'classification', 'total', 'pc_count', 'npc_count' );
 		$orderby = isset( $args['orderby'] ) && in_array( $args['orderby'], $allowed_orderby, true )
@@ -676,6 +682,7 @@ class OAT_Report_Query {
 		$offset   = isset( $args['offset'] ) ? absint( $args['offset'] ) : 0;
 
 		$sql = "SELECT m.meta_value AS classification,
+		               GROUP_CONCAT(DISTINCT NULLIF(e.coordinator_genre, '') ORDER BY e.coordinator_genre SEPARATOR ',') AS coordinators,
 		               COUNT(*) AS total,
 		               SUM(CASE WHEN c.pc_npc = 'pc' THEN 1 ELSE 0 END) AS pc_count,
 		               SUM(CASE WHEN c.pc_npc = 'npc' THEN 1 ELSE 0 END) AS npc_count
@@ -722,7 +729,13 @@ class OAT_Report_Query {
 			$values[] = $like;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		// Limit to a single controlling coordinator (genre).
+		if ( ! empty( $args['coordinator'] ) ) {
+			$where[]  = 'e.coordinator_genre = %s';
+			$values[] = $args['coordinator'];
+		}
+
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$sql = "SELECT COUNT(DISTINCT m.meta_value)
 		        FROM {$et} e
@@ -764,7 +777,7 @@ class OAT_Report_Query {
 			$values[] = $args['status'];
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$per_page = isset( $args['per_page'] ) ? absint( $args['per_page'] ) : 50;
 		$offset   = isset( $args['offset'] ) ? absint( $args['offset'] ) : 0;
@@ -806,7 +819,7 @@ class OAT_Report_Query {
 			$values[] = $args['status'];
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$sql = "SELECT COUNT(DISTINCT c.id)
 		        FROM {$et} e
@@ -828,7 +841,7 @@ class OAT_Report_Query {
 		$where = self::pc_npc_where( array( 'pc_npc' => $pc_npc ) );
 		$where = array_merge( $where, self::build_scope_where( $scope, '' ) );
 		$where[] = "status != ''";
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 		return $wpdb->get_col( "SELECT DISTINCT status FROM {$ct} WHERE {$where_sql} ORDER BY status" );
 	}
 
@@ -841,7 +854,7 @@ class OAT_Report_Query {
 		$where = self::pc_npc_where( array( 'pc_npc' => $pc_npc ) );
 		$where = array_merge( $where, self::build_scope_where( $scope, '' ) );
 		$where[] = "creature_type != ''";
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 		return $wpdb->get_col( "SELECT DISTINCT creature_type FROM {$ct} WHERE {$where_sql} ORDER BY creature_type" );
 	}
 
@@ -854,7 +867,7 @@ class OAT_Report_Query {
 		$where = self::pc_npc_where( array( 'pc_npc' => $pc_npc ) );
 		$where = array_merge( $where, self::build_scope_where( $scope, '' ) );
 		$where[] = "creature_genre != ''";
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 		return $wpdb->get_col( "SELECT DISTINCT creature_genre FROM {$ct} WHERE {$where_sql} ORDER BY creature_genre" );
 	}
 
@@ -867,7 +880,7 @@ class OAT_Report_Query {
 		$where = self::pc_npc_where( array( 'pc_npc' => $pc_npc ) );
 		$where = array_merge( $where, self::build_scope_where( $scope, '' ) );
 		$where[] = "chronicle_slug != ''";
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 		return $wpdb->get_col( "SELECT DISTINCT chronicle_slug FROM {$ct} WHERE {$where_sql} ORDER BY chronicle_slug" );
 	}
 
@@ -895,7 +908,7 @@ class OAT_Report_Query {
 			$values[] = $status;
 		}
 
-		$where_sql = implode( ' AND ', $where );
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
 		$sql = "SELECT c.player_name, c.player_email, c.character_name,
 		               c.chronicle_slug, c.creature_genre, c.creature_type,
