@@ -18,6 +18,17 @@ class OAT_Install {
             self::migrate_form_slugs();
         }
 
+        // Populate the entry-coordinator join table + close the grant gap from
+        // existing tagged entries (set-based, idempotent) so the ownership
+        // filter has data the moment the feature goes live. Blank-entry
+        // derivation is handled separately via the "Untagged R&U" screen.
+        // Guarded by a dedicated one-shot flag (not the DB version) so a later
+        // fatal in this method can't cause a replay before the version bumps.
+        if ( ! get_option( 'oat_coord_migrated' ) && class_exists( 'OAT_Coordinator_Backfill' ) ) {
+            OAT_Coordinator_Backfill::migrate_existing( true );
+            update_option( 'oat_coord_migrated', 1 );
+        }
+
         if ( class_exists( 'OAT_Seeder' ) ) {
             OAT_Seeder::run();
         }

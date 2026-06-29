@@ -71,6 +71,49 @@ class OAT_Report_Query {
 	}
 
 	/**
+	 * Build the "owned entry" predicate: restrict R&U entries to those the
+	 * viewer's coordinator office OWNS (via oat_entry_coordinators), unless the
+	 * viewer is global, toggled Show All, or holds no coordinator office.
+	 *
+	 * Chronicle staff own every R&U on their chronicle's characters, so their
+	 * chronicle is OR-ed in.
+	 *
+	 * Returns '' when no restriction applies, so callers append unconditionally:
+	 *   - character-anchored queries append to the R&U LEFT JOIN ... ON
+	 *   - entry-anchored queries append to WHERE
+	 *
+	 * @param array|null $scope
+	 * @param string     $entry_alias  Alias of oat_entries in the query.
+	 * @param string     $char_alias   Alias of oat_characters in the query (or '').
+	 * @return string  SQL fragment (no leading AND), or ''.
+	 */
+	private static function build_owned_entry_where( $scope, $entry_alias = 'e', $char_alias = 'c' ) {
+		if ( ! $scope || ! empty( $scope['is_global'] ) || ! empty( $scope['show_all'] ) ) {
+			return '';
+		}
+
+		$genres = isset( $scope['coordinator_genres'] )
+			? array_filter( array_map( 'strtolower', (array) $scope['coordinator_genres'] ) )
+			: array();
+		if ( empty( $genres ) ) {
+			return ''; // Pure staff / no coordinator office → nothing to restrict.
+		}
+
+		global $wpdb;
+		$ec    = $wpdb->prefix . 'oat_entry_coordinators';
+		$slugs = implode( "','", array_map( 'esc_sql', array_unique( $genres ) ) );
+		$owned = "EXISTS (SELECT 1 FROM {$ec} oec WHERE oec.entry_id = {$entry_alias}.id AND oec.coordinator_slug IN ('{$slugs}'))";
+
+		$chrons = isset( $scope['staff_chronicles'] ) ? array_filter( (array) $scope['staff_chronicles'] ) : array();
+		if ( $chrons && $char_alias ) {
+			$clist = implode( "','", array_map( 'esc_sql', array_unique( $chrons ) ) );
+			$owned = "({$owned} OR {$char_alias}.chronicle_slug IN ('{$clist}'))";
+		}
+
+		return $owned;
+	}
+
+	/**
 	 * Get chronicle → region lookup from owbn-client.
 	 *
 	 * @return array slug => region
@@ -216,7 +259,9 @@ class OAT_Report_Query {
 		$classification_join = '';
 		if ( ! empty( $args['classification'] ) ) {
 			$mt = $wpdb->prefix . 'oat_entry_meta';
-			$classification_join = " JOIN {$et} ce ON ce.character_id = c.id AND ce.domain = 'character_lifecycle' AND ce.status = 'approved'"
+			$owned_ce = self::build_owned_entry_where( $args['scope'] ?? null, 'ce', 'c' );
+			$owned_ce = $owned_ce ? " AND {$owned_ce}" : '';
+			$classification_join = " JOIN {$et} ce ON ce.character_id = c.id AND ce.domain = 'character_lifecycle' AND ce.status = 'approved'{$owned_ce}"
 			                     . " JOIN {$mt} cm ON ce.id = cm.entry_id AND cm.meta_key = 'item_description' AND cm.meta_value = %s";
 			$values[] = $args['classification'];
 		}
@@ -236,12 +281,15 @@ class OAT_Report_Query {
 		$per_page = isset( $args['per_page'] ) ? absint( $args['per_page'] ) : 50;
 		$offset   = isset( $args['offset'] ) ? absint( $args['offset'] ) : 0;
 
+		$owned    = self::build_owned_entry_where( $args['scope'] ?? null, 'e', 'c' );
+		$owned_on = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT c.id, c.player_name, c.player_email, c.character_name,
 		               c.chronicle_slug, c.creature_genre, c.creature_type,
 		               c.creature_sub_type, c.creature_variant,
-		               c.status, COUNT(e.id) AS ru_count
+		               c.status, COUNT(DISTINCT e.id) AS ru_count
 		        FROM {$ct} c
-		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'
+		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'{$owned_on}
 		        {$classification_join}
 		        WHERE {$where_sql}
 		        GROUP BY c.id
@@ -261,33 +309,35 @@ class OAT_Report_Query {
 		global $wpdb;
 		$ct = self::chars_table();
 
-		$where  = self::pc_npc_where( $args );
-		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, '' ) );
+		// Alias the chars table as `c` so columns stay unambiguous once the
+		// classification join brings in oat_entries (both have id/status/chronicle_slug).
+		$where  = self::pc_npc_where( $args, 'c' );
+		$where  = array_merge( $where, self::build_scope_where( $args['scope'] ?? null, 'c' ) );
 		$values = array();
 
 		if ( ! empty( $args['status'] ) ) {
-			$where[]  = 'status = %s';
+			$where[]  = 'c.status = %s';
 			$values[] = $args['status'];
 		}
 		if ( ! empty( $args['chronicle'] ) ) {
-			$where[]  = 'chronicle_slug = %s';
+			$where[]  = 'c.chronicle_slug = %s';
 			$values[] = $args['chronicle'];
 		}
 		if ( ! empty( $args['creature_type'] ) ) {
-			$where[]  = 'creature_type = %s';
+			$where[]  = 'c.creature_type = %s';
 			$values[] = $args['creature_type'];
 		}
 		if ( ! empty( $args['creature_sub_type'] ) ) {
-			$where[]  = 'creature_sub_type = %s';
+			$where[]  = 'c.creature_sub_type = %s';
 			$values[] = $args['creature_sub_type'];
 		}
 		if ( ! empty( $args['creature_genre'] ) ) {
-			$where[]  = 'creature_genre = %s';
+			$where[]  = 'c.creature_genre = %s';
 			$values[] = $args['creature_genre'];
 		}
 		if ( ! empty( $args['search'] ) ) {
 			$like     = '%' . $wpdb->esc_like( $args['search'] ) . '%';
-			$where[]  = '(player_name LIKE %s OR character_name LIKE %s OR player_email LIKE %s OR chronicle_slug LIKE %s OR creature_genre LIKE %s OR creature_type LIKE %s OR creature_sub_type LIKE %s OR creature_variant LIKE %s OR status LIKE %s)';
+			$where[]  = '(c.player_name LIKE %s OR c.character_name LIKE %s OR c.player_email LIKE %s OR c.chronicle_slug LIKE %s OR c.creature_genre LIKE %s OR c.creature_type LIKE %s OR c.creature_sub_type LIKE %s OR c.creature_variant LIKE %s OR c.status LIKE %s)';
 			for ( $i = 0; $i < 9; $i++ ) {
 				$values[] = $like;
 			}
@@ -303,7 +353,7 @@ class OAT_Report_Query {
 			}
 			if ( $slugs ) {
 				$placeholders = implode( ', ', array_fill( 0, count( $slugs ), '%s' ) );
-				$where[]      = "chronicle_slug IN ({$placeholders})";
+				$where[]      = "c.chronicle_slug IN ({$placeholders})";
 				$values       = array_merge( $values, $slugs );
 			} else {
 				$where[] = '1 = 0';
@@ -315,13 +365,15 @@ class OAT_Report_Query {
 		if ( ! empty( $args['classification'] ) ) {
 			$et = self::entries_table();
 			$mt = $wpdb->prefix . 'oat_entry_meta';
-			$classification_join = " JOIN {$et} ce ON ce.character_id = {$ct}.id AND ce.domain = 'character_lifecycle' AND ce.status = 'approved'"
+			$owned_ce = self::build_owned_entry_where( $args['scope'] ?? null, 'ce', 'c' );
+			$owned_ce = $owned_ce ? " AND {$owned_ce}" : '';
+			$classification_join = " JOIN {$et} ce ON ce.character_id = c.id AND ce.domain = 'character_lifecycle' AND ce.status = 'approved'{$owned_ce}"
 			                     . " JOIN {$mt} cm ON ce.id = cm.entry_id AND cm.meta_key = 'item_description' AND cm.meta_value = %s";
 			$values[] = $args['classification'];
 		}
 
 		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
-		$sql       = "SELECT COUNT(DISTINCT {$ct}.id) FROM {$ct} {$classification_join} WHERE {$where_sql}";
+		$sql       = "SELECT COUNT(DISTINCT c.id) FROM {$ct} c {$classification_join} WHERE {$where_sql}";
 
 		if ( $values ) {
 			return (int) $wpdb->get_var( $wpdb->prepare( $sql, $values ) );
@@ -355,9 +407,12 @@ class OAT_Report_Query {
 
 		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
+		$owned    = self::build_owned_entry_where( $scope, 'e', 'c' );
+		$owned_on = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT c.chronicle_slug, COUNT(DISTINCT c.id) AS chars, COUNT(e.id) AS ru
 		        FROM {$ct} c
-		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'
+		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'{$owned_on}
 		        WHERE {$where_sql}
 		        GROUP BY c.chronicle_slug";
 
@@ -427,9 +482,12 @@ class OAT_Report_Query {
 
 		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
+		$owned    = self::build_owned_entry_where( $scope, 'e', 'c' );
+		$owned_on = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT c.chronicle_slug, COUNT(DISTINCT c.id) AS chars, COUNT(e.id) AS ru
 		        FROM {$ct} c
-		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'
+		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'{$owned_on}
 		        WHERE {$where_sql}
 		        GROUP BY c.chronicle_slug
 		        ORDER BY ru DESC";
@@ -493,13 +551,16 @@ class OAT_Report_Query {
 		$per_page = isset( $args['per_page'] ) ? absint( $args['per_page'] ) : 50;
 		$offset   = isset( $args['offset'] ) ? absint( $args['offset'] ) : 0;
 
+		$owned    = self::build_owned_entry_where( $args['scope'] ?? null, 'e', 'c' );
+		$owned_on = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT {$group_key} AS player_key,
 		               MAX(c.player_name) AS player_name,
 		               MAX(c.player_email) AS player_email,
 		               COUNT(DISTINCT c.id) AS chars,
 		               COUNT(e.id) AS ru
 		        FROM {$ct} c
-		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'
+		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'{$owned_on}
 		        WHERE {$where_sql}
 		        GROUP BY player_key
 		        ORDER BY {$orderby} {$order}
@@ -570,9 +631,12 @@ class OAT_Report_Query {
 
 		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
+		$owned    = self::build_owned_entry_where( $scope, 'e', 'c' );
+		$owned_on = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT c.creature_type, COUNT(DISTINCT c.id) AS chars, COUNT(e.id) AS ru
 		        FROM {$ct} c
-		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'
+		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'{$owned_on}
 		        WHERE {$where_sql}
 		        GROUP BY c.creature_type
 		        ORDER BY ru DESC";
@@ -607,10 +671,13 @@ class OAT_Report_Query {
 
 		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
+		$owned    = self::build_owned_entry_where( $scope, 'e', 'c' );
+		$owned_on = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT COALESCE(NULLIF(c.creature_sub_type, ''), '(none)') AS sect,
 		               COUNT(DISTINCT c.id) AS chars, COUNT(e.id) AS ru
 		        FROM {$ct} c
-		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'
+		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'{$owned_on}
 		        WHERE {$where_sql}
 		        GROUP BY sect
 		        ORDER BY ru DESC";
@@ -681,6 +748,9 @@ class OAT_Report_Query {
 		$per_page = isset( $args['per_page'] ) ? absint( $args['per_page'] ) : 50;
 		$offset   = isset( $args['offset'] ) ? absint( $args['offset'] ) : 0;
 
+		$owned     = self::build_owned_entry_where( $args['scope'] ?? null, 'e', 'c' );
+		$owned_and = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT m.meta_value AS classification,
 		               GROUP_CONCAT(DISTINCT NULLIF(e.coordinator_genre, '') ORDER BY e.coordinator_genre SEPARATOR ',') AS coordinators,
 		               COUNT(*) AS total,
@@ -689,7 +759,7 @@ class OAT_Report_Query {
 		        FROM {$et} e
 		        JOIN {$mt} m ON e.id = m.entry_id
 		        LEFT JOIN {$ct} c ON e.character_id = c.id
-		        WHERE {$where_sql}
+		        WHERE {$where_sql}{$owned_and}
 		        GROUP BY m.meta_value
 		        ORDER BY {$orderby} {$order}
 		        LIMIT {$per_page} OFFSET {$offset}";
@@ -737,11 +807,14 @@ class OAT_Report_Query {
 
 		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
+		$owned     = self::build_owned_entry_where( $args['scope'] ?? null, 'e', 'c' );
+		$owned_and = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT COUNT(DISTINCT m.meta_value)
 		        FROM {$et} e
 		        JOIN {$mt} m ON e.id = m.entry_id
 		        LEFT JOIN {$ct} c ON e.character_id = c.id
-		        WHERE {$where_sql}";
+		        WHERE {$where_sql}{$owned_and}";
 
 		if ( $values ) {
 			return (int) $wpdb->get_var( $wpdb->prepare( $sql, $values ) );
@@ -782,6 +855,9 @@ class OAT_Report_Query {
 		$per_page = isset( $args['per_page'] ) ? absint( $args['per_page'] ) : 50;
 		$offset   = isset( $args['offset'] ) ? absint( $args['offset'] ) : 0;
 
+		$owned     = self::build_owned_entry_where( $args['scope'] ?? null, 'e', 'c' );
+		$owned_and = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT c.id, c.player_name, c.player_email, c.character_name,
 		               c.chronicle_slug, c.creature_genre, c.creature_type,
 		               c.creature_sub_type, c.creature_variant,
@@ -789,7 +865,7 @@ class OAT_Report_Query {
 		        FROM {$et} e
 		        JOIN {$mt} m ON e.id = m.entry_id
 		        JOIN {$ct} c ON e.character_id = c.id
-		        WHERE {$where_sql}
+		        WHERE {$where_sql}{$owned_and}
 		        ORDER BY c.character_name ASC
 		        LIMIT {$per_page} OFFSET {$offset}";
 
@@ -821,11 +897,14 @@ class OAT_Report_Query {
 
 		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
+		$owned     = self::build_owned_entry_where( $args['scope'] ?? null, 'e', 'c' );
+		$owned_and = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT COUNT(DISTINCT c.id)
 		        FROM {$et} e
 		        JOIN {$mt} m ON e.id = m.entry_id
 		        JOIN {$ct} c ON e.character_id = c.id
-		        WHERE {$where_sql}";
+		        WHERE {$where_sql}{$owned_and}";
 
 		return (int) $wpdb->get_var( $wpdb->prepare( $sql, $values ) );
 	}
@@ -910,12 +989,15 @@ class OAT_Report_Query {
 
 		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
 
+		$owned    = self::build_owned_entry_where( $scope, 'e', 'c' );
+		$owned_on = $owned ? " AND {$owned}" : '';
+
 		$sql = "SELECT c.player_name, c.player_email, c.character_name,
 		               c.chronicle_slug, c.creature_genre, c.creature_type,
 		               c.creature_sub_type, c.creature_variant,
-		               c.status, COUNT(e.id) AS ru_count
+		               c.status, COUNT(DISTINCT e.id) AS ru_count
 		        FROM {$ct} c
-		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'
+		        LEFT JOIN {$et} e ON e.character_id = c.id AND e.form_slug = 'cl_ru_request'{$owned_on}
 		        WHERE {$where_sql}
 		        GROUP BY c.id
 		        ORDER BY c.player_name ASC, c.character_name ASC";

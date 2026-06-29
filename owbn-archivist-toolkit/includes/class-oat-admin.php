@@ -66,6 +66,15 @@ class OAT_Admin {
             'oat-reports',
             array( 'OAT_Page_Reports', 'render' )
         );
+
+        add_submenu_page(
+            'oat-entries',
+            __( 'Untagged R&U', 'owbn-archivist-toolkit' ),
+            __( 'Untagged R&U', 'owbn-archivist-toolkit' ),
+            OAT_Constants::CAP_ARCHIVIST,
+            'oat-coordinator-review',
+            array( 'OAT_Page_Coordinator_Review', 'render' )
+        );
     }
 
     /**

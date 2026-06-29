@@ -36,14 +36,43 @@ class OAT_Registry_Hooks {
             return;
         }
 
-        // Coordinator grant.
-        if ( ! empty( $entry->coordinator_genre ) && ! empty( $entry->character_id ) ) {
-            OAT_Registry_Access::ensure_grant(
-                (int) $entry->character_id,
-                'coordinator',
-                $entry->coordinator_genre,
-                $user_id
-            );
+        // Coordinator ownership: tag the entry with every controlling authority
+        // (primary coordinator_genre + any from linked regulation rules) and
+        // grant each authority access to the character.
+        $authorities = array();
+        if ( ! empty( $entry->coordinator_genre ) ) {
+            $authorities[ strtolower( $entry->coordinator_genre ) ] = true;
+        }
+        if ( class_exists( 'OAT_Coordinator_Backfill' ) ) {
+            global $wpdb;
+            $er = $wpdb->prefix . 'oat_entry_rules';
+            $rr = $wpdb->prefix . 'oat_regulation_rules';
+            $known = OAT_Coordinator_Backfill::known_slugs();
+            $rule_cc = $wpdb->get_col( $wpdb->prepare(
+                "SELECT rr.controlling_coordinator FROM {$er} er
+                 JOIN {$rr} rr ON rr.id = er.rule_id
+                 WHERE er.entry_id = %d AND rr.controlling_coordinator <> ''",
+                (int) $entry_id
+            ) );
+            foreach ( $rule_cc as $raw ) {
+                foreach ( OAT_Coordinator_Backfill::tokenize_authority( $raw ) as $t ) {
+                    if ( isset( $known[ $t ] ) ) {
+                        $authorities[ $t ] = true;
+                    }
+                }
+            }
+        }
+        $authorities = array_keys( $authorities );
+
+        if ( $authorities ) {
+            if ( class_exists( 'OAT_Entry_Coordinator' ) ) {
+                OAT_Entry_Coordinator::set_for_entry( (int) $entry_id, $authorities, 'submit' );
+            }
+            if ( ! empty( $entry->character_id ) ) {
+                foreach ( $authorities as $slug ) {
+                    OAT_Registry_Access::ensure_grant( (int) $entry->character_id, 'coordinator', $slug, $user_id );
+                }
+            }
         }
 
         // Character lifecycle actions — apply to registry on approval.

@@ -18,14 +18,17 @@ class OAT_Page_Reports {
 	 *     'roles'         => string[],    All qualifying ASC role paths (for checkbox UI).
 	 *   }
 	 */
-	public static function get_user_scope( $selected_roles = array() ) {
+	public static function get_user_scope( $selected_roles = array(), $show_all = false ) {
 		// WP admin = global.  Other global roles (exec/archivist) detected via ASC loop below.
 		if ( current_user_can( 'manage_options' ) ) {
 			return array(
-				'chronicles'    => array(),
-				'character_ids' => array(),
-				'is_global'     => true,
-				'roles'         => array(),
+				'chronicles'         => array(),
+				'character_ids'      => array(),
+				'is_global'          => true,
+				'roles'              => array(),
+				'coordinator_genres' => array(),
+				'staff_chronicles'   => array(),
+				'show_all'           => (bool) $show_all,
 			);
 		}
 
@@ -60,10 +63,13 @@ class OAT_Page_Reports {
 
 		if ( $is_global ) {
 			return array(
-				'chronicles'    => array(),
-				'character_ids' => array(),
-				'is_global'     => true,
-				'roles'         => $all_roles,
+				'chronicles'         => array(),
+				'character_ids'      => array(),
+				'is_global'          => true,
+				'roles'              => $all_roles,
+				'coordinator_genres' => array(),
+				'staff_chronicles'   => array(),
+				'show_all'           => (bool) $show_all,
 			);
 		}
 
@@ -78,11 +84,17 @@ class OAT_Page_Reports {
 			$character_ids = self::resolve_coordinator_character_ids( array_unique( $coord_slugs ) );
 		}
 
+		$staff_chronicles   = array_values( array_unique( $chronicles ) );
+		$coordinator_genres = array_values( array_unique( array_map( 'strtolower', $coord_slugs ) ) );
+
 		return array(
-			'chronicles'    => array_unique( $chronicles ),
-			'character_ids' => $character_ids,
-			'is_global'     => false,
-			'roles'         => $all_roles,
+			'chronicles'         => $staff_chronicles,
+			'character_ids'      => $character_ids,
+			'is_global'          => false,
+			'roles'              => $all_roles,
+			'coordinator_genres' => $coordinator_genres,
+			'staff_chronicles'   => $staff_chronicles,
+			'show_all'           => (bool) $show_all,
 		);
 	}
 
@@ -128,6 +140,15 @@ class OAT_Page_Reports {
 		return array_map( 'sanitize_text_field', $_GET['scope_roles'] );
 	}
 
+	/**
+	 * Read the Show All toggle from the request.
+	 *
+	 * @return bool
+	 */
+	private static function get_show_all() {
+		return ! empty( $_GET['show_all'] );
+	}
+
 	// ─── CSV Export ──────────────────────────────────────────────────
 
 	/**
@@ -139,7 +160,7 @@ class OAT_Page_Reports {
 			return;
 		}
 
-		$scope = self::get_user_scope( self::get_selected_roles() );
+		$scope = self::get_user_scope( self::get_selected_roles(), self::get_show_all() );
 		if ( ! $scope ) {
 			return;
 		}
@@ -301,7 +322,8 @@ class OAT_Page_Reports {
 	 */
 	public static function render() {
 		$selected_roles = self::get_selected_roles();
-		$scope          = self::get_user_scope( $selected_roles );
+		$show_all       = self::get_show_all();
+		$scope          = self::get_user_scope( $selected_roles, $show_all );
 
 		if ( ! $scope ) {
 			wp_die( 'You do not have permission to view reports.' );

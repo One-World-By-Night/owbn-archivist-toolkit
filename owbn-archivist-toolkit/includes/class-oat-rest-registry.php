@@ -199,11 +199,29 @@ class OAT_REST_Registry {
 
         $entries      = OAT_Registry::get_registry_entries( $character_id );
         $grants       = OAT_Registry_Access::find_by_character( $character_id );
-        $viewer_role  = OAT_Authorization::get_character_search_roles()[0];
-        $viewer_genres = self::get_viewer_genres();
+        $roles        = OAT_Authorization::get_character_search_roles();
+        $viewer_role  = $roles[0];
+        $viewer_genres = array_map( 'strtolower', self::get_viewer_genres() );
+
+        // Ownership filter: a pure coordinator sees only R&U items their office
+        // owns, unless Show All. Archivist, the character's owner, and chronicle
+        // staff (who own everything in their chronicle) are unaffected.
+        $show_all      = (bool) $request->get_param( 'show_all' );
+        $ctx           = self::owned_filter_context( $character, $show_all );
+        $coord_context = $ctx['can_show_all'];
+        $apply_owned   = $ctx['apply'];
 
         $entries_data = array();
         foreach ( $entries as $entry ) {
+            $coordinators = OAT_Entry_Coordinator::slugs_for_entry( (int) $entry->id );
+            if ( empty( $coordinators ) && ! empty( $entry->coordinator_genre ) ) {
+                $coordinators = array( strtolower( $entry->coordinator_genre ) ); // legacy fallback
+            }
+
+            if ( $apply_owned && ! array_intersect( $coordinators, $viewer_genres ) ) {
+                continue; // Not owned by this coordinator's office.
+            }
+
             $timeline = OAT_Timeline::for_entry( (int) $entry->id );
             $filtered = OAT_Registry::filter_timeline_for_viewer( $timeline, $viewer_role, $entry, $viewer_genres );
             $meta     = OAT_Entry_Meta::get_all( (int) $entry->id );
@@ -214,6 +232,7 @@ class OAT_REST_Registry {
                 'form_slug'         => $entry->form_slug,
                 'status'            => $entry->status,
                 'coordinator_genre' => $entry->coordinator_genre,
+                'coordinators'      => $coordinators,
                 'created_at'        => (int) $entry->created_at,
                 'meta'              => self::format_meta( $meta ),
                 'timeline'          => self::format_timeline( $filtered ),
@@ -221,9 +240,11 @@ class OAT_REST_Registry {
         }
 
         return new WP_REST_Response( array(
-            'character' => self::format_character_full( $character ),
-            'grants'    => self::format_grants( $grants ),
-            'entries'   => $entries_data,
+            'character'    => self::format_character_full( $character ),
+            'grants'       => self::format_grants( $grants ),
+            'entries'      => $entries_data,
+            'can_show_all' => $coord_context,
+            'show_all'     => $show_all,
         ), 200 );
     }
 
@@ -492,6 +513,35 @@ class OAT_REST_Registry {
         }
 
         return false;
+    }
+
+    /**
+     * Decide whether to apply the coordinator ownership filter for the current
+     * viewer on a given character. Shared by the REST endpoint and owbn-client's
+     * local registry path so both behave identically.
+     *
+     * @param object $character
+     * @param bool   $show_all
+     * @return array { apply: bool, genres: string[], can_show_all: bool }
+     */
+    public static function owned_filter_context( $character, $show_all = false ) {
+        $roles   = OAT_Authorization::get_character_search_roles();
+        $user_id = get_current_user_id();
+        $genres  = array_map( 'strtolower', self::get_viewer_genres() );
+
+        $is_global        = in_array( 'archivist', $roles, true );
+        $is_owner         = $user_id && (int) $character->wp_user_id === $user_id;
+        $is_staff_of_char = in_array( 'staff', $roles, true )
+            && in_array( $character->chronicle_slug, self::get_viewer_chronicle_slugs(), true );
+
+        $coord_context = ! $is_global && ! $is_owner && ! $is_staff_of_char
+            && in_array( 'coordinator', $roles, true ) && ! empty( $genres );
+
+        return array(
+            'apply'        => $coord_context && ! $show_all,
+            'genres'       => $genres,
+            'can_show_all' => $coord_context,
+        );
     }
 
     private static function get_viewer_chronicle_slugs() {

@@ -10,6 +10,13 @@
 			$scope_qs .= '&scope_roles[]=' . urlencode( $sr );
 		}
 	}
+	// Preserve Show All across tab / view / filter / export links.
+	$show_all = ! empty( $show_all );
+	if ( $show_all ) {
+		$scope_qs .= '&show_all=1';
+	}
+	// A coordinator office is required for the Show All toggle to mean anything.
+	$can_show_all = ! empty( $scope ) && empty( $scope['is_global'] ) && ! empty( $scope['coordinator_genres'] );
 	?>
 
 	<?php // ─── Role Scope Selector (non-global users with 2+ roles) ─── ?>
@@ -33,6 +40,26 @@
 					</label>
 				<?php endforeach; ?>
 				<?php submit_button( __( 'Apply', 'owbn-archivist-toolkit' ), 'secondary', 'apply_scope', false, array( 'style' => 'margin:0;' ) ); ?>
+			</form>
+		</div>
+	<?php endif; ?>
+
+	<?php // ─── Show All toggle (coordinators only) ─── ?>
+	<?php if ( $can_show_all ) : ?>
+		<div style="background:#fcf9e8;border:1px solid #dba617;border-radius:4px;padding:8px 14px;margin-bottom:15px;">
+			<form method="get" style="margin:0;display:inline-flex;align-items:center;gap:8px;">
+				<input type="hidden" name="page" value="oat-reports">
+				<input type="hidden" name="tab" value="<?php echo esc_attr( $tab ); ?>">
+				<input type="hidden" name="pc_npc" value="<?php echo esc_attr( $pc_npc ); ?>">
+				<?php if ( $status ) : ?><input type="hidden" name="status" value="<?php echo esc_attr( $status ); ?>"><?php endif; ?>
+				<?php foreach ( (array) $selected_roles as $sr ) : ?>
+					<input type="hidden" name="scope_roles[]" value="<?php echo esc_attr( $sr ); ?>">
+				<?php endforeach; ?>
+				<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin:0;">
+					<input type="checkbox" name="show_all" value="1"<?php echo $show_all ? ' checked' : ''; ?> onchange="this.form.submit();">
+					<strong><?php esc_html_e( 'Show All', 'owbn-archivist-toolkit' ); ?></strong>
+					<span style="color:#646970;"><?php esc_html_e( '— include R&U items owned by other coordinators on characters you can see', 'owbn-archivist-toolkit' ); ?></span>
+				</label>
 			</form>
 		</div>
 	<?php endif; ?>
@@ -79,6 +106,9 @@
 				<?php foreach ( $selected_roles as $sr ) : ?>
 					<input type="hidden" name="scope_roles[]" value="<?php echo esc_attr( $sr ); ?>">
 				<?php endforeach; ?>
+			<?php endif; ?>
+			<?php if ( $show_all ) : ?>
+				<input type="hidden" name="show_all" value="1">
 			<?php endif; ?>
 
 			<?php if ( $show_status_filter && 'active' !== $tab ) : ?>
