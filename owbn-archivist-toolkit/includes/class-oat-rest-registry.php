@@ -424,7 +424,17 @@ class OAT_REST_Registry {
         return false;
     }
 
-    private static function can_view_character( $character ) {
+    /**
+     * Can the current user VIEW this character's registry detail?
+     * Archivist: any. Owner: their own PC. Staff: a character with an active
+     * chronicle grant for one of their chronicles. Coordinator: a character with
+     * an active coordinator grant for one of their genres.
+     *
+     * Public so owbn-client's local registry path can enforce the identical gate
+     * (mirrors owned_filter_context()). Without this, local mode would leak any
+     * character by ID to any logged-in user.
+     */
+    public static function can_view_character( $character ) {
         $roles   = OAT_Authorization::get_character_search_roles();
         $user_id = get_current_user_id();
 
@@ -432,8 +442,9 @@ class OAT_REST_Registry {
             return true;
         }
 
-        // Player owns the character.
-        if ( (int) $character->wp_user_id === $user_id ) {
+        // Player owns the character. The $user_id guard prevents a logged-out
+        // uid-0 context from matching an unowned character (wp_user_id = 0).
+        if ( $user_id && (int) $character->wp_user_id === $user_id ) {
             return true;
         }
 
@@ -495,7 +506,16 @@ class OAT_REST_Registry {
         return false;
     }
 
-    private static function can_manage_grants( $character ) {
+    /**
+     * Can the current user CREATE/REVOKE grants on this character?
+     * Archivist: any. Staff: only characters in their own chronicle.
+     * (Pure coordinators cannot manage grants.)
+     *
+     * Public so owbn-client's local registry path can enforce the identical gate
+     * (mirrors can_view_character()). Without this, local-mode grant create/revoke
+     * would be protected by the form nonce alone, which is not character-scoped.
+     */
+    public static function can_manage_grants( $character ) {
         if ( ! $character ) {
             return false;
         }
