@@ -3,7 +3,7 @@
  * Plugin Name: OWbN Archivist Toolkit
  * Plugin URI: https://github.com/One-World-By-Night/owbn-archivist-toolkit
  * Description: Workflow engine for organizational requests and approvals.
- * Version:     1.11.0
+ * Version:     1.11.1
  * Author:      OWbN Web Team
  * License:     GPL-2.0-or-later
  * Text Domain: owbn-archivist-toolkit
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OAT_VERSION', '1.11.0' );
+define( 'OAT_VERSION', '1.11.1' );
 define( 'OAT_PLUGIN_FILE', __FILE__ );
 define( 'OAT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OAT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -81,6 +81,9 @@ OAT_Record_Snapshot::init();
 
 // Registry visibility — auto-grant hooks.
 OAT_Registry_Hooks::init();
+
+// Chronicle Report → targeted Coordinator email on approval.
+OAT_Chronicle_Report_Notify::init();
 
 // Timer processing — WP-Cron hourly (D-051).
 add_action( 'oat_process_timers', array( 'OAT_Timer_Engine', 'process_expired_timers' ) );

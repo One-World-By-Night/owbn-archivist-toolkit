@@ -316,6 +316,15 @@ class OAT_Domain_Chronicle_Actions implements OAT_Domain_Interface {
             ),
             array(
                 'context'         => 'submit',
+                'field_key'       => 'notify_coordinators',
+                'field_type'      => 'coordinator_checkboxes',
+                'label'           => 'Notify Coordinators',
+                'required'        => 0,
+                'sort_order'      => 115,
+                'help_text'       => 'Select any Coordinators this report should be sent to. When the report is approved, each selected Coordinator is emailed the relevant details.',
+            ),
+            array(
+                'context'         => 'submit',
                 'field_key'       => 'prominent_deaths',
                 'field_type'      => 'htmlarea',
                 'label'           => 'Death or Administrative Removal of Prominent Characters within the Chronicle',
