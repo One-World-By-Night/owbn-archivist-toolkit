@@ -61,6 +61,10 @@ class OAT_Action_Request_Changes {
             OAT_Assignee::assign( (int) $entry->id, (int) $entry->originator_id, $prev_step );
         }
 
+        // Notify whoever it went back to (the new current step's assignees — one
+        // level back). Fires every time; a report can be bounced repeatedly.
+        do_action( 'oat_entry_changes_requested', (int) $entry->id, $user_id, $data );
+
         return true;
     }
 }

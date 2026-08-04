@@ -77,6 +77,9 @@ class OAT_Action_Deny {
             'note'            => $data['note'],
         ) );
 
+        // Denied is terminal — notify the originator (goes all the way back).
+        do_action( 'oat_entry_denied', (int) $entry->id, $user_id, $data );
+
         return true;
     }
 }

@@ -76,11 +76,55 @@ class OAT_Authorization {
      * @return array User data.
      */
     public static function get_users_with_role( $role_path ) {
-        if ( function_exists( 'owc_asc_get_users_by_role' ) ) {
-            $result = owc_asc_get_users_by_role( self::CLIENT_ID, $role_path );
-            return is_array( $result ) ? $result : array();
+        // Support a pipe-delimited UNION of role paths so a single workflow step
+        // can assign more than one office (e.g. a Coordinator AND their
+        // Sub-Coordinator). AccessSchema has no wildcard/prefix query, so each
+        // exact path is resolved separately and the local WP ids are merged.
+        if ( is_string( $role_path ) && strpos( $role_path, '|' ) !== false ) {
+            $merged = array();
+            foreach ( explode( '|', $role_path ) as $one ) {
+                $one = trim( $one );
+                if ( '' !== $one ) {
+                    $merged = array_merge( $merged, self::get_users_with_role( $one ) );
+                }
+            }
+            return array_values( array_unique( array_filter( $merged ) ) );
         }
-        return array();
+        if ( ! function_exists( 'owc_asc_get_users_by_role' ) ) {
+            return array();
+        }
+        $result = owc_asc_get_users_by_role( self::CLIENT_ID, $role_path );
+        if ( ! is_array( $result ) ) {
+            return array();
+        }
+
+        // Normalize to LOCAL WordPress user IDs. AccessSchema now returns holder
+        // objects — {user_id, display_name, email, user_login, player_id} — whose
+        // 'user_id' is the AccessSchema id, NOT the local WP id. Casting the whole
+        // object with (int) yields 1, which silently assigned everything to WP
+        // user 1 (web@owbn.net). Resolve the local user via email, then login.
+        $ids = array();
+        foreach ( $result as $holder ) {
+            if ( is_int( $holder ) || ( is_string( $holder ) && ctype_digit( $holder ) ) ) {
+                $ids[] = (int) $holder; // legacy shape: bare WP user id
+                continue;
+            }
+            if ( is_array( $holder ) ) {
+                $wp = 0;
+                if ( ! empty( $holder['email'] ) ) {
+                    $u  = get_user_by( 'email', $holder['email'] );
+                    $wp = $u ? (int) $u->ID : 0;
+                }
+                if ( ! $wp && ! empty( $holder['user_login'] ) ) {
+                    $u  = get_user_by( 'login', $holder['user_login'] );
+                    $wp = $u ? (int) $u->ID : 0;
+                }
+                if ( $wp ) {
+                    $ids[] = $wp;
+                }
+            }
+        }
+        return array_values( array_unique( array_filter( $ids ) ) );
     }
 
     /**

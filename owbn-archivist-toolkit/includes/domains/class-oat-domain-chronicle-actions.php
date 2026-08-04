@@ -47,7 +47,10 @@ class OAT_Domain_Chronicle_Actions implements OAT_Domain_Interface {
             array(
                 'id'                 => 'archivist',
                 'label'              => 'Archivist Review',
-                'assignee_role'      => 'Exec/Archivist/Coordinator',
+                // Assign the Archivist Coordinator AND their Sub-Coordinator: the
+                // sub-coordinator exists to help the coordinator, so chronicle
+                // reports land in both queues. (Pipe = union; ASC has no wildcard.)
+                'assignee_role'      => 'Exec/Archivist/Coordinator|Exec/Archivist/Sub-Coordinator',
                 'visibility_tier'    => OAT_Constants::TIER_ARCHIVIST,
                 'on_approve'         => null,
                 'on_deny'            => null,
