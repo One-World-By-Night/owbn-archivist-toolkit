@@ -106,7 +106,13 @@ class OAT_Record_Snapshot {
 		$snapshot['timeline'] = array();
 		if ( is_array( $timeline ) ) {
 			foreach ( $timeline as $event ) {
-				$actor_id   = is_object( $event ) ? $event->actor_id : ( isset( $event['actor_id'] ) ? $event['actor_id'] : 0 );
+				// The timeline table column is user_id; append() accepts actor_id and maps it.
+				// Reading actor_id off a DB row always missed, so every snapshot recorded "System".
+				if ( is_object( $event ) ) {
+					$actor_id = isset( $event->user_id ) ? $event->user_id : ( isset( $event->actor_id ) ? $event->actor_id : 0 );
+				} else {
+					$actor_id = isset( $event['user_id'] ) ? $event['user_id'] : ( isset( $event['actor_id'] ) ? $event['actor_id'] : 0 );
+				}
 				$actor_name = '';
 				if ( $actor_id ) {
 					$actor_user = get_userdata( (int) $actor_id );

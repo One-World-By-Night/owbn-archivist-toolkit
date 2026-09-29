@@ -646,7 +646,19 @@ class OAT_Domain_Chronicle_Actions implements OAT_Domain_Interface {
         return $count;
     }
     public function validate( $entry, $meta ) {
-        if ( empty( $meta['chronicle_slug'] ) ) {
+        // This domain holds two forms that name the chronicle differently:
+        // Chronicle Report uses chronicle_slug, Manage Satellites uses
+        // parent_chronicle. Requiring chronicle_slug alone meant Manage
+        // Satellites could never pass validation — it has produced zero entries
+        // since it was created, while Chronicle Report has thousands.
+        $slug = '';
+        if ( ! empty( $meta['chronicle_slug'] ) ) {
+            $slug = $meta['chronicle_slug'];
+        } elseif ( ! empty( $meta['parent_chronicle'] ) ) {
+            $slug = $meta['parent_chronicle'];
+        }
+
+        if ( empty( $slug ) ) {
             return new WP_Error( 'missing_chronicle', 'Chronicle selection is required.' );
         }
 

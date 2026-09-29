@@ -42,8 +42,14 @@ class OAT_Action_Submit {
         }
 
         // Check for super-user fast-track routing.
-        $is_fast_track = false;
-        if ( function_exists( 'owc_oat_is_super_user' ) && owc_oat_is_super_user( $user_id ) ) {
+        //
+        // Filterable so a caller can opt out. External intake (a promoted support
+        // ticket) turns this off: the request should walk the full approval chain
+        // regardless of the requester's own privileges, because the person acting
+        // is an agent promoting on their behalf, not the requester submitting.
+        $is_fast_track    = false;
+        $allow_fast_track = apply_filters( 'oat_allow_fast_track', true, $entry, $user_id, $data );
+        if ( $allow_fast_track && function_exists( 'owc_oat_is_super_user' ) && owc_oat_is_super_user( $user_id ) ) {
             $archivist_config = OAT_Workflow_Engine::get_step_config( $entry, 'archivist' );
             if ( $archivist_config ) {
                 $is_fast_track = true;

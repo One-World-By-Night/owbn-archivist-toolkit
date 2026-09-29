@@ -146,6 +146,19 @@ class OAT_Workflow_Engine {
             }
         }
 
+        // A coordinator step with no owning office would assign nobody and sit
+        // there forever (four registrations sat 67 days that way). If we cannot
+        // work out an office, skip the step rather than strand the request.
+        if ( ! empty( $step_config['assignee_role'] )
+            && false !== strpos( $step_config['assignee_role'], '{coordinator_genre}' )
+            && '' === self::derive_coordinator_office( $entry ) ) {
+            $next = isset( $step_config['on_approve'] ) ? $step_config['on_approve'] : null;
+            if ( $next !== null && $next !== $step_id ) {
+                self::advance_to_step( $entry, $next );
+            }
+            return;
+        }
+
         // Cancel any existing active timer before transitioning.
         $existing_timer = OAT_Timer::active_for_entry( (int) $entry->id );
         if ( $existing_timer ) {
@@ -220,10 +233,135 @@ class OAT_Workflow_Engine {
      * @param string $role_pattern Role path pattern (e.g., 'oat/{chronicle_slug}/reviewer').
      * @return array User IDs.
      */
+
+    /**
+     * Known coordinator office slugs, cached per request.
+     *
+     * @return array slug => true
+     */
+    public static function coordinator_slugs() {
+        static $slugs = null;
+        if ( null !== $slugs ) {
+            return $slugs;
+        }
+        $slugs = array();
+        if ( function_exists( 'owc_get_coordinators' ) ) {
+            foreach ( (array) owc_get_coordinators() as $c ) {
+                if ( ! empty( $c['slug'] ) ) {
+                    $slugs[ strtolower( $c['slug'] ) ] = true;
+                }
+            }
+        }
+        return $slugs;
+    }
+
+    /**
+     * Work out which coordinator office owns this request.
+     *
+     * The entry's coordinator_genre is free text and has historically been filled
+     * with clan and creature names ("baali", "ravnos antitribu", "red talon") that
+     * are not coordinator slugs, leaving requests with nobody assigned. So: trust
+     * the value when it IS an office, otherwise derive it from the character record,
+     * which carries genre, clan and sect.
+     *
+     * @return string A coordinator slug, or '' when no office owns this character.
+     */
+    public static function derive_coordinator_office( $entry ) {
+        $slugs = self::coordinator_slugs();
+        $norm  = function ( $v ) {
+            return strtolower( trim( preg_replace( '/\s+/', ' ', (string) $v ) ) );
+        };
+
+        // 1. The stored value, when it is already a real office.
+        $given = isset( $entry->coordinator_genre ) ? $norm( $entry->coordinator_genre ) : '';
+        if ( '' !== $given && isset( $slugs[ $given ] ) ) {
+            return $given;
+        }
+
+        // 2. Otherwise derive from the character.
+        $ch = self::character_for_entry( $entry );
+        if ( ! $ch ) {
+            return '';
+        }
+        $genre = $norm( isset( $ch->creature_genre ) ? $ch->creature_genre : '' );
+        $type  = $norm( isset( $ch->creature_type ) ? $ch->creature_type : '' );
+        $sect  = $norm( isset( $ch->creature_sub_type ) ? $ch->creature_sub_type : '' );
+
+        // Non-vampire genres map straight to their office.
+        $by_genre = array(
+            'changing breeds' => 'changing-breeds',
+            'wraith'          => 'wraith',
+            'mage'            => 'mage',
+            'changeling'      => 'changeling',
+            'demon'           => 'demon',
+            'kuei-jin'        => 'kuei-jin',
+            'mummy'           => 'mummy',
+            'hunter'          => 'hunter',
+        );
+        if ( isset( $by_genre[ $genre ] ) && isset( $slugs[ $by_genre[ $genre ] ] ) ) {
+            return $by_genre[ $genre ];
+        }
+
+        if ( 'vampire' === $genre ) {
+            // Lineages whose parent office is unambiguous.
+            $alias = array(
+                'baali'                => 'demon',
+                'samedi'               => 'giovanni',
+                'gargoyle'             => 'tremere',
+                'serpent of the light' => 'setite',
+                'serpents of the light'=> 'setite',
+                'harbinger of skulls'  => 'giovanni',
+                'harbingers of skulls' => 'giovanni',
+                'kiasyd'               => 'lasombra',
+                'true brujah'          => 'brujah',
+                'pander'               => 'sabbat',
+            );
+            if ( isset( $alias[ $type ] ) && isset( $slugs[ $alias[ $type ] ] ) ) {
+                return $alias[ $type ];
+            }
+
+            // Clan office, ignoring antitribu / bracketed / "old clan" variants.
+            $base = trim( preg_replace( '/\b(antitribu|anti-tribu)\b/', '', $type ) );
+            $base = trim( preg_replace( '/\(.*?\)/', '', $base ) );
+            $base = trim( preg_replace( '/^old clan\s+/', '', $base ) );
+            $base = trim( preg_replace( '/\s+/', ' ', $base ) );
+            if ( '' !== $base && isset( $slugs[ $base ] ) ) {
+                return $base;
+            }
+
+            // Sect, for clans with no office of their own (Caitiff and friends).
+            $by_sect = array( 'camarilla' => 'camarilla', 'sabbat' => 'sabbat', 'anarch' => 'anarch' );
+            if ( isset( $by_sect[ $sect ] ) && isset( $slugs[ $by_sect[ $sect ] ] ) ) {
+                return $by_sect[ $sect ];
+            }
+        }
+
+        return '';
+    }
+
+    /** @return object|null */
+    protected static function character_for_entry( $entry ) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'oat_characters';
+        if ( ! empty( $entry->character_id ) ) {
+            $ch = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $entry->character_id ) );
+            if ( $ch ) {
+                return $ch;
+            }
+        }
+        if ( class_exists( 'OAT_Entry_Meta' ) && isset( $entry->id ) ) {
+            $uuid = OAT_Entry_Meta::get( (int) $entry->id, 'character_name' );
+            if ( $uuid ) {
+                return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE uuid = %s", $uuid ) );
+            }
+        }
+        return null;
+    }
+
     public static function resolve_assignees( $entry, $role_pattern ) {
         $replacements = array(
             '{chronicle_slug}'    => isset( $entry->chronicle_slug ) ? $entry->chronicle_slug : '',
-            '{coordinator_genre}' => isset( $entry->coordinator_genre ) ? $entry->coordinator_genre : '',
+            '{coordinator_genre}' => self::derive_coordinator_office( $entry ),
         );
 
         // Resolve any remaining {meta_key} tokens from entry meta (CL-007).
