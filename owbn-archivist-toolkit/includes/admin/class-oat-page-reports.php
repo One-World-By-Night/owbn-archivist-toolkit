@@ -39,9 +39,9 @@ class OAT_Page_Reports {
 		$all_roles   = array();
 
 		foreach ( $asc_roles as $role ) {
-			// Exec-level oversight = global.
-			// Coordinator-tier from any exec office; staff-tier only from exec/archivist.
-			if ( preg_match( '#^exec/(archivist|web|head-coordinator|ahc1|ahc2|admin)/coordinator$#i', $role )
+			// Exec-level oversight = global: the archivist, web, head-coordinator, ahc1, ahc2,
+			// admin and membership coordinators, and exec/archivist/staff.
+			if ( preg_match( '#^exec/(archivist|web|head-coordinator|ahc1|ahc2|admin|membership)/coordinator$#i', $role )
 				|| preg_match( '#^exec/archivist/staff$#i', $role ) ) {
 				$is_global = true;
 			}
