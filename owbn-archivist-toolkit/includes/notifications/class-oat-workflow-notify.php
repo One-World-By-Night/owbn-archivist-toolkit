@@ -10,6 +10,10 @@
  *   changes requested    -> whoever it went back to, i.e. the pending assignees
  *                           at the new current step (one level back), with the
  *                           note; falls back to the originator.
+ *   reaches a step       -> every person assigned to that step, in every domain
+ *                           chronicle reports included, with a link that signs
+ *                           them in and opens the request; never the person
+ *                           who moved it there.
  *
  * Recipients are resolved to a real person's WordPress email; the system
  * web@owbn.net account and drafts (originator id <= 1) are never emailed.
@@ -23,6 +27,98 @@ class OAT_Workflow_Notify {
 		add_action( 'oat_entry_approved', array( __CLASS__, 'on_approved' ), 30, 3 );
 		add_action( 'oat_entry_denied', array( __CLASS__, 'on_denied' ), 30, 3 );
 		add_action( 'oat_entry_changes_requested', array( __CLASS__, 'on_changes_requested' ), 30, 3 );
+		add_action( 'oat_entry_step_assigned', array( __CLASS__, 'on_step_assigned' ), 30, 3 );
+	}
+
+	/**
+	 * A request reached a step: email each person assigned to it, with a link to the request.
+	 *
+	 * @param int    $entry_id Request id.
+	 * @param string $step_id  Step the request is now at.
+	 * @param int[]  $user_ids People assigned to the step.
+	 * @return void
+	 */
+	public static function on_step_assigned( $entry_id, $step_id, $user_ids ) {
+		if ( ! class_exists( 'OAT_Entry' ) ) {
+			return;
+		}
+		$entry = OAT_Entry::find( (int) $entry_id );
+		if ( ! $entry || ( class_exists( 'OAT_Constants' ) && OAT_Constants::is_terminal_status( $entry->status ) ) ) {
+			return;
+		}
+
+		$actor  = get_current_user_id();
+		$emails = array();
+		foreach ( (array) $user_ids as $uid ) {
+			$uid = (int) $uid;
+			if ( $uid <= 1 || $uid === $actor ) {
+				continue;
+			}
+			$u = get_user_by( 'id', $uid );
+			if ( $u && is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
+				$emails[ strtolower( $u->user_email ) ] = $u->user_email;
+			}
+		}
+		if ( empty( $emails ) ) {
+			return;
+		}
+
+		$label   = self::label( $entry );
+		$subject = sprintf( '[OWbN] %s #%d is waiting for you', $label, (int) $entry->id );
+
+		$lines   = array();
+		$lines[] = sprintf( 'A %s (#%d) is now at %s and waiting on you.', $label, (int) $entry->id, self::step_label( $entry, $step_id ) );
+		$filer   = self::filer_name( $entry );
+		if ( '' !== $filer ) {
+			$lines[] = '';
+			$lines[] = 'Filed by: ' . $filer;
+		}
+		$lines[] = '';
+		$lines[] = 'Open it here:';
+		$lines[] = self::entry_link( $entry );
+		$lines[] = '';
+		$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
+		$body    = implode( "\n", $lines );
+
+		foreach ( $emails as $to ) {
+			wp_mail( $to, $subject, $body );
+		}
+	}
+
+	/**
+	 * The step's name from its configuration (e.g. "Staff Review"), else its id in words.
+	 *
+	 * @param object $entry
+	 * @param string $step_id
+	 * @return string
+	 */
+	private static function step_label( $entry, $step_id ) {
+		$config = class_exists( 'OAT_Workflow_Engine' ) ? OAT_Workflow_Engine::get_step_config( $entry, $step_id ) : null;
+		if ( is_array( $config ) && ! empty( $config['label'] ) ) {
+			return (string) $config['label'];
+		}
+		return ucwords( str_replace( array( '_', '-' ), ' ', (string) $step_id ) );
+	}
+
+	/**
+	 * The display name of the person who filed the request, or '' for a draft or the system account.
+	 *
+	 * @param object $entry
+	 * @return string
+	 */
+	private static function filer_name( $entry ) {
+		$u = ( (int) $entry->originator_id > 1 ) ? get_user_by( 'id', (int) $entry->originator_id ) : null;
+		return $u ? (string) $u->display_name : '';
+	}
+
+	/**
+	 * Address that signs the reader in through OWbN sign-on and opens the request on this site.
+	 *
+	 * @param object $entry
+	 * @return string
+	 */
+	private static function entry_link( $entry ) {
+		return home_url( '/?auth=sso&redirect_uri=' . rawurlencode( '/oat-entry/?oat_entry=' . (int) $entry->id ) );
 	}
 
 	/**

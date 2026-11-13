@@ -25,6 +25,7 @@ class OAT_Action_Delegate {
 
         // Assign the delegate (can be outside normal pool per D-027).
         OAT_Assignee::assign( (int) $entry->id, $target_uid, $step );
+        do_action( 'oat_entry_step_assigned', (int) $entry->id, $step, array( $target_uid ) );
 
         // Get step config for timeline tier.
         $step_config = OAT_Workflow_Engine::get_step_config( $entry );

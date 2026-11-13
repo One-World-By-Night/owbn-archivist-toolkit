@@ -177,6 +177,16 @@ class OAT_Workflow_Engine {
             foreach ( $user_ids as $uid ) {
                 OAT_Assignee::assign( (int) $entry->id, (int) $uid, $step_id );
             }
+            if ( ! empty( $user_ids ) ) {
+                /**
+                 * Fires when people are assigned to the step a request has reached.
+                 *
+                 * @param int    $entry_id Request id.
+                 * @param string $step_id  Step id.
+                 * @param int[]  $user_ids Assigned users.
+                 */
+                do_action( 'oat_entry_step_assigned', (int) $entry->id, $step_id, array_map( 'intval', $user_ids ) );
+            }
         }
 
         // Start timer if configured.
