@@ -64,6 +64,20 @@ class OAT_Schema {
             KEY idx_coordinator_slug (coordinator_slug)
         ) {$charset};\n\n";
 
+        // ── oat_character_content ───────────────────────────────────
+        $sql .= "CREATE TABLE {$prefix}oat_character_content (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            character_id bigint(20) unsigned NOT NULL,
+            entry_id bigint(20) unsigned DEFAULT NULL,
+            content_type varchar(100) NOT NULL DEFAULT '',
+            content_name varchar(255) NOT NULL DEFAULT '',
+            coordinator_genre varchar(100) DEFAULT NULL,
+            created_at bigint(20) unsigned NOT NULL,
+            PRIMARY KEY  (id),
+            KEY idx_character (character_id),
+            KEY idx_entry (entry_id)
+        ) {$charset};\n\n";
+
         // ── oat_entry_meta ──────────────────────────────────────────
         $sql .= "CREATE TABLE {$prefix}oat_entry_meta (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

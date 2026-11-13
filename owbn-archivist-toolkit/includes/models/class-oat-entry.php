@@ -182,21 +182,13 @@ class OAT_Entry {
     }
 
     /**
-     * Check whether an entry can be deleted.
-     *
-     * WP admin or archivist (super user) can delete any entry.
+     * Whether a request can be deleted from All Entries: never. Requests are records; denying or withdrawing one
+     * stops it and keeps it.
      *
      * @param object $entry
      * @return bool
      */
     public static function can_delete( $entry ) {
-        if ( current_user_can( 'manage_options' ) ) {
-            return true;
-        }
-        if ( function_exists( 'owc_oat_is_super_user' ) ) {
-            $user = wp_get_current_user();
-            return $user && $user->ID && owc_oat_is_super_user( $user->ID );
-        }
         return false;
     }
 
