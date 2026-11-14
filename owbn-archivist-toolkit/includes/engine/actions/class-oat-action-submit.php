@@ -3,6 +3,31 @@
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Action_Submit {
+
+    /**
+     * The checks a submission must pass, with nothing saved: the domain's own validation, then the submission rules.
+     *
+     * @param object $entry Entry row, or an unsaved one with the same fields.
+     * @param array  $meta  Field values.
+     * @return true|WP_Error
+     */
+    public static function check( $entry, array $meta ) {
+        $domain = OAT_Domain_Registry::get_php_domain( $entry->domain );
+        if ( $domain ) {
+            $valid = $domain->validate( $entry, $meta );
+            if ( is_wp_error( $valid ) ) {
+                return $valid;
+            }
+        }
+        if ( class_exists( 'OAT_Rule' ) ) {
+            $rule_result = OAT_Rule::evaluate_submission( $entry, $meta );
+            if ( is_wp_error( $rule_result ) ) {
+                return $rule_result;
+            }
+        }
+        return true;
+    }
+
     public static function execute( $entry, $user_id, $data = array() ) {
 
         $domain = OAT_Domain_Registry::get_php_domain( $entry->domain );

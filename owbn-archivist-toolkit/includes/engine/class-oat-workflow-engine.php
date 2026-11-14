@@ -133,29 +133,13 @@ class OAT_Workflow_Engine {
             return;
         }
 
-        // Evaluate condition — if false, skip to the next step.
-        if ( ! empty( $step_config['condition'] ) ) {
-            if ( ! self::evaluate_condition( $step_config['condition'], (int) $entry->id ) ) {
-                $next = isset( $step_config['on_approve'] ) ? $step_config['on_approve'] : null;
-                if ( $next !== null && $next !== $step_id ) {
-                    self::advance_to_step( $entry, $next );
-                    return;
-                }
-                // Terminal if on_approve is null or same step (prevents infinite recursion).
-                return;
-            }
-        }
-
-        // A coordinator step with no owning office would assign nobody and sit
-        // there forever (four registrations sat 67 days that way). If we cannot
-        // work out an office, skip the step rather than strand the request.
-        if ( ! empty( $step_config['assignee_role'] )
-            && false !== strpos( $step_config['assignee_role'], '{coordinator_genre}' )
-            && '' === self::derive_coordinator_office( $entry ) ) {
+        // A step that doesn't apply to this request is skipped: on to its on_approve step.
+        if ( ! self::step_applies( $entry, $step_id, $step_config ) ) {
             $next = isset( $step_config['on_approve'] ) ? $step_config['on_approve'] : null;
             if ( $next !== null && $next !== $step_id ) {
                 self::advance_to_step( $entry, $next );
             }
+            // Terminal if on_approve is null or same step (prevents infinite recursion).
             return;
         }
 
@@ -201,6 +185,33 @@ class OAT_Workflow_Engine {
                 'expires_at'    => time() + ( isset( $timer_config['duration'] ) ? (int) $timer_config['duration'] : 1209600 ),
             ) );
         }
+    }
+
+    /**
+     * Whether a step applies to a request: its condition (if any) holds, and a Coordinator step has an office to
+     * assign (one without would assign nobody).
+     *
+     * @param object     $entry       The entry object.
+     * @param string     $step_id     Step ID.
+     * @param array|null $step_config The step's configuration, when already loaded.
+     * @return bool
+     */
+    public static function step_applies( $entry, $step_id, $step_config = null ) {
+        if ( null === $step_config ) {
+            $step_config = self::get_step_config( $entry, $step_id );
+        }
+        if ( ! $step_config ) {
+            return false;
+        }
+        if ( ! empty( $step_config['condition'] ) && ! self::evaluate_condition( $step_config['condition'], (int) $entry->id ) ) {
+            return false;
+        }
+        if ( ! empty( $step_config['assignee_role'] )
+            && false !== strpos( $step_config['assignee_role'], '{coordinator_genre}' )
+            && '' === self::derive_coordinator_office( $entry ) ) {
+            return false;
+        }
+        return true;
     }
 
     /**

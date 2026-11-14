@@ -22,6 +22,18 @@ class OAT_Action_Request_Changes {
             return new WP_Error( 'no_prev_step', 'No previous step configured for request changes.' );
         }
 
+        // A step that doesn't apply to this request is passed over: on to that step's own send-back target, until a
+        // step that applies, Submission, or a step with no send-back target.
+        $passed = array( $current_step => true );
+        while ( 'submit' !== $prev_step && ! isset( $passed[ $prev_step ] ) && ! OAT_Workflow_Engine::step_applies( $entry, $prev_step ) ) {
+            $passed[ $prev_step ] = true;
+            $earlier = OAT_Workflow_Engine::get_next_step( $entry, $prev_step, 'request_changes' );
+            if ( null === $earlier ) {
+                break;
+            }
+            $prev_step = $earlier;
+        }
+
         // Reset all assignee approvals at the current step (D-019).
         OAT_Assignee::reset_step( (int) $entry->id, $current_step );
 

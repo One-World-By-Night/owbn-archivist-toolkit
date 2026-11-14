@@ -159,24 +159,41 @@ class OAT_REST_Intake {
 			);
 		}
 
-		// 5. Create the entry at the submit step.
-		$entry_id = OAT_Entry::create( array(
+		// 5. The request's row: Manage Satellites names its chronicle field parent_chronicle; keep the
+		//    entry associated with the chronicle either way.
+		$row = array(
 			'domain'            => OAT_REST_Forms::form_domain( $form_slug ),
 			'form_slug'         => $form_slug,
 			'status'            => OAT_Constants::STATUS_PENDING,
 			'current_step'      => 'submit',
 			'originator_id'     => $user_id,
-			// Manage Satellites names its chronicle field parent_chronicle; keep the
-			// entry associated with the chronicle either way.
 			'chronicle_slug'    => isset( $values['chronicle_slug'] ) ? $values['chronicle_slug']
 				: ( isset( $values['parent_chronicle'] ) ? $values['parent_chronicle'] : '' ),
 			'coordinator_genre' => isset( $values['coordinator_genre'] ) ? $values['coordinator_genre'] : '',
-		) );
+		);
+
+		// 6. The submission's checks run before anything is saved, on an unsaved copy of the row, so a rejected
+		//    ticket creates no request.
+		$draft = (object) array_merge(
+			array_map( 'sanitize_text_field', $row ),
+			array( 'id' => 0, 'originator_id' => $user_id, 'character_id' => 0, 'created_at' => time(), 'updated_at' => time() )
+		);
+		$checked = OAT_Action_Submit::check( $draft, $values );
+		if ( is_wp_error( $checked ) ) {
+			return new WP_Error(
+				'oat_rejected',
+				$checked->get_error_message(),
+				array( 'status' => 422, 'rejected_by' => $checked->get_error_code() )
+			);
+		}
+
+		// 7. Create the entry at the submit step.
+		$entry_id = OAT_Entry::create( $row );
 		if ( ! $entry_id ) {
 			return new WP_Error( 'oat_create_failed', 'Could not create the request.', array( 'status' => 500 ) );
 		}
 
-		// 6. Field values, then provenance.
+		// 8. Field values, then provenance.
 		foreach ( $values as $k => $v ) {
 			OAT_Entry_Meta::set( $entry_id, $k, $v );
 		}
@@ -188,7 +205,7 @@ class OAT_REST_Intake {
 			OAT_Entry_Meta::set( $entry_id, self::SOURCE_KEY, $idem );
 		}
 
-		// 7. Same submission path as the toolkit's own form.
+		// 9. Same submission path as the toolkit's own form.
 		$entry = OAT_Entry::find( $entry_id );
 		if ( ! $entry ) {
 			return new WP_Error( 'oat_create_failed', 'Request created but could not be loaded.', array( 'status' => 500 ) );
@@ -201,12 +218,20 @@ class OAT_REST_Intake {
 		$result = OAT_Action_Submit::execute( $entry, $user_id, array( 'meta' => $values, 'note' => $note ) );
 		remove_filter( 'oat_allow_fast_track', '__return_false', 99 );
 		if ( is_wp_error( $result ) ) {
-			// Roll back rather than leave a half-created request in the queue.
-			OAT_Entry::delete_cascade( $entry_id );
+			// Refused at submit after passing the checks: the request stays, cancelled, with the reason on its timeline.
+			OAT_Entry::update_status( $entry_id, OAT_Constants::STATUS_CANCELLED, 'submit' );
+			OAT_Timeline::append( array(
+				'entry_id'        => $entry_id,
+				'action_type'     => OAT_Constants::ACTION_CANCEL,
+				'actor_id'        => $user_id,
+				'step'            => 'submit',
+				'visibility_tier' => OAT_Constants::TIER_STAFF,
+				'note'            => 'Not accepted at intake: ' . $result->get_error_message(),
+			) );
 			return new WP_Error(
 				'oat_rejected',
 				$result->get_error_message(),
-				array( 'status' => 422, 'rejected_by' => $result->get_error_code() )
+				array( 'status' => 422, 'rejected_by' => $result->get_error_code(), 'entry_id' => (int) $entry_id )
 			);
 		}
 
