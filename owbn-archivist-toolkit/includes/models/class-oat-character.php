@@ -148,8 +148,9 @@ class OAT_Character {
         }
 
         // Snapshot old chronicle_slug before update for transfer detection.
-        $old_chronicle = null;
-        if ( array_key_exists( 'chronicle_slug', $update ) ) {
+        $sets_chronicle = array_key_exists( 'chronicle_slug', $update );
+        $old_chronicle  = null;
+        if ( $sets_chronicle ) {
             $old = self::find( $id );
             $old_chronicle = $old ? $old->chronicle_slug : null;
         }
@@ -165,10 +166,10 @@ class OAT_Character {
             array( '%d' )
         );
 
-        // Fire transfer action if chronicle_slug actually changed.
-        if ( $result && $old_chronicle !== null ) {
+        // Fire transfer action if chronicle_slug actually changed, a first chronicle on a character with none included.
+        if ( $result && $sets_chronicle ) {
             $new_chronicle = $update['chronicle_slug'];
-            if ( $new_chronicle !== $old_chronicle ) {
+            if ( (string) $new_chronicle !== (string) $old_chronicle ) {
                 do_action( 'oat_character_transferred', $id, $old_chronicle, $new_chronicle );
             }
         }
