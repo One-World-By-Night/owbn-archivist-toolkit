@@ -19,6 +19,10 @@ class OAT_Action_Submit {
                 return $valid;
             }
         }
+        $offered = OAT_Submit_Guard::check( $entry, $meta );
+        if ( is_wp_error( $offered ) ) {
+            return $offered;
+        }
         if ( class_exists( 'OAT_Rule' ) ) {
             $rule_result = OAT_Rule::evaluate_submission( $entry, $meta );
             if ( is_wp_error( $rule_result ) ) {
@@ -48,6 +52,11 @@ class OAT_Action_Submit {
             if ( is_wp_error( $valid ) ) {
                 return $valid;
             }
+        }
+
+        $offered = OAT_Submit_Guard::check( $entry, isset( $data['meta'] ) && is_array( $data['meta'] ) && $data['meta'] ? $data['meta'] : ( isset( $meta ) ? $meta : array() ) );
+        if ( is_wp_error( $offered ) ) {
+            return $offered;
         }
 
         // Generic rules engine — evaluate submission_check rules.
