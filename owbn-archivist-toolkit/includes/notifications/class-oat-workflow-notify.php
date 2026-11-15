@@ -81,7 +81,7 @@ class OAT_Workflow_Notify {
 		$body    = implode( "\n", $lines );
 
 		foreach ( $emails as $to ) {
-			wp_mail( $to, $subject, $body );
+			OAT_Notify_Mail::send( $to, $subject, $body, (int) $entry->id );
 		}
 	}
 
@@ -162,7 +162,7 @@ class OAT_Workflow_Notify {
 		$lines[] = '';
 		$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 
-		if ( wp_mail( $to, $subject, implode( "\n", $lines ) ) ) {
+		if ( OAT_Notify_Mail::send( $to, $subject, implode( "\n", $lines ), (int) $entry->id ) ) {
 			OAT_Entry_Meta::set( (int) $entry->id, 'wf_approved_notified', (string) time() );
 		}
 	}
@@ -196,7 +196,7 @@ class OAT_Workflow_Notify {
 		$lines[] = '';
 		$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 
-		wp_mail( $to, $subject, implode( "\n", $lines ) );
+		OAT_Notify_Mail::send( $to, $subject, implode( "\n", $lines ), (int) $entry->id );
 	}
 
 	/**
@@ -236,7 +236,7 @@ class OAT_Workflow_Notify {
 		$body    = implode( "\n", $lines );
 
 		foreach ( $emails as $to ) {
-			wp_mail( $to, $subject, $body );
+			OAT_Notify_Mail::send( $to, $subject, $body, (int) $entry->id );
 		}
 	}
 

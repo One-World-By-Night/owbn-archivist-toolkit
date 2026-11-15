@@ -71,7 +71,7 @@ class OAT_Chronicle_Report_Notify {
 		$lines[] = '';
 		$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 
-		wp_mail( $to, $subject, implode( "\n", $lines ) );
+		OAT_Notify_Mail::send( $to, $subject, implode( "\n", $lines ), (int) $entry->id );
 	}
 
 	/**
@@ -130,7 +130,7 @@ class OAT_Chronicle_Report_Notify {
 		$body    = implode( "\n", $lines );
 
 		foreach ( $emails as $to ) {
-			wp_mail( $to, $subject, $body );
+			OAT_Notify_Mail::send( $to, $subject, $body, (int) $entry->id );
 		}
 	}
 
@@ -227,7 +227,7 @@ class OAT_Chronicle_Report_Notify {
 		$body    = implode( "\n", $lines );
 
 		foreach ( $emails as $to ) {
-			wp_mail( $to, $subject, $body );
+			OAT_Notify_Mail::send( $to, $subject, $body, (int) $entry->id );
 		}
 	}
 
@@ -267,7 +267,7 @@ class OAT_Chronicle_Report_Notify {
 		$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 		$body    = implode( "\n", $lines );
 
-		if ( wp_mail( $to, $subject, $body ) ) {
+		if ( OAT_Notify_Mail::send( $to, $subject, $body, (int) $entry->id ) ) {
 			OAT_Entry_Meta::set( (int) $entry->id, 'submitter_confirmed_at', (string) time() );
 		}
 	}
