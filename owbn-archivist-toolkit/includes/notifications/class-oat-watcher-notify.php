@@ -87,7 +87,7 @@ class OAT_Watcher_Notify {
 				__( 'Open it here:', 'owbn-archivist-toolkit' ),
 				home_url( '/?auth=sso&redirect_uri=' . rawurlencode( '/oat-entry/?oat_entry=' . (int) $entry->id ) ),
 				'',
-				__( 'You get this because you watch this request. To stop, open it and choose Unwatch.', 'owbn-archivist-toolkit' ),
+				__( 'You get this because you watch this request. To stop, open it and click Watching.', 'owbn-archivist-toolkit' ),
 				'',
 				OAT_Notify_Mail::FOOTER,
 			);
