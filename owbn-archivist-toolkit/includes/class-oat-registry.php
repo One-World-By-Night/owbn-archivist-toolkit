@@ -551,7 +551,7 @@ class OAT_Registry {
             $roles = array();
         }
         foreach ( $roles as $role ) {
-            if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff|ast)#i', $role, $m ) ) {
+            if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff|ast|st(?=$|/))#i', $role, $m ) ) {
                 $result['chronicles'][] = strtolower( $m[1] );
             }
             if ( preg_match( '#^coordinator/([^/]+)/(coordinator|sub-coordinator)$#i', $role, $m ) ) {
@@ -672,7 +672,7 @@ class OAT_Registry {
         $roles = OAT_Authorization::get_user_roles();
         $slugs = array();
         foreach ( $roles as $role ) {
-            if ( preg_match( '#^chronicle/([^/]+)/(hst|staff|cm|ast)#i', $role, $m ) ) {
+            if ( preg_match( '#^chronicle/([^/]+)/(hst|staff|cm|ast|st(?=$|/))#i', $role, $m ) ) {
                 $slugs[] = $m[1];
             }
         }

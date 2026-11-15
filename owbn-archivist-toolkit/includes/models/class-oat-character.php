@@ -158,7 +158,7 @@ class OAT_Character {
         $update['updated_at'] = time();
         $format[] = '%d';
 
-        $result = (bool) $wpdb->update(
+        $result = false !== $wpdb->update(
             self::table(),
             $update,
             array( 'id' => $id ),
@@ -311,7 +311,7 @@ class OAT_Character {
         $slugs = array();
 
         foreach ( $roles as $role ) {
-            if ( preg_match( '#^chronicle/([^/]+)/(hst|staff|cm|ast)#i', $role, $m ) ) {
+            if ( preg_match( '#^chronicle/([^/]+)/(hst|staff|cm|ast|st(?=$|/))#i', $role, $m ) ) {
                 $slugs[] = $m[1];
             }
         }

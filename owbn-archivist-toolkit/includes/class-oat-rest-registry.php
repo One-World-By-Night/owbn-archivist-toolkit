@@ -568,7 +568,7 @@ class OAT_REST_Registry {
         $asc_roles = OAT_Authorization::get_user_roles();
         $slugs = array();
         foreach ( $asc_roles as $role ) {
-            if ( preg_match( '#^chronicle/([^/]+)/(hst|staff|cm|ast)#i', $role, $m ) ) {
+            if ( preg_match( '#^chronicle/([^/]+)/(hst|staff|cm|ast|st(?=$|/))#i', $role, $m ) ) {
                 $slugs[] = $m[1];
             }
         }
