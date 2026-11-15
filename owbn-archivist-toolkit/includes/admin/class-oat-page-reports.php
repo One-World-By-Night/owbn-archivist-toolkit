@@ -46,7 +46,7 @@ class OAT_Page_Reports {
 				$is_global = true;
 			}
 			// Chronicle staff.
-			if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff)$#i', $role, $m ) ) {
+			if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff|st)$#i', $role, $m ) ) {
 				$all_roles[] = $role;
 				if ( empty( $selected_roles ) || in_array( $role, $selected_roles, true ) ) {
 					$chronicles[] = $m[1];
@@ -413,7 +413,7 @@ class OAT_Page_Reports {
 	 * @return string       e.g. 'HST: Hartford'
 	 */
 	public static function role_label( $role ) {
-		if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff)$#i', $role, $m ) ) {
+		if ( preg_match( '#^chronicle/([^/]+)/(hst|cm|staff|st)$#i', $role, $m ) ) {
 			$slug  = $m[1];
 			$type  = strtoupper( $m[2] );
 			$title = $slug;

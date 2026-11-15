@@ -168,7 +168,7 @@ class OAT_Authorization {
                     $roles[] = 'archivist';
                 }
             }
-            if ( preg_match( '#^chronicle/[^/]+/(hst|staff|cm|ast|sug)#i', $role ) ) {
+            if ( preg_match( '#^chronicle/[^/]+/(hst|staff|cm|ast|sug|st(?=$|/))#i', $role ) ) {
                 $has_staff = true;
             }
         }
