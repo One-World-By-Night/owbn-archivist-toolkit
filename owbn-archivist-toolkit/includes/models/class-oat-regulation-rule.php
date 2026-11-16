@@ -100,30 +100,42 @@ class OAT_Regulation_Rule {
         global $wpdb;
         return $wpdb->get_col( 'SELECT DISTINCT genre FROM ' . self::table() . ' WHERE active = 1 ORDER BY genre ASC' );
     }
-    public static function search( $term, $genre = null ) {
+    /**
+     * Active rules matching every word of the term, each word in any of section, genre, category, subcategory or
+     * condition ("ventrue lore" finds the Ventrue Lore rules), in genre, category and section order.
+     *
+     * @param string      $term  Search words.
+     * @param string|null $genre Only this genre.
+     * @param int         $limit Most rules returned (1-500).
+     * @return array
+     */
+    public static function search( $term, $genre = null, $limit = 200 ) {
         global $wpdb;
         $table = self::table();
-        $like  = '%' . $wpdb->esc_like( $term ) . '%';
+        $words = array_slice( array_values( array_filter( preg_split( '/\s+/', trim( (string) $term ) ), 'strlen' ) ), 0, 6 );
+        if ( ! $words ) {
+            return array();
+        }
 
         $where  = array( 'active = 1' );
         $values = array();
-
-        $where[]  = '(section_ref LIKE %s OR category LIKE %s OR subcategory LIKE %s OR condition_name LIKE %s)';
-        $values[] = $like;
-        $values[] = $like;
-        $values[] = $like;
-        $values[] = $like;
+        foreach ( $words as $word ) {
+            $like     = '%' . $wpdb->esc_like( $word ) . '%';
+            $where[]  = '(section_ref LIKE %s OR genre LIKE %s OR category LIKE %s OR subcategory LIKE %s OR condition_name LIKE %s)';
+            array_push( $values, $like, $like, $like, $like, $like );
+        }
 
         if ( $genre !== null ) {
             $where[]  = 'genre = %s';
             $values[] = $genre;
         }
+        $values[] = max( 1, min( 500, (int) $limit ) );
 
         $sql = "SELECT id, genre, category, subcategory, condition_name, pc_level, npc_level, controlling_coordinator, section_ref, elevation
                 FROM {$table}
                 WHERE " . implode( ' AND ', $where ) . '
-                ORDER BY genre ASC, category ASC
-                LIMIT 20';
+                ORDER BY genre ASC, category ASC, section_ref ASC
+                LIMIT %d';
 
         return $wpdb->get_results( $wpdb->prepare( $sql, $values ) );
     }
