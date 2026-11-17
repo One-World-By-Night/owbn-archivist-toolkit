@@ -55,13 +55,47 @@ class OAT_Submit_Guard {
 
 			if ( 'chronicle_picker' === ( $field['type'] ?? '' ) && ! $super ) {
 				$allowed = self::chronicles_offered( $attrs, $meta, $roles );
-				if ( null !== $allowed && ! in_array( strtolower( $value ), $allowed, true ) ) {
+				if ( null !== $allowed && ! in_array( strtolower( $value ), $allowed, true ) && ! self::is_own_characters_chronicle( $fields, $meta, $user, $value ) ) {
 					/* translators: %s: the field's label, e.g. "Chronicle Name" */
 					return new WP_Error( 'oat_chronicle_not_yours', sprintf( __( 'You can\'t submit this for the chronicle chosen in "%s".', 'owbn-archivist-toolkit' ), $label ) );
 				}
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Whether the chronicle chosen is the chronicle of a character the sender plays: the form's character is linked to
+	 * the sender's account or carries their player email, and its own chronicle is the one chosen. A player can then
+	 * file for their own character in a chronicle where they hold no role.
+	 *
+	 * @param array        $fields    The form's submit fields.
+	 * @param array        $meta      Field values as submitted.
+	 * @param WP_User|null $user      The sender.
+	 * @param string       $chronicle The chronicle slug chosen.
+	 * @return bool
+	 */
+	private static function is_own_characters_chronicle( array $fields, array $meta, $user, $chronicle ) {
+		if ( ! $user || '' === (string) $chronicle || ! class_exists( 'OAT_Character' ) ) {
+			return false;
+		}
+		foreach ( $fields as $field ) {
+			if ( 'character_picker' !== ( $field['type'] ?? '' ) ) {
+				continue;
+			}
+			$key  = (string) ( $field['key'] ?? '' );
+			$uuid = ( '' !== $key && isset( $meta[ $key ] ) && is_scalar( $meta[ $key ] ) ) ? trim( (string) $meta[ $key ] ) : '';
+			$char = '' !== $uuid ? OAT_Character::find_by_uuid( $uuid ) : null;
+			if ( ! $char || '' === (string) $char->chronicle_slug || 0 !== strcasecmp( (string) $char->chronicle_slug, (string) $chronicle ) ) {
+				continue;
+			}
+			$linked   = (int) $char->wp_user_id > 0 && (int) $char->wp_user_id === (int) $user->ID;
+			$by_email = '' !== (string) $user->user_email && '' !== (string) $char->player_email && 0 === strcasecmp( (string) $char->player_email, (string) $user->user_email );
+			if ( $linked || $by_email ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
