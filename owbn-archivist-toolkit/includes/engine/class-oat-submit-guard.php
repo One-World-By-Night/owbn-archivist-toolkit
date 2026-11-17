@@ -87,7 +87,12 @@ class OAT_Submit_Guard {
 		if ( ! $wanted || in_array( '*', $wanted, true ) ) {
 			return null;
 		}
-		return self::chronicles_held( $roles, array_map( 'strtolower', array_map( 'strval', $wanted ) ) );
+		$wanted = array_map( 'strtolower', array_map( 'strval', $wanted ) );
+		// A storyteller is offered the chronicles an assistant storyteller is, as on the form.
+		if ( in_array( 'ast', $wanted, true ) && ! in_array( 'st', $wanted, true ) ) {
+			$wanted[] = 'st';
+		}
+		return self::chronicles_held( $roles, $wanted );
 	}
 
 	/**
