@@ -277,7 +277,78 @@ class OAT_Workflow_Engine {
     }
 
     /**
-     * Work out which coordinator office owns this request.
+     * The coordinator office that owns this request, first of coordinator_offices().
+     *
+     * @return string A coordinator slug, or '' when no office owns this request.
+     */
+    public static function derive_coordinator_office( $entry ) {
+        $offices = self::coordinator_offices( $entry );
+        return $offices ? $offices[0] : '';
+    }
+
+    /**
+     * Every coordinator office that owns this request.
+     *
+     * The offices named by the request's selected regulation rules when those rules need a
+     * coordinator; otherwise the single office of the entry or its character.
+     *
+     * @return string[] Coordinator slugs, empty when no office owns this request.
+     */
+    public static function coordinator_offices( $entry ) {
+        $from_rules = self::rule_coordinator_offices( $entry );
+        if ( $from_rules ) {
+            return $from_rules;
+        }
+        $one = self::derive_office_from_entry( $entry );
+        return '' === $one ? array() : array( $one );
+    }
+
+    /**
+     * The coordinator offices controlling the regulation rules selected on this request, for the rules whose level
+     * needs a coordinator (approval, disallowed, council vote at the character's PC or NPC level).
+     *
+     * @return string[] Coordinator slugs in rule order, only real offices.
+     */
+    public static function rule_coordinator_offices( $entry ) {
+        global $wpdb;
+        if ( empty( $entry->id ) ) {
+            return array();
+        }
+        $er   = $wpdb->prefix . 'oat_entry_rules';
+        $rr   = $wpdb->prefix . 'oat_regulation_rules';
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT rr.controlling_coordinator, rr.pc_level, rr.npc_level FROM {$er} er
+             JOIN {$rr} rr ON rr.id = er.rule_id
+             WHERE er.entry_id = %d AND rr.controlling_coordinator <> '' ORDER BY er.id",
+            (int) $entry->id
+        ) );
+        if ( ! $rows ) {
+            return array();
+        }
+        $pc_npc = class_exists( 'OAT_Entry_Meta' ) ? OAT_Entry_Meta::get( (int) $entry->id, 'pc_npc' ) : '';
+        $needs  = array( 'coordinator_approval' => true, 'disallowed' => true, 'council_vote' => true );
+        $slugs  = self::coordinator_slugs();
+        $offices = array();
+        foreach ( $rows as $row ) {
+            $level = ( 'npc' === $pc_npc && ! empty( $row->npc_level ) ) ? $row->npc_level : $row->pc_level;
+            if ( ! isset( $needs[ $level ] ) ) {
+                continue;
+            }
+            $tokens = class_exists( 'OAT_Coordinator_Backfill' )
+                ? OAT_Coordinator_Backfill::tokenize_authority( $row->controlling_coordinator )
+                : array( strtolower( trim( (string) $row->controlling_coordinator ) ) );
+            foreach ( $tokens as $token ) {
+                $token = str_replace( ' ', '-', $token );
+                if ( isset( $slugs[ $token ] ) ) {
+                    $offices[ $token ] = true;
+                }
+            }
+        }
+        return array_keys( $offices );
+    }
+
+    /**
+     * Work out which coordinator office owns this entry or its character.
      *
      * The entry's coordinator_genre is free text and has historically been filled
      * with clan and creature names ("baali", "ravnos antitribu", "red talon") that
@@ -287,7 +358,7 @@ class OAT_Workflow_Engine {
      *
      * @return string A coordinator slug, or '' when no office owns this character.
      */
-    public static function derive_coordinator_office( $entry ) {
+    public static function derive_office_from_entry( $entry ) {
         $slugs = self::coordinator_slugs();
         $norm  = function ( $v ) {
             return strtolower( trim( preg_replace( '/\s+/', ' ', (string) $v ) ) );
@@ -400,6 +471,18 @@ class OAT_Workflow_Engine {
         }
 
         $role = str_replace( array_keys( $replacements ), array_values( $replacements ), $role_pattern );
+
+        // A request owned by several coordinator offices is assigned to each of them.
+        if ( false !== strpos( $role_pattern, '{coordinator_genre}' ) ) {
+            $offices = self::coordinator_offices( $entry );
+            if ( count( $offices ) > 1 ) {
+                $roles = array();
+                foreach ( $offices as $office ) {
+                    $roles[] = str_replace( array_keys( $replacements ), array_values( array_merge( $replacements, array( '{coordinator_genre}' => $office ) ) ), $role_pattern );
+                }
+                $role = implode( '|', array_unique( $roles ) );
+            }
+        }
 
         // BA-003: Direct user assignment via User/<user_id> pattern.
         if ( strpos( $role, 'User/' ) === 0 ) {
