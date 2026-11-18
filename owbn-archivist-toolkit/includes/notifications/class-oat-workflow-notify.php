@@ -47,41 +47,52 @@ class OAT_Workflow_Notify {
 			return;
 		}
 
-		$actor  = get_current_user_id();
-		$emails = array();
+		$actor   = get_current_user_id();
+		$targets = array();
 		foreach ( (array) $user_ids as $uid ) {
 			$uid = (int) $uid;
 			if ( $uid <= 1 || $uid === $actor ) {
 				continue;
 			}
 			$u = get_user_by( 'id', $uid );
-			if ( $u && is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
-				$emails[ strtolower( $u->user_email ) ] = $u->user_email;
+			if ( ! $u ) {
+				continue;
+			}
+			$position = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::for_assignee( $u, $entry, $step_id ) : null;
+			if ( $position ) {
+				$targets[ strtolower( $position['email'] ) ] = $position;
+			} elseif ( is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
+				$targets[ strtolower( $u->user_email ) ] = array( 'email' => $u->user_email, 'label' => '' );
 			}
 		}
-		if ( empty( $emails ) ) {
+		if ( empty( $targets ) ) {
 			return;
 		}
 
-		$label   = self::label( $entry );
-		$subject = sprintf( '[OWbN] %s #%d is waiting for you', $label, (int) $entry->id );
+		$label = self::label( $entry );
+		foreach ( $targets as $target ) {
+			$subject = '' === $target['label']
+				? sprintf( '[OWbN] %s #%d is waiting for you', $label, (int) $entry->id )
+				: sprintf( '[OWbN] %s: %s #%d is waiting for you', $target['label'], $label, (int) $entry->id );
 
-		$lines   = array();
-		$lines[] = sprintf( 'A %s (#%d) is now at %s and waiting on you.', $label, (int) $entry->id, self::step_label( $entry, $step_id ) );
-		$filer   = self::filer_name( $entry );
-		if ( '' !== $filer ) {
+			$lines = array();
+			if ( '' !== $target['label'] ) {
+				$lines[] = sprintf( 'You are receiving this for the position: %s.', $target['label'] );
+				$lines[] = '';
+			}
+			$lines[] = sprintf( 'A %s (#%d) is now at %s and waiting on you.', $label, (int) $entry->id, self::step_label( $entry, $step_id ) );
+			$filer   = self::filer_name( $entry );
+			if ( '' !== $filer ) {
+				$lines[] = '';
+				$lines[] = 'Filed by: ' . $filer;
+			}
 			$lines[] = '';
-			$lines[] = 'Filed by: ' . $filer;
-		}
-		$lines[] = '';
-		$lines[] = 'Open it here:';
-		$lines[] = self::entry_link( $entry );
-		$lines[] = '';
-		$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
-		$body    = implode( "\n", $lines );
+			$lines[] = 'Open it here:';
+			$lines[] = self::entry_link( $entry );
+			$lines[] = '';
+			$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 
-		foreach ( $emails as $to ) {
-			OAT_Notify_Mail::send( $to, $subject, $body, (int) $entry->id );
+			OAT_Notify_Mail::send( $target['email'], $subject, implode( "\n", $lines ), (int) $entry->id );
 		}
 	}
 
@@ -269,7 +280,13 @@ class OAT_Workflow_Notify {
 				continue;
 			}
 			$u = ( (int) $a->user_id > 1 ) ? get_user_by( 'id', (int) $a->user_id ) : null;
-			if ( $u && is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
+			if ( ! $u ) {
+				continue;
+			}
+			$position = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::for_assignee( $u, $entry, $step ) : null;
+			if ( $position ) {
+				$out[ strtolower( $position['email'] ) ] = $position['email'];
+			} elseif ( is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
 				$out[ strtolower( $u->user_email ) ] = $u->user_email;
 			}
 		}

@@ -101,7 +101,13 @@ class OAT_Chronicle_Report_Notify {
 				continue;
 			}
 			$u = ( (int) $a->user_id > 1 ) ? get_user_by( 'id', (int) $a->user_id ) : null;
-			if ( $u && is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
+			if ( ! $u ) {
+				continue;
+			}
+			$position = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::for_assignee( $u, $entry, $entry->current_step ) : null;
+			if ( $position ) {
+				$emails[ strtolower( $position['email'] ) ] = $position['email'];
+			} elseif ( is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
 				$emails[ strtolower( $u->user_email ) ] = $u->user_email;
 			}
 		}
@@ -310,6 +316,11 @@ class OAT_Chronicle_Report_Notify {
 			return $emails;
 		}
 		foreach ( $slugs as $slug ) {
+			$office = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::office_address( $slug ) : null;
+			if ( $office ) {
+				$emails[ strtolower( $office['email'] ) ] = $office['email'];
+				continue;
+			}
 			foreach ( array( 'coordinator', 'sub-coordinator' ) as $level ) {
 				$users = owc_asc_get_users_by_role( 'oat', 'coordinator/' . $slug . '/' . $level );
 				if ( is_wp_error( $users ) || ! is_array( $users ) ) {

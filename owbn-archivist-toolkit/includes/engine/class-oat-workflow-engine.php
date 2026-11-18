@@ -489,6 +489,38 @@ class OAT_Workflow_Engine {
     }
 
     public static function resolve_assignees( $entry, $role_pattern ) {
+        $role = self::expand_role_pattern( $entry, $role_pattern );
+
+        // BA-003: Direct user assignment via User/<user_id> pattern.
+        if ( strpos( $role, 'User/' ) === 0 ) {
+            $uid = (int) substr( $role, 5 );
+            return $uid > 0 ? array( $uid ) : array();
+        }
+
+        $users = OAT_Authorization::get_users_with_role( $role );
+
+        // A chronicle with no HST: its CM reviews, else its Staff.
+        if ( ! $users && preg_match( '#^chronicle/([^/|]+)/hst$#i', $role, $m ) ) {
+            foreach ( array( 'CM', 'Staff' ) as $fallback ) {
+                $users = OAT_Authorization::get_users_with_role( 'Chronicle/' . $m[1] . '/' . $fallback );
+                if ( $users ) {
+                    break;
+                }
+            }
+        }
+
+        return $users;
+    }
+
+    /**
+     * A step's role pattern with this request's values filled in: its chronicle, its coordinator office or offices (several
+     * joined with |), and any {meta_key} token from its fields.
+     *
+     * @param object $entry        The entry object.
+     * @param string $role_pattern Role path pattern (e.g. 'Coordinator/{coordinator_genre}/Coordinator').
+     * @return string The role path, or several joined with |.
+     */
+    public static function expand_role_pattern( $entry, $role_pattern ) {
         $replacements = array(
             '{chronicle_slug}'    => isset( $entry->chronicle_slug ) ? $entry->chronicle_slug : '',
             '{coordinator_genre}' => self::derive_coordinator_office( $entry ),
@@ -522,24 +554,6 @@ class OAT_Workflow_Engine {
             }
         }
 
-        // BA-003: Direct user assignment via User/<user_id> pattern.
-        if ( strpos( $role, 'User/' ) === 0 ) {
-            $uid = (int) substr( $role, 5 );
-            return $uid > 0 ? array( $uid ) : array();
-        }
-
-        $users = OAT_Authorization::get_users_with_role( $role );
-
-        // A chronicle with no HST: its CM reviews, else its Staff.
-        if ( ! $users && preg_match( '#^chronicle/([^/|]+)/hst$#i', $role, $m ) ) {
-            foreach ( array( 'CM', 'Staff' ) as $fallback ) {
-                $users = OAT_Authorization::get_users_with_role( 'Chronicle/' . $m[1] . '/' . $fallback );
-                if ( $users ) {
-                    break;
-                }
-            }
-        }
-
-        return $users;
+        return $role;
     }
 }
