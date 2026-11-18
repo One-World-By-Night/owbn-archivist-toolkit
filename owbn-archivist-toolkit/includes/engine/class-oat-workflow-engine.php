@@ -11,6 +11,12 @@ defined( 'ABSPATH' ) || exit;
 class OAT_Workflow_Engine {
 
     /**
+     * Forms where a coordinator who files for an office they hold goes straight to that office's review, without the
+     * chronicle HST's Staff Review.
+     */
+    const COORDINATOR_OWN_OFFICE_FORMS = array( 'custom_content', 'cl_ru_request' );
+
+    /**
      * Process any action on an entry.
      *
      * @param int    $entry_id The entry to act on.
@@ -206,12 +212,44 @@ class OAT_Workflow_Engine {
         if ( ! empty( $step_config['condition'] ) && ! self::evaluate_condition( $step_config['condition'], (int) $entry->id ) ) {
             return false;
         }
+        if ( self::coordinator_files_for_own_office( $entry, $step_id, $step_config ) ) {
+            return false;
+        }
         if ( ! empty( $step_config['assignee_role'] )
             && false !== strpos( $step_config['assignee_role'], '{coordinator_genre}' )
             && '' === self::derive_coordinator_office( $entry ) ) {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Whether this is the chronicle HST's Staff Review of a request its own filer, a Coordinator, owns: the filer holds
+     * the Coordinator role of an office that owns the request, on a form in COORDINATOR_OWN_OFFICE_FORMS.
+     *
+     * @param object $entry       The entry object.
+     * @param string $step_id     Step ID.
+     * @param array  $step_config The step's configuration.
+     * @return bool
+     */
+    public static function coordinator_files_for_own_office( $entry, $step_id, $step_config ) {
+        if ( 'staff_review' !== $step_id || empty( $entry->form_slug ) || ! in_array( $entry->form_slug, self::COORDINATOR_OWN_OFFICE_FORMS, true ) ) {
+            return false;
+        }
+        $role = isset( $step_config['assignee_role'] ) ? strtolower( (string) $step_config['assignee_role'] ) : '';
+        if ( 0 !== strpos( $role, 'chronicle/{chronicle_slug}/hst' ) ) {
+            return false;
+        }
+        $filer = isset( $entry->originator_id ) ? (int) $entry->originator_id : 0;
+        if ( $filer <= 0 ) {
+            return false;
+        }
+        foreach ( self::coordinator_offices( $entry ) as $office ) {
+            if ( in_array( $filer, OAT_Authorization::get_users_with_role( 'Coordinator/' . $office . '/Coordinator' ), true ) ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
