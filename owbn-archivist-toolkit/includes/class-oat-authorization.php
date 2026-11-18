@@ -103,29 +103,28 @@ class OAT_Authorization {
             return array();
         }
 
-        // Normalize to LOCAL WordPress user IDs. AccessSchema now returns holder
-        // objects — {user_id, display_name, email, user_login, player_id} — whose
-        // 'user_id' is the AccessSchema id, NOT the local WP id. Casting the whole
-        // object with (int) yields 1, which silently assigned everything to WP
-        // user 1 (web@owbn.net). Resolve the local user via email, then login.
+        return self::local_user_ids( $result );
+    }
+
+    /**
+     * Local WordPress user ids for role holders, matched by email only. AccessSchema returns holder objects
+     * ({user_id, display_name, email, user_login, player_id}) whose 'user_id' is the AccessSchema id, not the local WP id,
+     * so a holder is the local account with the same email; one with no account here is left out.
+     *
+     * @param array $holders Holders as AccessSchema returned them.
+     * @return int[]
+     */
+    public static function local_user_ids( array $holders ) {
         $ids = array();
-        foreach ( $result as $holder ) {
+        foreach ( $holders as $holder ) {
             if ( is_int( $holder ) || ( is_string( $holder ) && ctype_digit( $holder ) ) ) {
-                $ids[] = (int) $holder; // legacy shape: bare WP user id
+                $ids[] = (int) $holder; // bare WP user id
                 continue;
             }
-            if ( is_array( $holder ) ) {
-                $wp = 0;
-                if ( ! empty( $holder['email'] ) ) {
-                    $u  = get_user_by( 'email', $holder['email'] );
-                    $wp = $u ? (int) $u->ID : 0;
-                }
-                if ( ! $wp && ! empty( $holder['user_login'] ) ) {
-                    $u  = get_user_by( 'login', $holder['user_login'] );
-                    $wp = $u ? (int) $u->ID : 0;
-                }
-                if ( $wp ) {
-                    $ids[] = $wp;
+            if ( is_array( $holder ) && ! empty( $holder['email'] ) ) {
+                $u = get_user_by( 'email', $holder['email'] );
+                if ( $u ) {
+                    $ids[] = (int) $u->ID;
                 }
             }
         }

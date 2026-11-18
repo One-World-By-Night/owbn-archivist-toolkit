@@ -21,5 +21,6 @@ class OAT_Uninstall {
         if ( $timestamp ) {
             wp_unschedule_event( $timestamp, 'oat_process_timers' );
         }
+        wp_clear_scheduled_hook( OAT_Account_Sync::EVENT );
     }
 }

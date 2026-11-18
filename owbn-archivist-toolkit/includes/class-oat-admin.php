@@ -42,6 +42,16 @@ class OAT_Admin {
             array( 'OAT_Page_Settings', 'render' )
         );
 
+        // Account Sync: the daily www account sync's last run and history.
+        add_submenu_page(
+            'oat-entries',
+            'Account Sync',
+            'Account Sync',
+            OAT_Constants::CAP_ADMIN,
+            'oat-account-sync',
+            array( 'OAT_Page_Account_Sync', 'render' )
+        );
+
         // Toolbox: Domains, Forms, Workflow Steps, Form Fields — consolidated as tabs.
         add_submenu_page(
             'oat-entries',
