@@ -17,6 +17,11 @@ class OAT_Authorization {
     const CLIENT_ID = 'oat';
 
     /**
+     * A chronicle staff role: HST, staff, CM, AST, SUG or ST. Group 1 is the chronicle slug.
+     */
+    const STAFF_ROLE_PATTERN = '#^chronicle/([^/]+)/(hst|staff|cm|ast|sug|st(?=$|/))#i';
+
+    /**
      * Check if the current user has access via ASC role path,
      * with WordPress capability as fallback.
      *
@@ -140,19 +145,30 @@ class OAT_Authorization {
      * @return array e.g. ['staff', 'player'] or ['archivist', 'coordinator', 'staff', 'player']
      */
     public static function get_character_search_roles() {
-        $roles   = array();
-        $user    = wp_get_current_user();
+        $user = wp_get_current_user();
 
         if ( ! $user || ! $user->exists() ) {
             return array( 'player' );
         }
 
+        return self::character_search_roles_for( $user, self::get_user_roles() );
+    }
+
+    /**
+     * The character-search roles a given user qualifies for, from their ASC role paths.
+     *
+     * @param WP_User $user      The user.
+     * @param array   $asc_roles The user's ASC role paths.
+     * @return array Same shape as get_character_search_roles().
+     */
+    public static function character_search_roles_for( $user, array $asc_roles ) {
+        $roles = array();
+
         // Archivist / Exec / WP Admin.
-        if ( current_user_can( OAT_Constants::CAP_ARCHIVIST ) || current_user_can( OAT_Constants::CAP_EXEC_OVERSIGHT ) || current_user_can( 'manage_options' ) ) {
+        if ( $user->has_cap( OAT_Constants::CAP_ARCHIVIST ) || $user->has_cap( OAT_Constants::CAP_EXEC_OVERSIGHT ) || $user->has_cap( 'manage_options' ) ) {
             $roles[] = 'archivist';
         }
 
-        $asc_roles = self::get_user_roles();
         $has_coord = false;
         $has_staff = false;
 
@@ -168,7 +184,7 @@ class OAT_Authorization {
                     $roles[] = 'archivist';
                 }
             }
-            if ( preg_match( '#^chronicle/[^/]+/(hst|staff|cm|ast|sug|st(?=$|/))#i', $role ) ) {
+            if ( preg_match( self::STAFF_ROLE_PATTERN, $role ) ) {
                 $has_staff = true;
             }
         }
@@ -184,6 +200,22 @@ class OAT_Authorization {
         $roles[] = 'player';
 
         return $roles;
+    }
+
+    /**
+     * The chronicles where the given ASC role paths make someone staff (HST, staff, CM, AST, SUG or ST).
+     *
+     * @param array $asc_roles ASC role paths.
+     * @return string[] Lowercase chronicle slugs.
+     */
+    public static function staff_chronicle_slugs( array $asc_roles ) {
+        $slugs = array();
+        foreach ( $asc_roles as $role ) {
+            if ( preg_match( self::STAFF_ROLE_PATTERN, (string) $role, $m ) ) {
+                $slugs[] = strtolower( $m[1] );
+            }
+        }
+        return array_values( array_unique( $slugs ) );
     }
 
     /**

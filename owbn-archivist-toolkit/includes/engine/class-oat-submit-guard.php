@@ -4,8 +4,9 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Refuses a submission carrying a choice its form would not have offered the sender: a form from another kind of
- * request, a select option its role_filter withholds from the sender, or a chronicle the chronicle picker would not
- * list for them. Each rule is the one the form itself applies when it is drawn, with the sender's own roles.
+ * request, a select option its role_filter withholds from the sender, a chronicle the chronicle picker would not
+ * list for them, or a character the character search would not have found for them. Each rule is the one the form
+ * itself applies when it is drawn, with the sender's own roles.
  */
 class OAT_Submit_Guard {
 
@@ -13,6 +14,12 @@ class OAT_Submit_Guard {
 	 * The chronicle roles the picker's script counts as the sender's own chronicles.
 	 */
 	const OWN_CHRONICLE_ROLES = array( 'hst', 'staff', 'cm', 'player' );
+
+	/**
+	 * The character picker fields that name the character a request is about. Other character pickers on a form
+	 * (the teacher of learned content) name someone else's character and are not checked.
+	 */
+	const REQUEST_CHARACTER_FIELDS = array( 'character_name', 'character' );
 
 	/**
 	 * @param object $entry Entry row, or an unsaved one with the same fields (domain, form_slug, originator_id).
@@ -61,7 +68,82 @@ class OAT_Submit_Guard {
 				}
 			}
 		}
+		if ( ! $super ) {
+			$refused = self::check_characters( $fields, $meta, $user, $roles );
+			if ( is_wp_error( $refused ) ) {
+				return $refused;
+			}
+		}
 		return true;
+	}
+
+	/**
+	 * Refuses a request about a character the sender could not have found in the character search: every character
+	 * the request names (the form's character field, and a character_id sent with it) must be the sender's own, in a
+	 * chronicle they are staff of, or any character for a Coordinator or the Archivist.
+	 *
+	 * @param array        $fields The form's submit fields.
+	 * @param array        $meta   Field values as submitted.
+	 * @param WP_User|null $user   The sender.
+	 * @param array        $roles  The sender's role paths.
+	 * @return true|WP_Error
+	 */
+	private static function check_characters( array $fields, array $meta, $user, array $roles ) {
+		if ( ! class_exists( 'OAT_Character' ) ) {
+			return true;
+		}
+		$named = array();
+		foreach ( $fields as $field ) {
+			$key = (string) ( $field['key'] ?? '' );
+			if ( 'character_picker' !== ( $field['type'] ?? '' ) || ! in_array( $key, self::REQUEST_CHARACTER_FIELDS, true ) ) {
+				continue;
+			}
+			$uuid = isset( $meta[ $key ] ) && is_scalar( $meta[ $key ] ) ? trim( (string) $meta[ $key ] ) : '';
+			$char = '' !== $uuid ? OAT_Character::find_by_uuid( $uuid ) : null;
+			if ( $char ) {
+				$named[ (int) $char->id ] = $char;
+			}
+		}
+		$sent_id = isset( $meta['character_id'] ) && is_scalar( $meta['character_id'] ) ? (int) $meta['character_id'] : 0;
+		if ( $sent_id > 0 && ! isset( $named[ $sent_id ] ) ) {
+			$char = OAT_Character::find( $sent_id );
+			if ( $char ) {
+				$named[ $sent_id ] = $char;
+			}
+		}
+		foreach ( $named as $char ) {
+			if ( ! self::may_file_for( $char, $user, $roles ) ) {
+				return new WP_Error( 'oat_character_not_yours', __( 'You can\'t file this for that character. Pick one of your own, or one in a chronicle you are staff of.', 'owbn-archivist-toolkit' ) );
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Whether the sender may file a request about a character: it is theirs (linked to their account or carrying
+	 * their player email), they are a Coordinator or the Archivist, or they are staff in its chronicle.
+	 *
+	 * @param object       $char  The character.
+	 * @param WP_User|null $user  The sender.
+	 * @param array        $roles The sender's role paths.
+	 * @return bool
+	 */
+	private static function may_file_for( $char, $user, array $roles ) {
+		if ( ! $user ) {
+			return false;
+		}
+		$linked   = (int) $char->wp_user_id > 0 && (int) $char->wp_user_id === (int) $user->ID;
+		$by_email = '' !== (string) $user->user_email && '' !== (string) $char->player_email && 0 === strcasecmp( (string) $char->player_email, (string) $user->user_email );
+		if ( $linked || $by_email ) {
+			return true;
+		}
+		$tiers = OAT_Authorization::character_search_roles_for( $user, $roles );
+		if ( in_array( 'archivist', $tiers, true ) || in_array( 'coordinator', $tiers, true ) ) {
+			return true;
+		}
+		return in_array( 'staff', $tiers, true )
+			&& '' !== (string) $char->chronicle_slug
+			&& in_array( strtolower( (string) $char->chronicle_slug ), OAT_Authorization::staff_chronicle_slugs( $roles ), true );
 	}
 
 	/**
