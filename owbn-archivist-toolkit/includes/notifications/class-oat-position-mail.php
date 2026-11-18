@@ -13,29 +13,43 @@ defined( 'ABSPATH' ) || exit;
 class OAT_Position_Mail {
 
     /**
-     * The position a person holds at a step, with the address it uses.
+     * The positions a person holds at a step that have an address, one per position. A person with several roles is only
+     * placed by the roles this step is for: their other roles, and their player email, are not touched.
      *
      * @param WP_User $user    The assigned person.
      * @param object  $entry   The request.
      * @param string  $step_id The step the request is at.
-     * @return array|null array( 'email' => address, 'label' => position name ), or null when the position has no address.
+     * @return array[] Each array( 'email' => address, 'label' => position name ); empty when none has an address.
      */
-    public static function for_assignee( $user, $entry, $step_id ) {
+    public static function positions_for_assignee( $user, $entry, $step_id ) {
+        $found = array();
         if ( ! $user || empty( $user->ID ) || ! class_exists( 'OAT_Workflow_Engine' ) ) {
-            return null;
+            return $found;
         }
         $config = OAT_Workflow_Engine::get_step_config( $entry, $step_id );
         if ( ! is_array( $config ) || empty( $config['assignee_role'] ) ) {
-            return null;
+            return $found;
         }
         $expanded = OAT_Workflow_Engine::expand_role_pattern( $entry, $config['assignee_role'] );
-        foreach ( self::candidate_roles( $expanded ) as $path ) {
-            $position = self::position_for_role( $path );
-            if ( $position && self::holds( (int) $user->ID, $path ) ) {
-                return $position;
+        foreach ( explode( '|', strtolower( $expanded ) ) as $path ) {
+            $path = trim( $path );
+            if ( '' === $path ) {
+                continue;
+            }
+            $tries = array( $path );
+            // A chronicle with no HST is reviewed by its CM, else its Staff: only then do those roles count.
+            if ( preg_match( '#^chronicle/([^/]+)/hst$#', $path, $m ) && ! self::holders( $path ) ) {
+                $tries[] = 'chronicle/' . $m[1] . '/cm';
+                $tries[] = 'chronicle/' . $m[1] . '/staff';
+            }
+            foreach ( $tries as $try ) {
+                $position = self::position_for_role( $try );
+                if ( $position && self::holds( (int) $user->ID, $try ) ) {
+                    $found[ strtolower( $position['email'] ) ] = $position;
+                }
             }
         }
-        return null;
+        return array_values( $found );
     }
 
     /**
@@ -54,28 +68,6 @@ class OAT_Position_Mail {
             return null;
         }
         return array( 'email' => $email, 'label' => isset( $record['title'] ) ? (string) $record['title'] : (string) $slug );
-    }
-
-    /**
-     * The role paths a step can assign: the ones its pattern names, plus a chronicle's CM and Staff behind its HST.
-     *
-     * @param string $expanded Role path(s) joined with |.
-     * @return string[] Lowercase role paths.
-     */
-    private static function candidate_roles( $expanded ) {
-        $out = array();
-        foreach ( explode( '|', strtolower( (string) $expanded ) ) as $path ) {
-            $path = trim( $path );
-            if ( '' === $path ) {
-                continue;
-            }
-            $out[] = $path;
-            if ( preg_match( '#^chronicle/([^/]+)/hst$#', $path, $m ) ) {
-                $out[] = 'chronicle/' . $m[1] . '/cm';
-                $out[] = 'chronicle/' . $m[1] . '/staff';
-            }
-        }
-        return array_values( array_unique( $out ) );
     }
 
     /**
@@ -117,11 +109,21 @@ class OAT_Position_Mail {
      * @return bool
      */
     private static function holds( $user_id, $path ) {
-        static $holders = array();
-        if ( ! isset( $holders[ $path ] ) ) {
-            $holders[ $path ] = array_map( 'intval', OAT_Authorization::get_users_with_role( $path ) );
+        return in_array( $user_id, self::holders( $path ), true );
+    }
+
+    /**
+     * The local user ids holding a role (looked up once per role in a request).
+     *
+     * @param string $path Lowercase role path.
+     * @return int[]
+     */
+    private static function holders( $path ) {
+        static $memo = array();
+        if ( ! isset( $memo[ $path ] ) ) {
+            $memo[ $path ] = array_map( 'intval', OAT_Authorization::get_users_with_role( $path ) );
         }
-        return in_array( $user_id, $holders[ $path ], true );
+        return $memo[ $path ];
     }
 
     private static function usable( $email ) {

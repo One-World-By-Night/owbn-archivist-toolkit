@@ -104,9 +104,11 @@ class OAT_Chronicle_Report_Notify {
 			if ( ! $u ) {
 				continue;
 			}
-			$position = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::for_assignee( $u, $entry, $entry->current_step ) : null;
-			if ( $position ) {
-				$emails[ strtolower( $position['email'] ) ] = $position['email'];
+			$positions = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::positions_for_assignee( $u, $entry, $entry->current_step ) : array();
+			if ( $positions ) {
+				foreach ( $positions as $position ) {
+					$emails[ strtolower( $position['email'] ) ] = $position['email'];
+				}
 			} elseif ( is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
 				$emails[ strtolower( $u->user_email ) ] = $u->user_email;
 			}

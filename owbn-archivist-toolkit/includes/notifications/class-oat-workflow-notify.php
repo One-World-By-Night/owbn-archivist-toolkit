@@ -58,9 +58,11 @@ class OAT_Workflow_Notify {
 			if ( ! $u ) {
 				continue;
 			}
-			$position = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::for_assignee( $u, $entry, $step_id ) : null;
-			if ( $position ) {
-				$targets[ strtolower( $position['email'] ) ] = $position;
+			$positions = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::positions_for_assignee( $u, $entry, $step_id ) : array();
+			if ( $positions ) {
+				foreach ( $positions as $position ) {
+					$targets[ strtolower( $position['email'] ) ] = $position;
+				}
 			} elseif ( is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
 				$targets[ strtolower( $u->user_email ) ] = array( 'email' => $u->user_email, 'label' => '' );
 			}
@@ -283,9 +285,11 @@ class OAT_Workflow_Notify {
 			if ( ! $u ) {
 				continue;
 			}
-			$position = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::for_assignee( $u, $entry, $step ) : null;
-			if ( $position ) {
-				$out[ strtolower( $position['email'] ) ] = $position['email'];
+			$positions = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::positions_for_assignee( $u, $entry, $step ) : array();
+			if ( $positions ) {
+				foreach ( $positions as $position ) {
+					$out[ strtolower( $position['email'] ) ] = $position['email'];
+				}
 			} elseif ( is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
 				$out[ strtolower( $u->user_email ) ] = $u->user_email;
 			}
