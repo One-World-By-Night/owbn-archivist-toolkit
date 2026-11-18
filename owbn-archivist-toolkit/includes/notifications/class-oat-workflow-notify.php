@@ -160,8 +160,8 @@ class OAT_Workflow_Notify {
 		if ( OAT_Entry_Meta::get( (int) $entry->id, 'wf_approved_notified' ) ) {
 			return;
 		}
-		$to = self::originator_address( $entry );
-		if ( '' === $to ) {
+		$targets = self::originator_addresses( $entry );
+		if ( empty( $targets ) ) {
 			return;
 		}
 
@@ -175,7 +175,13 @@ class OAT_Workflow_Notify {
 		$lines[] = '';
 		$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 
-		if ( OAT_Notify_Mail::send( $to, $subject, implode( "\n", $lines ), (int) $entry->id ) ) {
+		$sent = false;
+		foreach ( $targets as $to ) {
+			if ( OAT_Notify_Mail::send( $to, $subject, implode( "\n", $lines ), (int) $entry->id ) ) {
+				$sent = true;
+			}
+		}
+		if ( $sent ) {
 			OAT_Entry_Meta::set( (int) $entry->id, 'wf_approved_notified', (string) time() );
 		}
 	}
@@ -191,8 +197,8 @@ class OAT_Workflow_Notify {
 		if ( ! self::eligible( $entry ) ) {
 			return;
 		}
-		$to = self::originator_address( $entry );
-		if ( '' === $to ) {
+		$targets = self::originator_addresses( $entry );
+		if ( empty( $targets ) ) {
 			return;
 		}
 
@@ -209,7 +215,9 @@ class OAT_Workflow_Notify {
 		$lines[] = '';
 		$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 
-		OAT_Notify_Mail::send( $to, $subject, implode( "\n", $lines ), (int) $entry->id );
+		foreach ( $targets as $to ) {
+			OAT_Notify_Mail::send( $to, $subject, implode( "\n", $lines ), (int) $entry->id );
+		}
 	}
 
 	/**
@@ -227,11 +235,10 @@ class OAT_Workflow_Notify {
 
 		$emails = self::assignee_addresses( $entry, $entry->current_step );
 		if ( empty( $emails ) ) {
-			$fallback = self::originator_address( $entry );
-			if ( '' === $fallback ) {
+			$emails = self::originator_addresses( $entry );
+			if ( empty( $emails ) ) {
 				return;
 			}
-			$emails = array( $fallback );
 		}
 
 		$label   = self::label( $entry );
@@ -251,6 +258,21 @@ class OAT_Workflow_Notify {
 		foreach ( $emails as $to ) {
 			OAT_Notify_Mail::send( $to, $subject, $body, (int) $entry->id );
 		}
+	}
+
+	/**
+	 * Where mail about how a request ended goes: the position the filer acted in, else their account email.
+	 *
+	 * @param object $entry
+	 * @return string[] Addresses; empty for a draft or the system account.
+	 */
+	private static function originator_addresses( $entry ) {
+		$positions = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::filer_positions( $entry ) : array();
+		if ( $positions ) {
+			return array_values( array_map( function ( $p ) { return $p['email']; }, $positions ) );
+		}
+		$one = self::originator_address( $entry );
+		return '' === $one ? array() : array( $one );
 	}
 
 	/**

@@ -6,9 +6,12 @@ defined( 'ABSPATH' ) || exit;
  * The address a position uses. A person emailed because of a position they hold (a Coordinator office, a chronicle's CM, a
  * chronicle's HST) is emailed at the position's address, so the mailbox keeps its history when the person changes.
  *
- * Coordinator offices and CMs use the role address on their record (coord_info and cm_info display_email). An HST uses
- * theirs only when it is an @owbn.net address. Every other position, and any position without a usable address, has none: the
- * caller uses the person's account email.
+ * Coordinator offices, CMs and HSTs use the role address on their record (coord_info, cm_info and hst_info display_email: the
+ * ST email for a chronicle). Every other position, and any position without a usable address, has none: the caller uses the
+ * person's account email.
+ *
+ * Mail about a request goes by what the request is about: the person's own character is their own email; something in their
+ * chronicle is their ST email; something in their Coordinator office is that office's email.
  */
 class OAT_Position_Mail {
 
@@ -53,6 +56,80 @@ class OAT_Position_Mail {
     }
 
     /**
+     * The positions a request's filer acted in, with their addresses, for the mail that tells them how it ended. A request
+     * filed as Player (declared on the form, or inferred because it is about their own character) has none: it goes to their
+     * account email. Filed as Staff, or about something in a chronicle they are HST or CM of: that position. Filed as a
+     * Coordinator, or about something in an office they hold: that office. The form's submitter_role wins when it records one.
+     *
+     * @param object $entry The request.
+     * @return array[] Each array( 'email' => address, 'label' => position name ); empty means the account email.
+     */
+    public static function filer_positions( $entry ) {
+        $filer = isset( $entry->originator_id ) ? (int) $entry->originator_id : 0;
+        $user  = $filer > 1 ? get_userdata( $filer ) : null;
+        if ( ! $user || ! class_exists( 'OAT_Entry_Meta' ) ) {
+            return array();
+        }
+        $declared = strtolower( trim( (string) OAT_Entry_Meta::get( (int) $entry->id, 'submitter_role' ) ) );
+        if ( 'player' === $declared || ( '' === $declared && self::owns_character( $user, $entry ) ) ) {
+            return array();
+        }
+        $slug  = ! empty( $entry->chronicle_slug ) ? (string) $entry->chronicle_slug : (string) OAT_Entry_Meta::get( (int) $entry->id, 'chronicle_slug' );
+        $staff = '' === $slug ? array() : array( 'chronicle/' . strtolower( $slug ) . '/hst', 'chronicle/' . strtolower( $slug ) . '/cm' );
+        $coord = array();
+        if ( class_exists( 'OAT_Workflow_Engine' ) ) {
+            foreach ( OAT_Workflow_Engine::coordinator_offices( $entry ) as $office ) {
+                $coord[] = 'coordinator/' . strtolower( $office ) . '/coordinator';
+            }
+        }
+        if ( 'archivist' === $declared ) {
+            return self::held_positions( (int) $user->ID, array( 'exec/archivist/coordinator' ) );
+        }
+        if ( 'coordinator' === $declared ) {
+            return self::held_positions( (int) $user->ID, $coord );
+        }
+        if ( 'staff' === $declared ) {
+            return self::held_positions( (int) $user->ID, $staff );
+        }
+        $found = self::held_positions( (int) $user->ID, $staff );
+        return $found ? $found : self::held_positions( (int) $user->ID, $coord );
+    }
+
+    /**
+     * The positions among some role paths that a person holds and that have an address.
+     *
+     * @param int      $user_id Local user id.
+     * @param string[] $paths   Lowercase role paths.
+     * @return array[]
+     */
+    private static function held_positions( $user_id, array $paths ) {
+        $found = array();
+        foreach ( $paths as $path ) {
+            $position = self::position_for_role( $path );
+            if ( $position && self::holds( $user_id, $path ) ) {
+                $found[ strtolower( $position['email'] ) ] = $position;
+            }
+        }
+        return array_values( $found );
+    }
+
+    /**
+     * Whether the request is about the person's own character: linked to their account, or carrying their account email.
+     *
+     * @param WP_User $user  The filer.
+     * @param object  $entry The request.
+     * @return bool
+     */
+    private static function owns_character( $user, $entry ) {
+        $character_id = isset( $entry->character_id ) ? (int) $entry->character_id : 0;
+        if ( ! $character_id || ! class_exists( 'OAT_Character' ) ) {
+            return false;
+        }
+        $character = OAT_Character::find( $character_id );
+        return $character && ( (int) $character->wp_user_id === (int) $user->ID || 0 === strcasecmp( trim( (string) $character->player_email ), (string) $user->user_email ) );
+    }
+
+    /**
      * A Coordinator office's position address.
      *
      * @param string $slug Office slug.
@@ -92,7 +169,7 @@ class OAT_Position_Mail {
             }
             $key   = 'cm' === $role ? 'cm_info' : 'hst_info';
             $email = isset( $chronicle[ $key ]['display_email'] ) ? self::usable( $chronicle[ $key ]['display_email'] ) : '';
-            if ( '' === $email || ( 'hst' === $role && ! str_ends_with( $email, '@owbn.net' ) ) ) {
+            if ( '' === $email ) {
                 return null;
             }
             $title = isset( $chronicle['title'] ) ? (string) $chronicle['title'] : (string) $slug;
