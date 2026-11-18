@@ -11,13 +11,14 @@ class OAT_Page_Account_Sync {
         if ( ! current_user_can( OAT_Constants::CAP_ADMIN ) ) {
             wp_die( esc_html__( 'You do not have permission to view this page.', 'owbn-archivist-toolkit' ) );
         }
+        global $wpdb;
         $report  = get_option( OAT_Account_Sync::REPORT, array() );
         $history = array_reverse( (array) get_option( OAT_Account_Sync::HISTORY, array() ) );
         $when    = function ( $t ) {
             return $t ? wp_date( 'Y-m-d H:i', (int) $t ) . ' (' . human_time_diff( (int) $t ) . ' ago)' : '';
         };
         echo '<div class="wrap oat-account-sync"><h1>' . esc_html__( 'Account Sync', 'owbn-archivist-toolkit' ) . '</h1>';
-        echo '<p>' . esc_html__( 'Every account on www gets an account here, matched by email only, once a day. Nothing is changed or deleted: a new email gets a subscriber account, and the person signs in through SSO as usual.', 'owbn-archivist-toolkit' ) . '</p>';
+        echo '<p>' . esc_html__( 'Every account on www gets an account here, matched by email only, once a day. Nothing is changed or deleted: a new email gets a subscriber account, and the person signs in through SSO as usual. A character with no linked account is linked to the account whose email equals the player email on the character, after each sync and when that person signs in.', 'owbn-archivist-toolkit' ) . '</p>';
         if ( isset( $_GET['ran'] ) ) {
             echo '<div class="notice notice-' . ( 'ok' === $_GET['ran'] ? 'success' : 'error' ) . '"><p>' . esc_html( 'ok' === $_GET['ran'] ? __( 'The sync ran.', 'owbn-archivist-toolkit' ) : __( 'The sync could not run. See the last run below.', 'owbn-archivist-toolkit' ) ) . '</p></div>';
         }
@@ -40,6 +41,8 @@ class OAT_Page_Account_Sync {
                 __( 'Created in this run', 'owbn-archivist-toolkit' )         => (int) $report['created'],
                 __( 'Skipped (no usable email, or the web admin)', 'owbn-archivist-toolkit' ) => (int) $report['skipped'],
                 __( 'Could not create (login taken)', 'owbn-archivist-toolkit' ) => count( (array) $report['conflicts'] ),
+                __( 'Characters linked to an account in this run', 'owbn-archivist-toolkit' ) => isset( $report['characters_linked'] ) ? (int) $report['characters_linked'] : 0,
+                __( 'Characters with a player email and no linked account', 'owbn-archivist-toolkit' ) => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}oat_characters WHERE ( wp_user_id IS NULL OR wp_user_id = 0 ) AND TRIM(player_email) <> ''" ),
                 __( 'Errors', 'owbn-archivist-toolkit' )                      => count( (array) $report['errors'] ),
             );
             foreach ( $rows as $label => $val ) {
@@ -71,9 +74,9 @@ class OAT_Page_Account_Sync {
         submit_button( __( 'Run it now', 'owbn-archivist-toolkit' ), 'secondary', 'submit', false );
         echo '</form>';
         if ( $history ) {
-            echo '<h2>' . esc_html__( 'Recent runs', 'owbn-archivist-toolkit' ) . '</h2><table class="widefat striped" style="max-width:640px"><thead><tr><th>Run</th><th>www</th><th>Matched</th><th>Created</th><th>Conflicts</th><th>Errors</th></tr></thead><tbody>';
+            echo '<h2>' . esc_html__( 'Recent runs', 'owbn-archivist-toolkit' ) . '</h2><table class="widefat striped" style="max-width:640px"><thead><tr><th>Run</th><th>www</th><th>Matched</th><th>Created</th><th>Conflicts</th><th>Errors</th><th>Linked</th></tr></thead><tbody>';
             foreach ( array_slice( $history, 0, 14 ) as $h ) {
-                echo '<tr><td>' . esc_html( wp_date( 'Y-m-d H:i', (int) $h['at'] ) ) . '</td><td>' . (int) $h['www_total'] . '</td><td>' . (int) $h['matched'] . '</td><td>' . (int) $h['created'] . '</td><td>' . (int) $h['conflicts'] . '</td><td>' . (int) $h['errors'] . '</td></tr>';
+                echo '<tr><td>' . esc_html( wp_date( 'Y-m-d H:i', (int) $h['at'] ) ) . '</td><td>' . (int) $h['www_total'] . '</td><td>' . (int) $h['matched'] . '</td><td>' . (int) $h['created'] . '</td><td>' . (int) $h['conflicts'] . '</td><td>' . (int) $h['errors'] . '</td><td>' . ( isset( $h['linked'] ) ? (int) $h['linked'] : 0 ) . '</td></tr>';
             }
             echo '</tbody></table>';
         }
