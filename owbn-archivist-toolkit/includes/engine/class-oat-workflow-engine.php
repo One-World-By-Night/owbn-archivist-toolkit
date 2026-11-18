@@ -490,7 +490,18 @@ class OAT_Workflow_Engine {
             return $uid > 0 ? array( $uid ) : array();
         }
 
-        // Query accessSchema for users with this role.
-        return OAT_Authorization::get_users_with_role( $role );
+        $users = OAT_Authorization::get_users_with_role( $role );
+
+        // A chronicle with no HST: its CM reviews, else its Staff.
+        if ( ! $users && preg_match( '#^chronicle/([^/|]+)/hst$#i', $role, $m ) ) {
+            foreach ( array( 'CM', 'Staff' ) as $fallback ) {
+                $users = OAT_Authorization::get_users_with_role( 'Chronicle/' . $m[1] . '/' . $fallback );
+                if ( $users ) {
+                    break;
+                }
+            }
+        }
+
+        return $users;
     }
 }
