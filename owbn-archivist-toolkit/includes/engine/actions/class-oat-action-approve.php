@@ -3,6 +3,43 @@
 defined( 'ABSPATH' ) || exit;
 
 class OAT_Action_Approve {
+    /**
+     * Whether a Coordinator step that belongs to several offices still lacks an approval from one of them. An approval counts
+     * for every office whose Coordinator role the approver holds; the Archivist's oversight approval counts for all.
+     *
+     * @param object     $entry       The entry object.
+     * @param string     $step        The step approved.
+     * @param array|null $step_config The step's configuration.
+     * @return bool
+     */
+    private static function offices_still_waiting( $entry, $step, $step_config ) {
+        if ( ! $step_config || empty( $step_config['assignee_role'] ) || false === strpos( $step_config['assignee_role'], '{coordinator_genre}' ) ) {
+            return false;
+        }
+        $offices = OAT_Workflow_Engine::coordinator_offices( $entry );
+        if ( count( $offices ) < 2 ) {
+            return false;
+        }
+        $approvers = array();
+        foreach ( OAT_Assignee::for_entry_step( (int) $entry->id, $step ) as $a ) {
+            if ( 'approved' === $a->status ) {
+                $approvers[] = (int) $a->user_id;
+            }
+        }
+        foreach ( $approvers as $uid ) {
+            if ( function_exists( 'owc_oat_get_user_asc_roles' ) && function_exists( 'owc_oat_is_archivist_oversight' ) && owc_oat_is_archivist_oversight( owc_oat_get_user_asc_roles( $uid ) ) ) {
+                return false;
+            }
+        }
+        foreach ( $offices as $office ) {
+            $holders = OAT_Authorization::get_users_with_role( 'Coordinator/' . $office . '/Coordinator' );
+            if ( ! array_intersect( $approvers, array_map( 'intval', (array) $holders ) ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static function execute( $entry, $user_id, $data = array() ) {
         if ( empty( $data['note'] ) ) {
             return new WP_Error( 'missing_note', 'A note is required.' );
@@ -73,6 +110,10 @@ class OAT_Action_Approve {
         $multi = $step_config && ! empty( $step_config['multi_approve'] );
         if ( $multi && ! OAT_Assignee::all_approved( (int) $entry->id, $step ) ) {
             return true; // Wait for others.
+        }
+        // A Coordinator step for several offices waits until each office has approved.
+        if ( ! $multi && self::offices_still_waiting( $entry, $step, $step_config ) ) {
+            return true;
         }
 
         // All approved — cancel any active timer.

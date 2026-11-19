@@ -649,6 +649,15 @@ class OAT_Domain_Character_Lifecycle implements OAT_Domain_Interface {
 				'sort_order' => 65,
 				'help_text'  => 'Automatically populated from selected regulation rules.',
 			),
+			array(
+				'context'    => 'submit',
+				'field_key'  => 'involved_coordinators',
+				'field_type' => 'coordinator_checkboxes',
+				'label'      => 'Coordinators Who Must Approve',
+				'required'   => 0,
+				'sort_order' => 66,
+				'help_text'  => "Tick every coordinator whose power, rule or item this uses (for example necromancy: the Giovanni Coordinator). Each one you tick must approve. A rule that doesn't say which coordinator also needs this; with nothing ticked it goes to the character's clan or sect coordinator.",
+			),
 		);
 	}
 

@@ -62,6 +62,11 @@ class OAT_Registry_Hooks {
                 }
             }
         }
+        if ( class_exists( 'OAT_Workflow_Engine' ) ) {
+            foreach ( OAT_Workflow_Engine::involved_coordinators( $entry ) as $named ) {
+                $authorities[ $named ] = true;
+            }
+        }
         $authorities = array_keys( $authorities );
 
         if ( $authorities ) {

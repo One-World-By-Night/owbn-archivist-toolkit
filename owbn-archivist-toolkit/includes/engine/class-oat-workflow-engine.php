@@ -355,12 +355,38 @@ class OAT_Workflow_Engine {
      * @return string[] Coordinator slugs, empty when no office owns this request.
      */
     public static function coordinator_offices( $entry ) {
-        $from_rules = self::rule_coordinator_offices( $entry );
-        if ( $from_rules ) {
-            return $from_rules;
+        $offices = array_values( array_unique( array_merge( self::rule_coordinator_offices( $entry ), self::involved_coordinators( $entry ) ) ) );
+        if ( $offices ) {
+            return $offices;
         }
         $one = self::derive_office_from_entry( $entry );
         return '' === $one ? array() : array( $one );
+    }
+
+    /**
+     * The coordinator offices the filer (or a coordinator on the request) named as having to approve it.
+     *
+     * @param object $entry The entry object.
+     * @return string[] Coordinator slugs, only real offices.
+     */
+    public static function involved_coordinators( $entry ) {
+        if ( empty( $entry->id ) || ! class_exists( 'OAT_Entry_Meta' ) ) {
+            return array();
+        }
+        $raw  = OAT_Entry_Meta::get( (int) $entry->id, 'involved_coordinators' );
+        $list = is_string( $raw ) ? json_decode( $raw, true ) : $raw;
+        if ( ! is_array( $list ) ) {
+            $list = is_string( $raw ) ? array_filter( array_map( 'trim', explode( ',', $raw ) ) ) : array();
+        }
+        $known = self::coordinator_slugs();
+        $out   = array();
+        foreach ( $list as $slug ) {
+            $slug = strtolower( trim( (string) $slug ) );
+            if ( '' !== $slug && isset( $known[ $slug ] ) ) {
+                $out[ $slug ] = true;
+            }
+        }
+        return array_keys( $out );
     }
 
     /**
