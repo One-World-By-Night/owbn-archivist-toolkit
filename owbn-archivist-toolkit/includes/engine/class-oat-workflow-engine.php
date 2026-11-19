@@ -426,14 +426,52 @@ class OAT_Workflow_Engine {
             $tokens = class_exists( 'OAT_Coordinator_Backfill' )
                 ? OAT_Coordinator_Backfill::tokenize_authority( $row->controlling_coordinator )
                 : array( strtolower( trim( (string) $row->controlling_coordinator ) ) );
+            $named = false;
             foreach ( $tokens as $token ) {
                 $token = str_replace( ' ', '-', $token );
                 if ( isset( $slugs[ $token ] ) ) {
                     $offices[ $token ] = true;
+                    $named             = true;
+                }
+            }
+            // A value that names no office and asks for the sect coordinator ("Appropriate Vampire Sect Coordinator")
+            // means the character's sect office. A value that names an office keeps just that office.
+            if ( ! $named && self::asks_for_sect_office( $row->controlling_coordinator ) ) {
+                $sect = self::derive_sect_office( $entry );
+                if ( '' !== $sect ) {
+                    $offices[ $sect ] = true;
                 }
             }
         }
         return array_keys( $offices );
+    }
+
+    /**
+     * Whether a rule's coordinator wording asks for the sect coordinator (and not the clan's).
+     *
+     * @param string $raw The rule's controlling_coordinator text.
+     * @return bool
+     */
+    public static function asks_for_sect_office( $raw ) {
+        $s = strtolower( (string) $raw );
+        return (bool) preg_match( '/\bsect\b/', $s ) && false !== strpos( $s, 'coordinator' ) && ! preg_match( '/\bclan\b/', $s );
+    }
+
+    /**
+     * The coordinator office of the sect a vampire character belongs to (Camarilla, Sabbat or Anarch).
+     *
+     * @param object $entry The entry object.
+     * @return string A coordinator slug, or '' when the character has no sect with an office.
+     */
+    public static function derive_sect_office( $entry ) {
+        $ch = self::character_for_entry( $entry );
+        if ( ! $ch || 'vampire' !== strtolower( trim( (string) $ch->creature_genre ) ) ) {
+            return '';
+        }
+        $sect    = strtolower( trim( preg_replace( '/\s+/', ' ', (string) $ch->creature_sub_type ) ) );
+        $by_sect = array( 'camarilla' => 'camarilla', 'sabbat' => 'sabbat', 'anarch' => 'anarch' );
+        $slugs   = self::coordinator_slugs();
+        return isset( $by_sect[ $sect ] ) && isset( $slugs[ $by_sect[ $sect ] ] ) ? $by_sect[ $sect ] : '';
     }
 
     /**
