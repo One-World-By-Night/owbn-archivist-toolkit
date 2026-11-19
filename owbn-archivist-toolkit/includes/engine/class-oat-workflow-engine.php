@@ -62,6 +62,7 @@ class OAT_Workflow_Engine {
             'bump'             => 'OAT_Action_Bump',
             'reassign'         => 'OAT_Action_Reassign',
             'delegate'         => 'OAT_Action_Delegate',
+            'add_coordinator'  => 'OAT_Action_Add_Coordinator',
             'hold'             => 'OAT_Action_Hold',
             'resume'           => 'OAT_Action_Resume',
             'record'           => 'OAT_Action_Record',
