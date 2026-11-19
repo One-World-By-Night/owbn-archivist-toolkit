@@ -120,7 +120,9 @@ class OAT_Workflow_Notify {
 	 */
 	private static function line_text( $entry ) {
 		$item = class_exists( 'OAT_Entry_Meta' ) ? trim( wp_strip_all_tags( (string) OAT_Entry_Meta::get( (int) $entry->id, 'item_description' ) ) ) : '';
-		return sprintf( '#%d%s', (int) $entry->id, '' === $item ? '' : ' - ' . $item );
+		$char = ! empty( $entry->character_id ) && class_exists( 'OAT_Character' ) ? OAT_Character::find( (int) $entry->character_id ) : null;
+		$who  = $char && '' !== trim( (string) $char->character_name ) ? ' (' . trim( (string) $char->character_name ) . ')' : '';
+		return sprintf( '#%d%s%s', (int) $entry->id, '' === $item ? '' : ' - ' . $item, $who );
 	}
 
 	/**
