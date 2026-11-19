@@ -63,6 +63,8 @@ class OAT_Workflow_Engine {
             'reassign'         => 'OAT_Action_Reassign',
             'delegate'         => 'OAT_Action_Delegate',
             'add_coordinator'  => 'OAT_Action_Add_Coordinator',
+            'approve_all'      => 'OAT_Action_Approve_All',
+            'veto_line'        => 'OAT_Action_Veto_Line',
             'hold'             => 'OAT_Action_Hold',
             'resume'           => 'OAT_Action_Resume',
             'record'           => 'OAT_Action_Record',

@@ -39,7 +39,7 @@ class OAT_Workflow_Notify {
 	 * @return void
 	 */
 	public static function on_step_assigned( $entry_id, $step_id, $user_ids ) {
-		if ( ! class_exists( 'OAT_Entry' ) ) {
+		if ( ! class_exists( 'OAT_Entry' ) || ( class_exists( 'OAT_Batch' ) && OAT_Batch::muted() ) ) {
 			return;
 		}
 		$entry = OAT_Entry::find( (int) $entry_id );
@@ -47,26 +47,7 @@ class OAT_Workflow_Notify {
 			return;
 		}
 
-		$actor   = get_current_user_id();
-		$targets = array();
-		foreach ( (array) $user_ids as $uid ) {
-			$uid = (int) $uid;
-			if ( $uid <= 1 || $uid === $actor ) {
-				continue;
-			}
-			$u = get_user_by( 'id', $uid );
-			if ( ! $u ) {
-				continue;
-			}
-			$positions = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::positions_for_assignee( $u, $entry, $step_id ) : array();
-			if ( $positions ) {
-				foreach ( $positions as $position ) {
-					$targets[ strtolower( $position['email'] ) ] = $position;
-				}
-			} elseif ( is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
-				$targets[ strtolower( $u->user_email ) ] = array( 'email' => $u->user_email, 'label' => '' );
-			}
-		}
+		$targets = self::step_targets( $entry, $step_id, $user_ids, get_current_user_id() );
 		if ( empty( $targets ) ) {
 			return;
 		}
@@ -95,6 +76,184 @@ class OAT_Workflow_Notify {
 			$lines[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 
 			OAT_Notify_Mail::send( $target['email'], $subject, implode( "\n", $lines ), (int) $entry->id );
+		}
+	}
+
+	/**
+	 * Who to email about a request reaching a step: the people assigned to it, by the position address when they act
+	 * in one, otherwise their account address; never the person who moved it there, the system account or a duplicate.
+	 *
+	 * @param object $entry    The request (its positions decide the addresses).
+	 * @param string $step_id  The step.
+	 * @param int[]  $user_ids People assigned to it.
+	 * @param int    $actor    Who moved it there.
+	 * @return array<string,array{email:string,label:string}> Keyed by lower-case address.
+	 */
+	private static function step_targets( $entry, $step_id, $user_ids, $actor ) {
+		$targets = array();
+		foreach ( (array) $user_ids as $uid ) {
+			$uid = (int) $uid;
+			if ( $uid <= 1 || $uid === (int) $actor ) {
+				continue;
+			}
+			$u = get_user_by( 'id', $uid );
+			if ( ! $u ) {
+				continue;
+			}
+			$positions = class_exists( 'OAT_Position_Mail' ) ? OAT_Position_Mail::positions_for_assignee( $u, $entry, $step_id ) : array();
+			if ( $positions ) {
+				foreach ( $positions as $position ) {
+					$targets[ strtolower( $position['email'] ) ] = $position;
+				}
+			} elseif ( is_email( $u->user_email ) && 'web@owbn.net' !== strtolower( $u->user_email ) ) {
+				$targets[ strtolower( $u->user_email ) ] = array( 'email' => $u->user_email, 'label' => '' );
+			}
+		}
+		return $targets;
+	}
+
+	/**
+	 * A short description of what a line is about, for the group emails: its item, else nothing.
+	 *
+	 * @param object $entry The line.
+	 * @return string
+	 */
+	private static function line_text( $entry ) {
+		$item = class_exists( 'OAT_Entry_Meta' ) ? trim( wp_strip_all_tags( (string) OAT_Entry_Meta::get( (int) $entry->id, 'item_description' ) ) ) : '';
+		return sprintf( '#%d%s', (int) $entry->id, '' === $item ? '' : ' - ' . $item );
+	}
+
+	/**
+	 * Lines of a group reached a step together: one email per person, listing the lines waiting on them.
+	 *
+	 * @param object[] $lines   The lines (all at $step_id).
+	 * @param string   $step_id The step.
+	 * @param int      $actor   Who moved them there.
+	 * @return void
+	 */
+	public static function group_waiting( array $lines, $step_id, $actor ) {
+		if ( ! $lines || ! class_exists( 'OAT_Assignee' ) ) {
+			return;
+		}
+		$lead  = $lines[0];
+		$users = array();
+		foreach ( $lines as $line ) {
+			foreach ( OAT_Assignee::for_entry_step( (int) $line->id, $step_id ) as $a ) {
+				if ( 'pending' === $a->status ) {
+					$users[] = (int) $a->user_id;
+				}
+			}
+		}
+		$targets = self::step_targets( $lead, $step_id, array_unique( $users ), $actor );
+		if ( ! $targets ) {
+			return;
+		}
+		$label = self::label( $lead );
+		$count = count( $lines );
+		foreach ( $targets as $target ) {
+			$subject = '' === $target['label']
+				? sprintf( '[OWbN] %d %s requests are waiting for you', $count, $label )
+				: sprintf( '[OWbN] %s: %d %s requests are waiting for you', $target['label'], $count, $label );
+			$body = array();
+			if ( '' !== $target['label'] ) {
+				$body[] = sprintf( 'You are receiving this for the position: %s.', $target['label'] );
+				$body[] = '';
+			}
+			$body[] = sprintf( '%d %s requests were filed together and are now at %s, waiting on you:', $count, $label, self::step_label( $lead, $step_id ) );
+			foreach ( $lines as $line ) {
+				$body[] = '- ' . self::line_text( $line );
+			}
+			$filer = self::filer_name( $lead );
+			if ( '' !== $filer ) {
+				$body[] = '';
+				$body[] = 'Filed by: ' . $filer;
+			}
+			$body[] = '';
+			$body[] = 'Open any of them to see the whole group. You can approve every line at once or veto a single line:';
+			$body[] = self::entry_link( $lead );
+			$body[] = '';
+			$body[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
+			OAT_Notify_Mail::send( $target['email'], $subject, implode( "\n", $body ), (int) $lead->id );
+		}
+	}
+
+	/**
+	 * Lines of a group were approved and recorded together: one email to the filer.
+	 *
+	 * @param object[] $lines The lines.
+	 * @return void
+	 */
+	public static function group_approved( array $lines ) {
+		$lines = array_values( array_filter( $lines, function ( $l ) {
+			return ! OAT_Entry_Meta::get( (int) $l->id, 'wf_approved_notified' );
+		} ) );
+		if ( ! $lines ) {
+			return;
+		}
+		if ( 1 === count( $lines ) ) {
+			self::on_approved( (int) $lines[0]->id, 0, array() );
+			return;
+		}
+		$lead = $lines[0];
+		if ( ! self::eligible( $lead ) ) {
+			return;
+		}
+		$targets = self::originator_addresses( $lead );
+		if ( ! $targets ) {
+			return;
+		}
+		$label = self::label( $lead );
+		$body  = array( sprintf( '%d of your %s requests have been approved and recorded:', count( $lines ), $label ) );
+		foreach ( $lines as $line ) {
+			$body[] = '- ' . self::line_text( $line );
+		}
+		$body[] = '';
+		$body[] = 'No further action is needed on your part.';
+		$body[] = '';
+		$body[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
+		$sent = false;
+		foreach ( $targets as $to ) {
+			if ( OAT_Notify_Mail::send( $to, sprintf( '[OWbN] %d %s requests approved', count( $lines ), $label ), implode( "\n", $body ), (int) $lead->id ) ) {
+				$sent = true;
+			}
+		}
+		if ( $sent ) {
+			foreach ( $lines as $line ) {
+				OAT_Entry_Meta::set( (int) $line->id, 'wf_approved_notified', (string) time() );
+			}
+		}
+	}
+
+	/**
+	 * One line of a group was vetoed: tell the filer, with the reason when there is one.
+	 *
+	 * @param object $entry  The vetoed line.
+	 * @param string $reason Why, or ''.
+	 * @return void
+	 */
+	public static function group_vetoed( $entry, $reason ) {
+		if ( ! $entry || ! self::eligible( $entry ) ) {
+			return;
+		}
+		$targets = self::originator_addresses( $entry );
+		if ( ! $targets ) {
+			return;
+		}
+		$label = self::label( $entry );
+		$body  = array(
+			sprintf( 'One line of your %s request was vetoed: %s.', $label, self::line_text( $entry ) ),
+			'',
+			'' === trim( (string) $reason ) ? 'No reason was given.' : 'Reason given: ' . self::plain( $reason ),
+			'',
+			'The other lines of the request are not affected. You can file the vetoed line again once it is corrected.',
+			'',
+			'Open it here:',
+			self::entry_link( $entry ),
+			'',
+			'This is an automated notification from the OWbN Archivist Toolkit.',
+		);
+		foreach ( $targets as $to ) {
+			OAT_Notify_Mail::send( $to, sprintf( '[OWbN] A line of your %s request was vetoed', $label ), implode( "\n", $body ), (int) $entry->id );
 		}
 	}
 
@@ -149,7 +308,7 @@ class OAT_Workflow_Notify {
 	 * Terminal approval — confirm to the originator, once per entry.
 	 */
 	public static function on_approved( $entry_id, $user_id, $data ) {
-		if ( ! class_exists( 'OAT_Entry' ) ) {
+		if ( ! class_exists( 'OAT_Entry' ) || ( class_exists( 'OAT_Batch' ) && OAT_Batch::muted() ) ) {
 			return;
 		}
 		$entry = OAT_Entry::find( (int) $entry_id );
@@ -190,7 +349,7 @@ class OAT_Workflow_Notify {
 	 * Terminal denial — tell the originator, with the reviewer's reason.
 	 */
 	public static function on_denied( $entry_id, $user_id, $data ) {
-		if ( ! class_exists( 'OAT_Entry' ) ) {
+		if ( ! class_exists( 'OAT_Entry' ) || ( class_exists( 'OAT_Batch' ) && OAT_Batch::muted() ) ) {
 			return;
 		}
 		$entry = OAT_Entry::find( (int) $entry_id );

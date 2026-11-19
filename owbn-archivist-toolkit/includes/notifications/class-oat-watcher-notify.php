@@ -48,6 +48,10 @@ class OAT_Watcher_Notify {
 		if ( $entry_id <= 0 ) {
 			return;
 		}
+		// While a group of requests is being moved together, the watchers hear once, about the group's first line.
+		if ( class_exists( 'OAT_Batch' ) && OAT_Batch::muted() ) {
+			$entry_id = OAT_Batch::lead_id( $entry_id );
+		}
 		if ( ! isset( self::$changed[ $entry_id ] ) ) {
 			self::$changed[ $entry_id ] = array( 'actor' => (int) $actor, 'sent_back' => false );
 		}

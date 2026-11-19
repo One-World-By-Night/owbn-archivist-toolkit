@@ -35,6 +35,8 @@ class OAT_Constants {
     const ACTION_DELEGATE = 'delegate';
     const ACTION_HOLD     = 'hold';
     const ACTION_ADD_COORDINATOR = 'add_coordinator';
+    const ACTION_APPROVE_ALL     = 'approve_all';
+    const ACTION_VETO_LINE       = 'veto_line';
 
     // System (6).
     const ACTION_RESUME           = 'resume';
@@ -129,6 +131,8 @@ class OAT_Constants {
             self::ACTION_DELEGATE,
             self::ACTION_HOLD,
             self::ACTION_ADD_COORDINATOR,
+            self::ACTION_APPROVE_ALL,
+            self::ACTION_VETO_LINE,
             self::ACTION_RESUME,
             self::ACTION_RECORD,
             self::ACTION_AUTO_APPROVE,
