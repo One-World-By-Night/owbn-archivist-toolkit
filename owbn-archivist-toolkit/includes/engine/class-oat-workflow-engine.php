@@ -120,7 +120,22 @@ class OAT_Workflow_Engine {
         }
 
         $route_key = 'on_' . $action;
-        return isset( $step_config[ $route_key ] ) ? $step_config[ $route_key ] : null;
+        $next      = isset( $step_config[ $route_key ] ) ? $step_config[ $route_key ] : null;
+
+        // An approval passes over steps that don't apply to this request; when none is left, the request is finished.
+        if ( 'approve' === $action ) {
+            $seen = array( $from_step );
+            while ( null !== $next && ! in_array( $next, $seen, true ) ) {
+                $next_config = self::get_step_config( $entry, $next );
+                if ( ! $next_config || self::step_applies( $entry, $next, $next_config ) ) {
+                    break;
+                }
+                $seen[] = $next;
+                $next   = isset( $next_config['on_approve'] ) ? $next_config['on_approve'] : null;
+            }
+        }
+
+        return $next;
     }
 
     /**
