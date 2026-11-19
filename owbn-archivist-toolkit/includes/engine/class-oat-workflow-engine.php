@@ -235,6 +235,13 @@ class OAT_Workflow_Engine {
             && '' === self::derive_coordinator_office( $entry ) ) {
             return false;
         }
+        // A step for the teacher's chronicle has nobody to ask when none was typed, and the request's own chronicle has already reviewed it.
+        if ( ! empty( $step_config['assignee_role'] ) && false !== strpos( $step_config['assignee_role'], '{teacher_chronicle}' ) ) {
+            $teacher = class_exists( 'OAT_Entry_Meta' ) ? strtolower( trim( (string) OAT_Entry_Meta::get( (int) $entry->id, 'teacher_chronicle' ) ) ) : '';
+            if ( '' === $teacher || strtolower( (string) ( $entry->chronicle_slug ?? '' ) ) === $teacher ) {
+                return false;
+            }
+        }
         return true;
     }
 
