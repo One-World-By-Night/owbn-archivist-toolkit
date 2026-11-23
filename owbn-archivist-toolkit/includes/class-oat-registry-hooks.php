@@ -7,6 +7,7 @@ class OAT_Registry_Hooks {
     public static function init() {
         add_action( 'oat_character_created', array( __CLASS__, 'on_character_created' ), 10, 2 );
         add_action( 'oat_character_updated', array( __CLASS__, 'on_character_updated' ), 10, 2 );
+        add_action( 'oat_character_office_changed', array( __CLASS__, 'on_character_office_changed' ), 10, 3 );
         add_action( 'oat_entry_approved', array( __CLASS__, 'on_entry_approved' ), 10, 3 );
         add_action( 'oat_character_transferred', array( __CLASS__, 'on_character_transferred' ), 10, 3 );
     }
@@ -22,6 +23,20 @@ class OAT_Registry_Hooks {
             OAT_Registry_Access::ensure_grant( $character_id, 'chronicle', $data['chronicle_slug'] );
         }
         self::ensure_owner_grant( $character_id, $data );
+    }
+
+    /**
+     * An NPC left an office: that office's grant on it ends, as a chronicle's does when the character transfers. The office it
+     * moved to is granted by on_character_updated().
+     *
+     * @param int    $character_id
+     * @param string $old_office The office it left.
+     * @param string $new_office The office it is in now, or ''.
+     */
+    public static function on_character_office_changed( $character_id, $old_office, $new_office ) {
+        if ( '' !== (string) $old_office ) {
+            OAT_Registry_Access::expire_grants( (int) $character_id, 'coordinator', (string) $old_office );
+        }
     }
 
     /**

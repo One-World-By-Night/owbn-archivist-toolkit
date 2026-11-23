@@ -292,7 +292,8 @@ class OAT_Workflow_Engine {
             return '';
         }
         $character = self::character_for_entry( $entry );
-        if ( ! $character || 'coordinator' !== OAT_Character::npc_kind( $character ) ) {
+        // Only an NPC belongs to an office; a player character that carries an office type does not.
+        if ( ! $character || 'npc' !== strtolower( trim( (string) ( $character->pc_npc ?? '' ) ) ) || 'coordinator' !== OAT_Character::npc_kind( $character ) ) {
             return '';
         }
         $office = strtolower( trim( (string) ( $character->npc_coordinator ?? '' ) ) );

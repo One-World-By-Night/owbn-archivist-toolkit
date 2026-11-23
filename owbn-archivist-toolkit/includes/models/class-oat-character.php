@@ -173,12 +173,15 @@ class OAT_Character {
             return false;
         }
 
-        // Snapshot old chronicle_slug before update for transfer detection.
+        // Snapshot the old chronicle_slug and office before the update, for transfer and office-change detection.
         $sets_chronicle = array_key_exists( 'chronicle_slug', $update );
+        $sets_office    = array_key_exists( 'npc_coordinator', $update );
         $old_chronicle  = null;
-        if ( $sets_chronicle ) {
+        $old_office     = '';
+        if ( $sets_chronicle || $sets_office ) {
             $old = self::find( $id );
             $old_chronicle = $old ? $old->chronicle_slug : null;
+            $old_office    = $old ? strtolower( trim( (string) $old->npc_coordinator ) ) : '';
         }
 
         $update['updated_at'] = time();
@@ -197,6 +200,21 @@ class OAT_Character {
             $new_chronicle = $update['chronicle_slug'];
             if ( (string) $new_chronicle !== (string) $old_chronicle ) {
                 do_action( 'oat_character_transferred', $id, $old_chronicle, $new_chronicle );
+            }
+        }
+
+        // An NPC that leaves an office is no longer that office's: tell the registry so the office's grant can end.
+        if ( $result && $sets_office && '' !== $old_office ) {
+            $now = self::find( $id );
+            if ( $now && 'npc' === strtolower( (string) $now->pc_npc ) && $old_office !== strtolower( trim( (string) $now->npc_coordinator ) ) ) {
+                /**
+                 * Fires after an NPC's office changed or was cleared.
+                 *
+                 * @param int    $id         Character id.
+                 * @param string $old_office The office it left (lower case).
+                 * @param string $new_office The office it is in now, or ''.
+                 */
+                do_action( 'oat_character_office_changed', $id, $old_office, strtolower( trim( (string) $now->npc_coordinator ) ) );
             }
         }
 
