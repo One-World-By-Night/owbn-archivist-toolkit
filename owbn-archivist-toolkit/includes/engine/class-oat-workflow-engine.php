@@ -233,6 +233,9 @@ class OAT_Workflow_Engine {
         if ( self::coordinator_files_for_own_office( $entry, $step_id, $step_config ) ) {
             return false;
         }
+        if ( self::office_npc_filed_by_its_office( $entry, $step_config ) ) {
+            return false;
+        }
         if ( ! empty( $step_config['assignee_role'] )
             && false !== strpos( $step_config['assignee_role'], '{coordinator_genre}' )
             && '' === self::derive_coordinator_office( $entry ) ) {
@@ -275,6 +278,56 @@ class OAT_Workflow_Engine {
             }
         }
         return false;
+    }
+
+    /**
+     * The coordinator office that owns the character a request is about, when that character is an office NPC and the
+     * request names no chronicle. Such a request has no chronicle staff to review it; its owning office does.
+     *
+     * @param object $entry The entry object.
+     * @return string An office slug, or '' when this is not such a request.
+     */
+    public static function chronicle_less_npc_office( $entry ) {
+        if ( ! empty( $entry->chronicle_slug ) ) {
+            return '';
+        }
+        $character = self::character_for_entry( $entry );
+        if ( ! $character || 'coordinator' !== strtolower( trim( (string) ( $character->npc_type ?? '' ) ) ) ) {
+            return '';
+        }
+        $office = strtolower( trim( (string) ( $character->npc_coordinator ?? '' ) ) );
+        return preg_match( '/^[a-z0-9][a-z0-9-]*$/', $office ) ? $office : '';
+    }
+
+    /**
+     * Whether a role pattern is a chronicle's staff, as the Staff Review step has.
+     *
+     * @param string $role_pattern Role path pattern.
+     * @return bool
+     */
+    private static function is_chronicle_staff_pattern( $role_pattern ) {
+        return 0 === strpos( strtolower( ltrim( (string) $role_pattern ) ), 'chronicle/{chronicle_slug}/' );
+    }
+
+    /**
+     * Whether this is the Staff Review of a request about an office NPC that the office's own Coordinator or
+     * Sub-Coordinator filed: nobody reviews their own request.
+     *
+     * @param object $entry       The entry object.
+     * @param array  $step_config The step's configuration.
+     * @return bool
+     */
+    public static function office_npc_filed_by_its_office( $entry, $step_config ) {
+        $pattern = isset( $step_config['assignee_role'] ) ? (string) $step_config['assignee_role'] : '';
+        if ( ! self::is_chronicle_staff_pattern( $pattern ) ) {
+            return false;
+        }
+        $office = self::chronicle_less_npc_office( $entry );
+        $filer  = isset( $entry->originator_id ) ? (int) $entry->originator_id : 0;
+        if ( '' === $office || $filer <= 0 ) {
+            return false;
+        }
+        return in_array( $filer, array_map( 'intval', OAT_Authorization::get_users_with_role( 'Coordinator/' . $office . '/Coordinator|Coordinator/' . $office . '/Sub-Coordinator' ) ), true );
     }
 
     /**
@@ -610,6 +663,14 @@ class OAT_Workflow_Engine {
      * @return string The role path, or several joined with |.
      */
     public static function expand_role_pattern( $entry, $role_pattern ) {
+        // A request about an office NPC, with no chronicle, is reviewed by the office that owns the NPC.
+        if ( self::is_chronicle_staff_pattern( $role_pattern ) ) {
+            $office = self::chronicle_less_npc_office( $entry );
+            if ( '' !== $office ) {
+                return 'Coordinator/' . $office . '/Coordinator|Coordinator/' . $office . '/Sub-Coordinator';
+            }
+        }
+
         $replacements = array(
             '{chronicle_slug}'    => isset( $entry->chronicle_slug ) ? $entry->chronicle_slug : '',
             '{coordinator_genre}' => self::derive_coordinator_office( $entry ),
