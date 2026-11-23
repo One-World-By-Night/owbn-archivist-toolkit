@@ -53,10 +53,11 @@ class OAT_Workflow_Notify {
 		}
 
 		$label = self::label( $entry );
+		$title = OAT_Request_Title::for_entry( $entry );
 		foreach ( $targets as $target ) {
 			$subject = '' === $target['label']
-				? sprintf( '[OWbN] %s #%d is waiting for you', $label, (int) $entry->id )
-				: sprintf( '[OWbN] %s: %s #%d is waiting for you', $target['label'], $label, (int) $entry->id );
+				? sprintf( '[OWbN] %s #%d is waiting for you', $title, (int) $entry->id )
+				: sprintf( '[OWbN] %s: %s #%d is waiting for you', $target['label'], $title, (int) $entry->id );
 
 			$lines = array();
 			if ( '' !== $target['label'] ) {
@@ -151,11 +152,12 @@ class OAT_Workflow_Notify {
 			return;
 		}
 		$label = self::label( $lead );
+		$title = OAT_Request_Title::for_entry( $lead );
 		$count = count( $lines );
 		foreach ( $targets as $target ) {
 			$subject = '' === $target['label']
-				? sprintf( '[OWbN] %d %s requests are waiting for you', $count, $label )
-				: sprintf( '[OWbN] %s: %d %s requests are waiting for you', $target['label'], $count, $label );
+				? sprintf( '[OWbN] %s (%d lines) is waiting for you', $title, $count )
+				: sprintf( '[OWbN] %s: %s (%d lines) is waiting for you', $target['label'], $title, $count );
 			$body = array();
 			if ( '' !== $target['label'] ) {
 				$body[] = sprintf( 'You are receiving this for the position: %s.', $target['label'] );
@@ -215,7 +217,7 @@ class OAT_Workflow_Notify {
 		$body[] = 'This is an automated notification from the OWbN Archivist Toolkit.';
 		$sent = false;
 		foreach ( $targets as $to ) {
-			if ( OAT_Notify_Mail::send( $to, sprintf( '[OWbN] %d %s requests approved', count( $lines ), $label ), implode( "\n", $body ), (int) $lead->id ) ) {
+			if ( OAT_Notify_Mail::send( $to, sprintf( '[OWbN] %s (%d lines) approved', OAT_Request_Title::for_entry( $lead ), count( $lines ) ), implode( "\n", $body ), (int) $lead->id ) ) {
 				$sent = true;
 			}
 		}
@@ -255,7 +257,7 @@ class OAT_Workflow_Notify {
 			'This is an automated notification from the OWbN Archivist Toolkit.',
 		);
 		foreach ( $targets as $to ) {
-			OAT_Notify_Mail::send( $to, sprintf( '[OWbN] A line of your %s request was vetoed', $label ), implode( "\n", $body ), (int) $entry->id );
+			OAT_Notify_Mail::send( $to, sprintf( '[OWbN] A line of %s was vetoed', OAT_Request_Title::for_entry( $entry ) ), implode( "\n", $body ), (int) $entry->id );
 		}
 	}
 
@@ -327,7 +329,7 @@ class OAT_Workflow_Notify {
 		}
 
 		$label   = self::label( $entry );
-		$subject = sprintf( '[OWbN] %s approved', $label );
+		$subject = sprintf( '[OWbN] %s approved', OAT_Request_Title::for_entry( $entry ) );
 
 		$lines   = array();
 		$lines[] = sprintf( 'Your %s (#%d) has been approved and recorded.', $label, (int) $entry->id );
@@ -364,7 +366,7 @@ class OAT_Workflow_Notify {
 		}
 
 		$label   = self::label( $entry );
-		$subject = sprintf( '[OWbN] %s not accepted', $label );
+		$subject = sprintf( '[OWbN] %s not accepted', OAT_Request_Title::for_entry( $entry ) );
 
 		$lines   = array();
 		$lines[] = sprintf( 'Your %s (#%d) was reviewed and was not accepted.', $label, (int) $entry->id );
@@ -403,7 +405,7 @@ class OAT_Workflow_Notify {
 		}
 
 		$label   = self::label( $entry );
-		$subject = sprintf( '[OWbN] %s needs changes', $label );
+		$subject = sprintf( '[OWbN] %s needs changes', OAT_Request_Title::for_entry( $entry ) );
 
 		$lines   = array();
 		$lines[] = sprintf( 'A %s (#%d) was returned for changes.', $label, (int) $entry->id );

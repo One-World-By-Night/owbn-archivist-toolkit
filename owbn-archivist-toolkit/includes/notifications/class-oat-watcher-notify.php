@@ -83,7 +83,7 @@ class OAT_Watcher_Notify {
 			}
 			$label   = self::label( $entry );
 			/* translators: 1: kind of request, 2: its number, 3: what happened */
-			$subject = sprintf( __( '[OWbN] %1$s #%2$d %3$s', 'owbn-archivist-toolkit' ), $label, (int) $entry->id, $what );
+			$subject = sprintf( __( '[OWbN] %1$s #%2$d %3$s', 'owbn-archivist-toolkit' ), OAT_Request_Title::for_entry( $entry ), (int) $entry->id, $what );
 			$lines   = array(
 				/* translators: 1: kind of request, 2: its number, 3: what happened */
 				sprintf( __( 'A %1$s you watch (#%2$d) %3$s.', 'owbn-archivist-toolkit' ), $label, (int) $entry->id, $what ),
