@@ -127,7 +127,8 @@ class OAT_Workflow_Notify {
 	}
 
 	/**
-	 * Lines of a group reached a step together: one email per person, listing the lines waiting on them.
+	 * Lines of a group reached a step together: one email per person, listing the lines waiting on them. The people and the
+	 * position address are worked out line by line, because the lines of a list can have different approvers.
 	 *
 	 * @param object[] $lines   The lines (all at $step_id).
 	 * @param string   $step_id The step.
@@ -138,33 +139,41 @@ class OAT_Workflow_Notify {
 		if ( ! $lines || ! class_exists( 'OAT_Assignee' ) ) {
 			return;
 		}
-		$lead  = $lines[0];
-		$users = array();
+		$per = array();
 		foreach ( $lines as $line ) {
+			$users = array();
 			foreach ( OAT_Assignee::for_entry_step( (int) $line->id, $step_id ) as $a ) {
 				if ( 'pending' === $a->status ) {
 					$users[] = (int) $a->user_id;
 				}
 			}
+			foreach ( self::step_targets( $line, $step_id, array_unique( $users ), $actor ) as $key => $target ) {
+				if ( ! isset( $per[ $key ] ) ) {
+					$per[ $key ] = array( 'target' => $target, 'lines' => array() );
+				}
+				$per[ $key ]['lines'][] = $line;
+			}
 		}
-		$targets = self::step_targets( $lead, $step_id, array_unique( $users ), $actor );
-		if ( ! $targets ) {
-			return;
-		}
-		$label = self::label( $lead );
-		$title = OAT_Request_Title::for_entry( $lead );
-		$count = count( $lines );
-		foreach ( $targets as $target ) {
+		foreach ( $per as $one ) {
+			$target = $one['target'];
+			$mine   = $one['lines'];
+			$lead   = $mine[0];
+			$label  = self::label( $lead );
+			$title  = OAT_Request_Title::for_entry( $lead );
+			$count  = count( $mine );
+			$noun    = 1 === $count ? 'line' : 'lines';
 			$subject = '' === $target['label']
-				? sprintf( '[OWbN] %s (%d lines) is waiting for you', $title, $count )
-				: sprintf( '[OWbN] %s: %s (%d lines) is waiting for you', $target['label'], $title, $count );
+				? sprintf( '[OWbN] %s (%d %s) is waiting for you', $title, $count, $noun )
+				: sprintf( '[OWbN] %s: %s (%d %s) is waiting for you', $target['label'], $title, $count, $noun );
 			$body = array();
 			if ( '' !== $target['label'] ) {
 				$body[] = sprintf( 'You are receiving this for the position: %s.', $target['label'] );
 				$body[] = '';
 			}
-			$body[] = sprintf( '%d %s requests were filed together and are now at %s, waiting on you:', $count, $label, self::step_label( $lead, $step_id ) );
-			foreach ( $lines as $line ) {
+			$body[] = 1 === $count
+				? sprintf( 'A %s request, filed together with others, is now at %s, waiting on you:', $label, self::step_label( $lead, $step_id ) )
+				: sprintf( '%d %s requests were filed together and are now at %s, waiting on you:', $count, $label, self::step_label( $lead, $step_id ) );
+			foreach ( $mine as $line ) {
 				$body[] = '- ' . self::line_text( $line );
 			}
 			$filer = self::filer_name( $lead );

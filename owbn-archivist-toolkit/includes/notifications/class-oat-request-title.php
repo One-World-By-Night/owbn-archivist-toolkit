@@ -33,6 +33,19 @@ class OAT_Request_Title {
 	}
 
 	/**
+	 * What kind of request this is, without the character: "Character Lifecycle - Learn Custom Content".
+	 *
+	 * @param object|null $entry The request row.
+	 * @return string '' when there is no request.
+	 */
+	public static function kind_for_entry( $entry ) {
+		if ( ! is_object( $entry ) ) {
+			return '';
+		}
+		return self::build( self::domain_label( $entry ), self::form_label( $entry ), '' );
+	}
+
+	/**
 	 * Joins the parts: "Domain - Form: Character".
 	 *
 	 * @param string $domain    Domain label.

@@ -3,12 +3,13 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Requests filed together, with the same approvers at every step, that move through review as one group.
+ * Requests filed together that move through review as one group.
  *
  * Each line is still an ordinary request (its own timeline, rules and registry entry). A group is the first line (the
  * lead) linked to every other line by an oat_entry_relationships row of type ru_batch. Lines are put in a group when
- * they are filed, and only when every line has the same filer, form, chronicle and coordinator offices, so the same
- * people approve all of them.
+ * they are filed. Two ways to join: the lines of one form with the same filer, form, chronicle and coordinator offices
+ * (the same people approve all of them), and the rows of a list the filer submitted together (MODE_LIST), whatever
+ * their form and approvers; each approver acts only on the lines assigned to them.
  *
  * While a group action or a late line is being processed the per-line emails are muted (see mute()); the code that muted
  * them sends one email for the group instead.
@@ -16,6 +17,16 @@ defined( 'ABSPATH' ) || exit;
 class OAT_Batch {
 
     const REL = 'ru_batch';
+
+    /**
+     * The mode of lines filed from one list of rows, which join the group whatever their form and approvers.
+     */
+    const MODE_LIST = 'list';
+
+    /**
+     * How long after a line was filed a later row of the same list may still join its group.
+     */
+    const LIST_WINDOW = 1800;
 
     /**
      * Depth of the mute switch.
@@ -101,31 +112,77 @@ class OAT_Batch {
     }
 
     /**
-     * Puts a line that was just filed in the group of an earlier line of the same submission, when one has the same approvers.
+     * Puts a line that was just filed in the group of an earlier line of the same submission. By default only when that
+     * line has the same approvers; in list mode (the rows of one list) any earlier line of the same filer qualifies.
      *
-     * @param int   $entry_id  The new line.
-     * @param int   $user_id   Who filed it.
-     * @param int[] $prior_ids Lines already filed in this submission.
+     * @param int    $entry_id  The new line.
+     * @param int    $user_id   Who filed it.
+     * @param int[]  $prior_ids Lines already filed in this submission.
+     * @param string $mode      '' or MODE_LIST.
      * @return bool Whether the line joined a group.
      */
-    public static function attach( $entry_id, $user_id, array $prior_ids ) {
+    public static function attach( $entry_id, $user_id, array $prior_ids, $mode = '' ) {
         $entry = OAT_Entry::find( (int) $entry_id );
         if ( ! $entry || (int) $entry->originator_id !== (int) $user_id ) {
             return false;
         }
-        $signature = self::signature( $entry );
+        $list      = self::MODE_LIST === $mode;
+        $signature = $list ? '' : self::signature( $entry );
         foreach ( array_slice( array_unique( array_map( 'intval', $prior_ids ) ), 0, 50 ) as $prior_id ) {
             $prior = $prior_id > 0 && $prior_id !== (int) $entry_id ? OAT_Entry::find( $prior_id ) : null;
             if ( ! $prior || (int) $prior->originator_id !== (int) $user_id || OAT_Constants::is_terminal_status( $prior->status ) ) {
                 continue;
             }
-            if ( self::signature( $prior ) !== $signature ) {
+            if ( $list ) {
+                // A row of the same list was filed minutes ago; an old request is never pulled into a group.
+                if ( (int) $entry->created_at - (int) $prior->created_at > self::LIST_WINDOW ) {
+                    continue;
+                }
+            } elseif ( self::signature( $prior ) !== $signature ) {
                 continue;
             }
             OAT_Entry_Relationship::create( self::lead_id( $prior_id ), (int) $entry_id, self::REL );
             return true;
         }
         return false;
+    }
+
+    /**
+     * Sends a line of a list its usual "waiting for you" email, but only to the people no earlier line of its group
+     * already told (someone who has another line waiting opens it and sees the whole group).
+     *
+     * @param int $entry_id The line.
+     * @return void
+     */
+    public static function mail_new_assignees( $entry_id ) {
+        $entry = OAT_Entry::find( (int) $entry_id );
+        if ( ! $entry || OAT_Constants::is_terminal_status( $entry->status ) || ! class_exists( 'OAT_Assignee' ) ) {
+            return;
+        }
+        $told = array();
+        foreach ( self::line_ids( (int) $entry->id ) as $line_id ) {
+            if ( (int) $line_id === (int) $entry->id ) {
+                continue;
+            }
+            $line = OAT_Entry::find( (int) $line_id );
+            if ( ! $line || OAT_Constants::is_terminal_status( $line->status ) ) {
+                continue;
+            }
+            foreach ( OAT_Assignee::for_entry_step( (int) $line->id, $line->current_step ) as $a ) {
+                if ( 'pending' === $a->status ) {
+                    $told[ (int) $a->user_id ] = true;
+                }
+            }
+        }
+        $users = array();
+        foreach ( OAT_Assignee::for_entry_step( (int) $entry->id, $entry->current_step ) as $a ) {
+            if ( 'pending' === $a->status && ! isset( $told[ (int) $a->user_id ] ) ) {
+                $users[] = (int) $a->user_id;
+            }
+        }
+        if ( $users ) {
+            OAT_Workflow_Notify::on_step_assigned( (int) $entry->id, $entry->current_step, $users );
+        }
     }
 
     /**
