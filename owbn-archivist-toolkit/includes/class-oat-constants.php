@@ -45,6 +45,7 @@ class OAT_Constants {
     const ACTION_AUTO_DENY        = 'auto_deny';
     const ACTION_COUNCIL_OVERRIDE = 'council_override';
     const ACTION_TIMER_EXTEND     = 'timer_extend';
+    const ACTION_PLAYER_ROLE      = 'player_role';
 
     // ── Assignee Statuses (oat_assignees.status) ────────────────────
 
@@ -139,6 +140,7 @@ class OAT_Constants {
             self::ACTION_AUTO_DENY,
             self::ACTION_COUNCIL_OVERRIDE,
             self::ACTION_TIMER_EXTEND,
+            self::ACTION_PLAYER_ROLE,
         ), true );
     }
     public static function is_valid_tier( $tier ) {

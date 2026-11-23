@@ -68,6 +68,11 @@ class OAT_Action_Submit {
             }
         }
 
+        // A Registration from someone who is a player nowhere is tagged, so approving it may grant the player role.
+        if ( class_exists( 'OAT_Player_Grant' ) ) {
+            OAT_Player_Grant::tag_if_newcomer( $entry );
+        }
+
         // Save meta values.
         if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) ) {
             foreach ( $data['meta'] as $key => $value ) {

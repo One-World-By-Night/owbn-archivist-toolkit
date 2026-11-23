@@ -116,6 +116,9 @@ class OAT_Action_Approve {
             return true;
         }
 
+        // The step is complete: everyone it needed has approved.
+        do_action( 'oat_entry_step_approved', (int) $entry->id, $step, $user_id );
+
         // All approved — cancel any active timer.
         $timer = OAT_Timer::active_for_entry( (int) $entry->id );
         if ( $timer ) {

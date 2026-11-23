@@ -22,6 +22,13 @@ class OAT_Submit_Guard {
 	const REQUEST_CHARACTER_FIELDS = array( 'character_name', 'character' );
 
 	/**
+	 * What a newcomer, a signed-in account that is a player nowhere and holds no office, may file: a Registration, and at
+	 * most this many that are still open.
+	 */
+	const NEWCOMER_FORM     = 'cl_registration';
+	const NEWCOMER_OPEN_CAP = 3;
+
+	/**
 	 * @param object $entry Entry row, or an unsaved one with the same fields (domain, form_slug, originator_id).
 	 * @param array  $meta  Field values as submitted.
 	 * @return true|WP_Error
@@ -35,14 +42,20 @@ class OAT_Submit_Guard {
 		if ( '' !== $form && $form !== $domain && ! self::form_in_domain( $form, $domain ) ) {
 			return new WP_Error( 'oat_form_not_in_domain', __( 'That form does not belong to this kind of request.', 'owbn-archivist-toolkit' ) );
 		}
+		$user    = self::sender( $entry );
+		$lookup  = self::lookup_roles( $user );
+		$roles   = null === $lookup ? array() : $lookup;
+		$super   = $user && function_exists( 'owc_oat_is_super_user' ) && owc_oat_is_super_user( $user->ID );
+		// A failed role lookup never makes anyone a newcomer.
+		$refused = ( $super || null === $lookup ) ? null : self::check_newcomer( $entry, $form, $user, $roles );
+		if ( is_wp_error( $refused ) ) {
+			return $refused;
+		}
+
 		$fields = OAT_Form_Field::get_fields( '' !== $form ? $form : $domain, 'submit' );
 		if ( ! $fields ) {
 			return true;
 		}
-
-		$user  = self::sender( $entry );
-		$roles = self::role_paths( $user );
-		$super = $user && function_exists( 'owc_oat_is_super_user' ) && owc_oat_is_super_user( $user->ID );
 
 		foreach ( $fields as $field ) {
 			$key   = (string) ( $field['key'] ?? '' );
@@ -73,6 +86,72 @@ class OAT_Submit_Guard {
 			if ( is_wp_error( $refused ) ) {
 				return $refused;
 			}
+		}
+		return true;
+	}
+
+	/**
+	 * Whether a person is a newcomer: not a site admin, an office holder, a chronicle's staff or a player anywhere.
+	 *
+	 * @param WP_User|null $user  The sender.
+	 * @param array        $roles The sender's role paths.
+	 * @return bool
+	 */
+	public static function is_newcomer( $user, array $roles ) {
+		if ( ! $user || ( function_exists( 'owc_oat_is_super_user' ) && owc_oat_is_super_user( $user->ID ) ) ) {
+			return false;
+		}
+		foreach ( $roles as $path ) {
+			$path = strtolower( (string) $path );
+			if ( 'player/approved' === $path
+				|| preg_match( '#^chronicle/[^/]+/(player|hst|cm|staff|st|ast)$#', $path )
+				|| preg_match( '#^exec/[^/]+/coordinator$#', $path )
+				|| preg_match( '#^coordinator/[^/]+/(coordinator|sub-coordinator)$#', $path ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Whether the person a request is from is a newcomer.
+	 *
+	 * @param object $entry The request.
+	 * @return bool
+	 */
+	public static function sender_is_newcomer( $entry ) {
+		$user   = self::sender( $entry );
+		$lookup = self::lookup_roles( $user );
+		return null !== $lookup && self::is_newcomer( $user, $lookup );
+	}
+
+	/**
+	 * A newcomer files a Registration for their own character and nothing else, and has at most NEWCOMER_OPEN_CAP of them
+	 * open. Once the chronicle's staff accept one they are a player there and the rest of the forms open to them.
+	 *
+	 * @param object       $entry The request, saved or not.
+	 * @param string       $form  The form slug.
+	 * @param WP_User|null $user  The sender.
+	 * @param array        $roles The sender's role paths.
+	 * @return true|WP_Error
+	 */
+	private static function check_newcomer( $entry, $form, $user, array $roles ) {
+		if ( ! self::is_newcomer( $user, $roles ) ) {
+			return true;
+		}
+		if ( self::NEWCOMER_FORM !== $form ) {
+			return new WP_Error( 'oat_newcomer_registration_only', __( 'Start with a Registration for your character. When the chronicle\'s staff accept it you are a player there, and the other forms open to you.', 'owbn-archivist-toolkit' ) );
+		}
+		global $wpdb;
+		$open = (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM {$wpdb->prefix}oat_entries WHERE originator_id = %d AND form_slug = %s AND status IN ('pending','in_progress','on_hold') AND id <> %d",
+			(int) $user->ID,
+			self::NEWCOMER_FORM,
+			(int) ( $entry->id ?? 0 )
+		) );
+		if ( $open >= self::NEWCOMER_OPEN_CAP ) {
+			/* translators: %d: how many Registrations may be open at once */
+			return new WP_Error( 'oat_newcomer_cap', sprintf( __( 'You already have %d Registrations waiting. Wait for a chronicle\'s staff to answer one before you file another.', 'owbn-archivist-toolkit' ), self::NEWCOMER_OPEN_CAP ) );
 		}
 		return true;
 	}
@@ -288,13 +367,28 @@ class OAT_Submit_Guard {
 	 * @param WP_User|null $user The sender.
 	 * @return string[]
 	 */
-	private static function role_paths( $user ) {
+	public static function role_paths( $user ) {
+		$paths = self::lookup_roles( $user );
+		return null === $paths ? array() : $paths;
+	}
+
+	/**
+	 * The sender's role paths, or null when they could not be looked up (no account, no accessSchema client, or no usable
+	 * answer): an empty list means the lookup worked and they hold no role.
+	 *
+	 * @param WP_User|null $user The sender.
+	 * @return string[]|null
+	 */
+	private static function lookup_roles( $user ) {
 		if ( ! $user || ! $user->user_email || ! function_exists( 'owc_asc_get_user_roles' ) ) {
-			return array();
+			return null;
 		}
 		$response = owc_asc_get_user_roles( OAT_Authorization::CLIENT_ID, $user->user_email );
-		$list     = is_array( $response ) && isset( $response['roles'] ) && is_array( $response['roles'] ) ? $response['roles'] : array();
-		$paths    = array();
+		if ( ! is_array( $response ) || ! isset( $response['roles'] ) || ! is_array( $response['roles'] ) ) {
+			return null;
+		}
+		$list  = $response['roles'];
+		$paths = array();
 		foreach ( $list as $role ) {
 			if ( is_string( $role ) ) {
 				$paths[] = $role;
