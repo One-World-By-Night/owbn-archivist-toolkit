@@ -6,6 +6,7 @@ class OAT_Registry_Hooks {
 
     public static function init() {
         add_action( 'oat_character_created', array( __CLASS__, 'on_character_created' ), 10, 2 );
+        add_action( 'oat_character_updated', array( __CLASS__, 'on_character_updated' ), 10, 2 );
         add_action( 'oat_entry_approved', array( __CLASS__, 'on_entry_approved' ), 10, 3 );
         add_action( 'oat_character_transferred', array( __CLASS__, 'on_character_transferred' ), 10, 3 );
     }
@@ -17,10 +18,49 @@ class OAT_Registry_Hooks {
      * @param array $data Insert data array.
      */
     public static function on_character_created( $character_id, $data ) {
-        if ( empty( $data['chronicle_slug'] ) ) {
+        if ( ! empty( $data['chronicle_slug'] ) ) {
+            OAT_Registry_Access::ensure_grant( $character_id, 'chronicle', $data['chronicle_slug'] );
+        }
+        self::ensure_owner_grant( $character_id, $data );
+    }
+
+    /**
+     * An NPC carries the grant of whoever owns it: when its owner, its type or its chronicle is set or changed, the owner is
+     * granted. Grants are only ever added here, never taken away.
+     *
+     * @param int   $character_id
+     * @param array $changed The fields that were set.
+     */
+    public static function on_character_updated( $character_id, $changed ) {
+        if ( ! is_array( $changed ) || ! array_intersect_key( $changed, array_flip( array( 'npc_type', 'npc_coordinator', 'chronicle_slug', 'pc_npc' ) ) ) ) {
             return;
         }
-        OAT_Registry_Access::ensure_grant( $character_id, 'chronicle', $data['chronicle_slug'] );
+        $character = OAT_Character::find( (int) $character_id );
+        if ( $character ) {
+            self::ensure_owner_grant( $character_id, $character );
+        }
+    }
+
+    /**
+     * Grants an NPC's owner access to it: a Coordinator office's NPC to that office, a chronicle's NPC to that chronicle. A PC,
+     * and an NPC that belongs to nobody yet, get nothing here.
+     *
+     * @param int          $character_id
+     * @param array|object $record The character's fields.
+     */
+    private static function ensure_owner_grant( $character_id, $record ) {
+        $record = (array) $record;
+        if ( 'npc' !== strtolower( (string) ( $record['pc_npc'] ?? '' ) ) ) {
+            return;
+        }
+        $kind      = OAT_Character::npc_kind( $record );
+        $office    = strtolower( trim( (string) ( $record['npc_coordinator'] ?? '' ) ) );
+        $chronicle = strtolower( trim( (string) ( $record['chronicle_slug'] ?? '' ) ) );
+        if ( 'coordinator' === $kind && '' !== $office ) {
+            OAT_Registry_Access::ensure_grant( (int) $character_id, 'coordinator', $office );
+        } elseif ( 'chronicle' === $kind && '' !== $chronicle ) {
+            OAT_Registry_Access::ensure_grant( (int) $character_id, 'chronicle', $chronicle );
+        }
     }
 
     /**

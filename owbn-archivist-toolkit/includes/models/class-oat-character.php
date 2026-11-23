@@ -65,6 +65,32 @@ class OAT_Character {
             $chronicle_slug
         ) );
     }
+    /**
+     * Which kind of NPC a character record is: 'coordinator' (a Coordinator office's), 'chronicle' (a chronicle's), or '' when
+     * it belongs to nobody yet. Records carry the standard types coordinator and chronicle and the older coord_owned and
+     * chronicle_owned. A record with no type is a chronicle's when it has a chronicle and no office. Any other type, and an
+     * untyped record with both an office and a chronicle, belongs to nobody until it is decided.
+     *
+     * @param array|object $character The character record.
+     * @return string 'coordinator', 'chronicle' or ''.
+     */
+    public static function npc_kind( $character ) {
+        $c    = (array) $character;
+        $type = strtolower( trim( (string) ( $c['npc_type'] ?? '' ) ) );
+        if ( in_array( $type, array( 'coordinator', 'coord_owned' ), true ) ) {
+            return 'coordinator';
+        }
+        if ( in_array( $type, array( 'chronicle', 'chronicle_owned' ), true ) ) {
+            return 'chronicle';
+        }
+        if ( '' !== $type ) {
+            return '';
+        }
+        $office    = strtolower( trim( (string) ( $c['npc_coordinator'] ?? '' ) ) );
+        $chronicle = strtolower( trim( (string) ( $c['chronicle_slug'] ?? '' ) ) );
+        return ( '' !== $chronicle && '' === $office ) ? 'chronicle' : '';
+    }
+
     public static function create( $data ) {
         global $wpdb;
 
@@ -172,6 +198,16 @@ class OAT_Character {
             if ( (string) $new_chronicle !== (string) $old_chronicle ) {
                 do_action( 'oat_character_transferred', $id, $old_chronicle, $new_chronicle );
             }
+        }
+
+        if ( $result ) {
+            /**
+             * Fires after a character's fields were changed.
+             *
+             * @param int   $id      Character id.
+             * @param array $changed The fields that were set.
+             */
+            do_action( 'oat_character_updated', $id, $update );
         }
 
         return $result;

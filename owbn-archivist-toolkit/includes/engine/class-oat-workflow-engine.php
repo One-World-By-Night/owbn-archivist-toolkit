@@ -292,7 +292,7 @@ class OAT_Workflow_Engine {
             return '';
         }
         $character = self::character_for_entry( $entry );
-        if ( ! $character || 'coordinator' !== strtolower( trim( (string) ( $character->npc_type ?? '' ) ) ) ) {
+        if ( ! $character || 'coordinator' !== OAT_Character::npc_kind( $character ) ) {
             return '';
         }
         $office = strtolower( trim( (string) ( $character->npc_coordinator ?? '' ) ) );
