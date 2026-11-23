@@ -13,6 +13,13 @@ class OAT_Request_Title {
 	const MAX_NAME = 60;
 
 	/**
+	 * What one page load has already looked up, so a list of requests asks the database once per form, domain and character.
+	 *
+	 * @var array<string,array>
+	 */
+	private static $memo = array( 'domain' => array(), 'form' => array(), 'character' => array() );
+
+	/**
 	 * Title of one request.
 	 *
 	 * @param object|null $entry The request row.
@@ -67,14 +74,20 @@ class OAT_Request_Title {
 	 * @return string
 	 */
 	private static function domain_label( $entry ) {
-		$domain = class_exists( 'OAT_Domain_Registry' ) ? OAT_Domain_Registry::get_php_domain( $entry->domain ) : null;
+		$slug = (string) $entry->domain;
+		if ( isset( self::$memo['domain'][ $slug ] ) ) {
+			return self::$memo['domain'][ $slug ];
+		}
+		$label  = '';
+		$domain = class_exists( 'OAT_Domain_Registry' ) ? OAT_Domain_Registry::get_php_domain( $slug ) : null;
 		if ( $domain && method_exists( $domain, 'get_label' ) ) {
 			$label = (string) $domain->get_label();
-			if ( '' !== $label ) {
-				return $label;
-			}
 		}
-		return ucwords( str_replace( array( '_', '-' ), ' ', (string) $entry->domain ) );
+		if ( '' === $label ) {
+			$label = ucwords( str_replace( array( '_', '-' ), ' ', $slug ) );
+		}
+		self::$memo['domain'][ $slug ] = $label;
+		return $label;
 	}
 
 	/**
@@ -88,8 +101,11 @@ class OAT_Request_Title {
 		if ( '' === $slug || ! class_exists( 'OAT_Form' ) ) {
 			return '';
 		}
-		$form = OAT_Form::find_by_slug( $slug );
-		return $form && isset( $form->label ) ? (string) $form->label : '';
+		if ( ! isset( self::$memo['form'][ $slug ] ) ) {
+			$form                        = OAT_Form::find_by_slug( $slug );
+			self::$memo['form'][ $slug ] = $form && isset( $form->label ) ? (string) $form->label : '';
+		}
+		return self::$memo['form'][ $slug ];
 	}
 
 	/**
@@ -99,9 +115,15 @@ class OAT_Request_Title {
 	 * @return string
 	 */
 	private static function character_name( $entry ) {
-		$char = ! empty( $entry->character_id ) && class_exists( 'OAT_Character' ) ? OAT_Character::find( (int) $entry->character_id ) : null;
-		if ( $char && '' !== trim( (string) $char->character_name ) ) {
-			return (string) $char->character_name;
+		$id = ! empty( $entry->character_id ) ? (int) $entry->character_id : 0;
+		if ( $id && class_exists( 'OAT_Character' ) ) {
+			if ( ! isset( self::$memo['character'][ $id ] ) ) {
+				$char                            = OAT_Character::find( $id );
+				self::$memo['character'][ $id ] = $char ? trim( (string) $char->character_name ) : '';
+			}
+			if ( '' !== self::$memo['character'][ $id ] ) {
+				return self::$memo['character'][ $id ];
+			}
 		}
 		if ( ! class_exists( 'OAT_Entry_Meta' ) || empty( $entry->id ) ) {
 			return '';
