@@ -70,6 +70,15 @@ class OAT_Page_Settings {
 		$roles     = array_filter( array_map( 'trim', explode( "\n", $roles_raw ) ) );
 		update_option( 'oat_character_create_roles', $roles );
 
+		$notice_raw = isset( $_POST['oat_bbp_notice_to'] ) ? sanitize_text_field( wp_unslash( $_POST['oat_bbp_notice_to'] ) ) : '';
+		$notice     = array();
+		foreach ( preg_split( '/[\s,;]+/', $notice_raw ) as $address ) {
+			if ( '' !== $address && is_email( $address ) ) {
+				$notice[] = $address;
+			}
+		}
+		update_option( OAT_Bbp_Notice::OPTION, implode( ', ', $notice ) );
+
 		wp_redirect( admin_url( 'admin.php?page=oat-settings&tab=general&saved=1' ) );
 		exit;
 	}
@@ -84,6 +93,7 @@ class OAT_Page_Settings {
 			$roles = array();
 		}
 		$roles_text = implode( "\n", $roles );
+		$notice_to  = (string) get_option( OAT_Bbp_Notice::OPTION, '' );
 
 		if ( $saved ) {
 			echo '<div class="notice notice-success"><p>Settings saved.</p></div>';
@@ -102,6 +112,19 @@ class OAT_Page_Settings {
 							Examples: <code>coordinator/*/coordinator</code>, <code>chronicle/*/hst</code>, <code>exec/*/coordinator</code><br>
 							Leave empty to allow all authenticated users (current default).
 						</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="oat_bbp_notice_to">Auto-approval notice to Council</label></th>
+					<td>
+						<input type="text" name="oat_bbp_notice_to" id="oat_bbp_notice_to" class="large-text" value="<?php echo esc_attr( $notice_to ); ?>">
+						<p class="description">
+							When a request passes by Bump Bump Pass, an email saying which Coordinator had an auto-approval processed goes to these addresses.<br>
+							Separate several with commas. Leave empty to announce nothing.
+						</p>
+						<?php if ( '' === trim( $notice_to ) ) : ?>
+							<p class="description"><strong>No address is set, so auto-approvals are not announced.</strong></p>
+						<?php endif; ?>
 					</td>
 				</tr>
 			</table>

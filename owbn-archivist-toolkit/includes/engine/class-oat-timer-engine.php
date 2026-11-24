@@ -92,12 +92,12 @@ class OAT_Timer_Engine {
     }
 
     /**
-     * Check if an entry is eligible for BBP auto-approve.
+     * Check if an entry is eligible for Bump Bump Pass auto-approval.
      *
-     * Three independent conditions (D-045):
+     * Three independent conditions:
      *   1. Timer expired (time elapsed)
      *   2. Bump count >= bump_required
-     *   3. No elevation on linked rules (D-046)
+     *   3. No elevation on linked rules
      *
      * @param int $entry_id
      * @return bool
@@ -127,49 +127,40 @@ class OAT_Timer_Engine {
     }
 
     /**
-     * Invoke BBP auto-approve for an entry. Submitter-initiated (D-045).
-     *
-     * @param int $entry_id
-     * @param int $user_id The submitter invoking auto-approve.
-     * @return true|WP_Error
-     */
-    public static function invoke_auto_approve( $entry_id, $user_id ) {
-        if ( ! self::check_bbp_eligible( $entry_id ) ) {
-            return new WP_Error( 'not_eligible', 'Entry is not eligible for BBP auto-approve.' );
-        }
-
-        return OAT_Workflow_Engine::process_action(
-            $entry_id,
-            'auto_approve',
-            $user_id,
-            array( 'note' => 'BBP auto-approve invoked by submitter.' )
-        );
-    }
-
-    /**
      * Process all expired timers. Called by WP-Cron or admin page load.
      *
-     * Auto-deny fires automatically. Auto-approve is NOT fired automatically
-     * (submitter-initiated per D-045) — timer is just marked as fired.
+     * An auto_deny timer denies its request. An auto_approve timer approves its request when it is eligible
+     * (see check_bbp_eligible()); an expired auto_approve timer that is not eligible just ends. A failed approval
+     * leaves its timer active so the next run tries again.
      *
-     * @return int Count of timers processed.
+     * @return int Count of requests approved or denied.
      */
     public static function process_expired_timers() {
         $expired = OAT_Timer::expired();
         $count   = 0;
 
         foreach ( $expired as $timer ) {
+            $entry_id = (int) $timer->entry_id;
+
             if ( $timer->auto_action === 'auto_deny' ) {
                 OAT_Workflow_Engine::process_action(
-                    (int) $timer->entry_id,
+                    $entry_id,
                     'auto_deny',
                     0,
                     array( 'note' => 'Timer expired — auto-denied.' )
                 );
                 $count++;
+            } elseif ( $timer->auto_action === 'auto_approve' && self::check_bbp_eligible( $entry_id ) ) {
+                $result = OAT_Workflow_Engine::process_action( $entry_id, 'auto_approve', 0 );
+                if ( is_wp_error( $result ) ) {
+                    if ( ! in_array( $result->get_error_code(), array( 'terminal', 'not_found', 'not_eligible', 'no_timer' ), true ) ) {
+                        continue;
+                    }
+                } else {
+                    $count++;
+                }
             }
 
-            // Mark timer as fired (for both auto_deny and auto_approve).
             OAT_Timer::fire( (int) $timer->id );
         }
 
